@@ -15,7 +15,7 @@ const css = `
     --charcoal: #1A1A1A;
     --gold: #C9A96E;
     --gold-light: #E8D5B0;
-    --warm-gray: #9E9890;
+    --warm-gray: #6F685F;
     --border: #E8E2D9;
     --white: #FFFFFF;
     --error: #C0392B;
@@ -82,13 +82,14 @@ const css = `
   .section-title { font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 3rem); font-weight: 400; color: var(--charcoal); line-height: 1.2; }
   .section-title em { font-style: italic; }
 
-  .categories-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+  .categories-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
   .category-card { position: relative; overflow: hidden; cursor: pointer; aspect-ratio: 3/4; }
   .category-bg { width: 100%; height: 100%; transition: transform 0.6s ease; display: flex; align-items: center; justify-content: center; }
   .category-card:hover .category-bg { transform: scale(1.04); }
   .cat-women { background: linear-gradient(160deg, #E8EDF4 0%, #D7DFEA 100%); }
   .cat-men { background: linear-gradient(160deg, #DEE8F6 0%, #C9D8EC 100%); }
   .cat-access { background: linear-gradient(160deg, #F2E5D9 0%, #E8D4C2 100%); }
+  .cat-children { background: linear-gradient(160deg, #E9F2EC 0%, #D3E6DA 100%); }
   .cat-icon { font-size: 5rem; opacity: 0.34; position: absolute; color: rgba(24,24,24,0.35); }
   .category-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,12,16,0.5) 0%, rgba(10,12,16,0.1) 58%, rgba(10,12,16,0) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 32px; transition: background 0.3s; }
   .category-card:hover .category-overlay { background: linear-gradient(to top, rgba(10,12,16,0.58) 0%, rgba(10,12,16,0.16) 58%, rgba(10,12,16,0) 100%); }
@@ -114,9 +115,9 @@ const css = `
   .product-name { font-family: var(--font-serif); font-size: 1.05rem; color: var(--charcoal); margin-bottom: 8px; }
   .product-price { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
   .product-badge { position: absolute; top: 12px; left: 12px; z-index: 2; background: var(--charcoal); color: white; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; }
-  .wishlist-btn { position: absolute; top: 12px; right: 12px; z-index: 2; background: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); transition: all 0.2s; }
+  .wishlist-btn { position: absolute; top: 12px; right: 12px; z-index: 2; background: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; color: var(--charcoal); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); transition: all 0.2s; }
   .wishlist-btn:hover { transform: scale(1.12); }
-  .wishlist-btn.active { background: var(--gold); }
+  .wishlist-btn.active { background: var(--gold); color: white; }
 
   .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); }
   .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: white; width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; }
@@ -137,7 +138,7 @@ const css = `
   .cart-item-meta { font-size: 0.7rem; color: var(--warm-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
   .cart-item-price { font-size: 0.8rem; font-weight: 600; color: var(--gold); }
   .qty-control { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-  .qty-btn { width: 24px; height: 24px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .qty-btn { width: 24px; height: 24px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--charcoal); }
   .qty-btn:hover { background: var(--charcoal); color: white; border-color: var(--charcoal); }
   .qty-num { font-size: 0.8rem; font-weight: 600; min-width: 20px; text-align: center; }
   .remove-btn { background: none; border: none; color: var(--warm-gray); cursor: pointer; font-size: 0.7rem; margin-left: auto; transition: color 0.2s; }
@@ -166,6 +167,14 @@ const css = `
   .auth-switch button { background: none; border: none; color: var(--gold); cursor: pointer; font-weight: 600; text-decoration: underline; }
   .form-submit { width: 100%; padding: 14px; background: var(--charcoal); color: white; border: none; cursor: pointer; font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; transition: background 0.3s; margin-top: 8px; }
   .form-submit:hover { background: var(--gold); }
+  .auth-divider { display: flex; align-items: center; text-align: center; margin: 24px 0; color: var(--warm-gray); font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border); }
+  .auth-divider:not(:empty)::before { margin-right: 1.5em; }
+  .auth-divider:not(:empty)::after { margin-left: 1.5em; }
+  .social-login-grid { display: grid; gap: 12px; }
+  .btn-social { width: 100%; padding: 12px; border: 1px solid var(--border); background: white; color: var(--charcoal); cursor: pointer; font-family: var(--font-sans); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
+  .btn-social:hover { background: var(--cream); border-color: var(--gold); }
+  .social-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
 
   .profile-layout { max-width: 1100px; margin: 0 auto; padding: 100px 40px 60px; }
   .profile-header { display: flex; gap: 28px; align-items: center; margin-bottom: 48px; padding-bottom: 40px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
@@ -188,6 +197,111 @@ const css = `
   .toast { background: var(--charcoal); color: white; padding: 14px 20px; font-size: 0.75rem; letter-spacing: 0.05em; min-width: 240px; display: flex; align-items: center; gap: 10px; animation: toastIn 0.3s ease; border-left: 3px solid var(--gold); }
   .toast.success { border-left-color: var(--success); }
   .toast.removing { animation: toastOut 0.3s ease forwards; }
+
+  .cookie-backdrop { position: fixed; inset: 0; background: rgba(10,12,16,0.22); backdrop-filter: blur(3px); z-index: 2100; animation: fadeIn 0.25s ease both; }
+
+  /* Cookie bar (full-width + slide-up) */
+  .cookie-panel {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 2101;
+    margin: 0;
+    max-width: none;
+    background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(250,247,242,0.90));
+    border-top: 1px solid rgba(232,226,217,0.95);
+    box-shadow: 0 -18px 60px rgba(0,0,0,0.18);
+    border-radius: 18px 18px 0 0;
+    overflow: hidden;
+    animation: cookieUp 520ms cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes cookieUp {
+    from { transform: translateY(120%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cookie-panel { animation: none; }
+  }
+  .cookie-top { display: flex; gap: 14px; padding: 14px 18px 12px; align-items: center; max-width: 1120px; margin: 0 auto; }
+  .cookie-badge {
+    flex: 0 0 auto;
+    width: 38px; height: 38px;
+    border-radius: 12px;
+    background: #B07A5A;
+    display: grid; place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.10), 0 10px 26px rgba(0,0,0,0.10);
+  }
+  .cookie-badge svg { width: 28px; height: 28px; }
+  .cookie-title { font-family: var(--font-serif); font-size: 1.05rem; letter-spacing: 0.02em; margin-bottom: 2px; color: var(--charcoal); }
+  .cookie-text { font-size: 0.72rem; color: var(--warm-gray); line-height: 1.6; }
+  .cookie-text a { color: var(--charcoal); text-decoration: underline; cursor: pointer; }
+  .cookie-actions { display: flex; gap: 8px; padding: 0 18px 14px; flex-wrap: wrap; align-items: center; justify-content: flex-end; max-width: 1120px; margin: 0 auto; }
+  .cookie-btn {
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--charcoal);
+    padding: 9px 10px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cookie-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,0.10); }
+  .cookie-btn.primary { background: var(--gold); color: white; border-color: var(--gold); }
+  .cookie-btn.primary:hover { background: #B8915A; border-color: #B8915A; }
+  .cookie-btn.dark { background: var(--charcoal); color: white; border-color: var(--charcoal); }
+  .cookie-btn.dark:hover { background: #111; border-color: #111; }
+  .cookie-btn.ghost { background: transparent; }
+  .cookie-drawer {
+    border-top: 1px solid rgba(232,226,217,0.9);
+    padding: 12px 18px 14px;
+    background: rgba(250,247,242,0.55);
+    display: grid;
+    gap: 10px;
+  }
+  .cookie-close {
+    margin-left: auto;
+    width: 34px; height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(26,26,26,0.10);
+    background: rgba(255,255,255,0.70);
+    cursor: pointer;
+    display: grid; place-items: center;
+    color: rgba(26,26,26,0.65);
+    transition: all 0.2s;
+  }
+  .cookie-close:hover { background: white; color: var(--charcoal); transform: translateY(-1px); }
+  .cookie-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .cookie-row strong { font-size: 0.72rem; letter-spacing: 0.02em; }
+  .cookie-row span { font-size: 0.7rem; color: var(--warm-gray); }
+  .cookie-toggle { display: inline-flex; gap: 10px; align-items: center; }
+  .cookie-switch {
+    width: 44px; height: 26px; border-radius: 999px;
+    border: 1px solid rgba(26,26,26,0.18);
+    background: rgba(26,26,26,0.08);
+    position: relative; cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .cookie-switch::after {
+    content: "";
+    position: absolute; top: 50%; left: 4px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: white;
+    transform: translateY(-50%);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    transition: left 0.2s;
+  }
+  .cookie-switch.on { background: rgba(201,169,110,0.35); border-color: rgba(201,169,110,0.65); }
+  .cookie-switch.on::after { left: 22px; }
+  .cookie-lock { font-size: 0.65rem; color: rgba(26,26,26,0.55); letter-spacing: 0.12em; text-transform: uppercase; }
+
+  .legal-page { padding: 100px 40px 60px; max-width: 1100px; margin: 0 auto; }
+  .legal-card { background: white; border: 1px solid var(--border); padding: 28px; }
+  .legal-kicker { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+  .legal-h1 { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 400; margin-bottom: 10px; }
+  .legal-p { font-size: 0.8rem; color: var(--warm-gray); line-height: 1.9; margin-bottom: 14px; }
+  .legal-li { font-size: 0.8rem; color: var(--charcoal); line-height: 1.85; margin: 6px 0; }
+  .legal-note { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 0.72rem; color: var(--warm-gray); line-height: 1.7; }
 
   .marquee-wrapper { background: var(--charcoal); overflow: hidden; padding: 10px 0; }
   .marquee-track { display: flex; animation: marquee 22s linear infinite; white-space: nowrap; width: max-content; }
@@ -216,13 +330,14 @@ const css = `
   .detail-price { font-size: 1.4rem; font-weight: 600; color: var(--charcoal); margin-bottom: 28px; }
   .detail-desc { font-size: 0.82rem; color: var(--warm-gray); line-height: 1.8; margin-bottom: 32px; }
   .size-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
-  .size-btn { padding: 8px 14px; border: 1px solid var(--border); background: none; cursor: pointer; font-family: var(--font-sans); font-size: 0.72rem; transition: all 0.2s; }
+  .size-btn { padding: 8px 14px; border: 1px solid var(--border); background: none; cursor: pointer; font-family: var(--font-sans); font-size: 0.72rem; transition: all 0.2s; color: var(--charcoal); }
   .size-btn:hover, .size-btn.selected { background: var(--charcoal); color: white; border-color: var(--charcoal); }
   .detail-actions { display: flex; gap: 12px; }
   .add-cart-btn { flex: 1; padding: 16px; background: var(--charcoal); color: white; border: none; cursor: pointer; font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; transition: background 0.3s; }
   .add-cart-btn:hover { background: var(--gold); }
-  .wish-btn { padding: 16px 20px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; }
+  .wish-btn { padding: 16px 20px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1.2rem; color: var(--charcoal); font-weight: 700; line-height: 1; transition: all 0.2s; }
   .wish-btn:hover { background: var(--charcoal); color: white; }
+  .wish-btn.active { background: var(--gold); color: white; border-color: var(--gold); }
 
   @media (max-width: 768px) {
     .navbar { padding: 0 20px; }
@@ -258,6 +373,10 @@ const PRODUCTS = [
   { id: 10, name: "Linen Shirt Dress", brand: "Maison Élite", price: 265, category: "Women", badge: null, emoji: "👔", bg: ["#EEF0EA","#E4E8DC"], desc: "Relaxed shirt dress in washed Belgian linen. Understated sophistication.", sizes: ["XS","S","M","L","XL"] },
   { id: 11, name: "Merino Turtleneck", brand: "Montagne", price: 220, category: "Men", badge: "Bestseller", emoji: "🧶", bg: ["#E8EAF0","#D8DDE8"], desc: "Ultra-fine merino turtleneck in a versatile palette. An essential layer for colder months.", sizes: ["S","M","L","XL","XXL"] },
   { id: 12, name: "Leather Belt", brand: "Brun & Co.", price: 135, category: "Accessories", badge: null, emoji: "👑", bg: ["#EDE8E0","#E0D8CC"], desc: "Vegetable-tanned leather belt with a polished brass buckle. The finishing touch every outfit deserves.", sizes: ["70cm","75cm","80cm","85cm","90cm"] },
+  { id: 13, name: "Organic Cotton Hoodie", brand: "Petit Atelier", price: 68, category: "Kids", badge: "New", emoji: "🧸", bg: ["#EAF3F0","#DDEBE5"], desc: "Soft brushed hoodie in organic cotton. Built for playground days and cozy evenings.", sizes: ["2Y","3Y","4Y","5Y","6Y","7Y","8Y"] },
+  { id: 14, name: "Denim Overalls Set", brand: "Petit Atelier", price: 82, category: "Kids", badge: null, emoji: "🧒", bg: ["#E9EDF5","#D8E0EF"], desc: "Classic denim overalls with an easy-fit tee. Durable, comfortable, and timeless.", sizes: ["2Y","3Y","4Y","5Y","6Y"] },
+  { id: 15, name: "Rain Jacket", brand: "Nord Mini", price: 95, category: "Kids", badge: "Bestseller", emoji: "🌧️", bg: ["#EEF6F9","#DCECF3"], desc: "Lightweight waterproof jacket with sealed seams. Keeps little explorers dry in style.", sizes: ["3Y","4Y","5Y","6Y","7Y","8Y"] },
+  { id: 16, name: "Knit Beanie + Scarf", brand: "Nord Mini", price: 48, category: "Kids", badge: "Sale", emoji: "🧣", bg: ["#F2F0EA","#E5E2D6"], desc: "Warm knit set in a soft blend. Perfect for chilly mornings and weekend walks.", sizes: ["One Size"] },
 ];
 
 const COUNTRY_OPTIONS = [
@@ -1434,6 +1553,7 @@ const COUNTRY_OPTIONS = [
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const CHECKOUT_CACHE_KEY = "velours_checkout_draft_v1";
+const COOKIE_CONSENT_KEY = "velours_cookie_consent_v1";
 const USER_PROFILE_VERSION = 2;
 
 const fmt = (n) => `$${n.toLocaleString()}`;
@@ -1455,6 +1575,18 @@ const LS = {
   clearSession: () => {
     try { localStorage.removeItem("velours_session"); } catch {}
   },
+};
+
+const readCookieConsent = () => {
+  try {
+    const raw = localStorage.getItem(COOKIE_CONSENT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+const writeCookieConsent = (consent) => {
+  try { localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent)); } catch {}
 };
 
 const splitName = (full) => {
@@ -1527,6 +1659,8 @@ export default function App() {
   const [payConfirmOrder, setPayConfirmOrder] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
+  const [cookieConsent, setCookieConsent] = useState(null);
+  const [cookieOpen, setCookieOpen] = useState(false);
   const [checkoutDraft, setCheckoutDraft] = useState({
     firstName: "",
     lastName: "",
@@ -1557,6 +1691,10 @@ export default function App() {
   const { toasts, add: addToast } = useToast();
   const dialForCountry = (code) => COUNTRY_OPTIONS.find(c => c.code === code)?.dial || "+1";
 
+  useEffect(() => {
+    document.title = "sanjiiiii";
+  }, []);
+
   // Restore session
   useEffect(() => {
     const session = LS.getSession();
@@ -1565,6 +1703,31 @@ export default function App() {
       if (u) { LS.saveUser(u); setUser(u); setCart(u.cart || []); setWishlist(u.wishlist || []); }
     }
   }, []);
+
+  // Cookie consent (GDPR)
+  useEffect(() => {
+    const existing = readCookieConsent();
+    if (existing && existing.version === 1) {
+      setCookieConsent(existing);
+      return;
+    }
+    setCookieOpen(true);
+  }, []);
+
+  // Allow reopening cookie settings anytime
+  useEffect(() => {
+    const handler = () => setCookieOpen(true);
+    window.addEventListener("velours:cookie-settings", handler);
+    return () => window.removeEventListener("velours:cookie-settings", handler);
+  }, []);
+
+  const saveCookieConsent = (next) => {
+    const consent = { ...next, version: 1, updatedAt: new Date().toISOString() };
+    setCookieConsent(consent);
+    writeCookieConsent(consent);
+    setCookieOpen(false);
+    addToast("Cookie preferences saved.", "success");
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -1966,7 +2129,7 @@ export default function App() {
     <div style={{ minHeight: "100vh" }}>
       {/* Navbar */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
-        <button className="nav-logo" onClick={() => navigate("home")}>Vel<span>ours</span></button>
+        <button className="nav-logo" onClick={() => navigate("home")}>sanj<span>iiiii</span></button>
         <div className="nav-links">
           {[["home","Home"],["shop","Collection"],["about","About"]].map(([p,l]) => (
             <button key={p} className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
@@ -2001,6 +2164,8 @@ export default function App() {
       {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} />}
       {page === "profile" && <ProfilePage user={user} cart={cart} wishlist={wishlist} products={PRODUCTS} logout={logout} tab={profileTab} setTab={setProfileTab} navigate={navigate} onMarkOrderPaid={handleOpenMarkPaid} onUpdateProfile={updateUserProfile} />}
       {page === "about" && <AboutPage navigate={navigate} />}
+      {page === "privacy" && <PrivacyPage navigate={navigate} />}
+      {page === "terms" && <TermsPage navigate={navigate} />}
 
       {/* Cart Drawer */}
       {cartOpen && (
@@ -2041,6 +2206,9 @@ export default function App() {
                   <div className="cart-total">
                     <span className="cart-total-label">Subtotal</span>
                     <span className="cart-total-price">{fmt(cartTotal)}</span>
+                  </div>
+                  <div style={{ fontSize:"0.68rem", color:"var(--warm-gray)", textAlign:"center", margin:"-6px 0 12px", letterSpacing:"0.02em" }}>
+                    VAT included where applicable (EU orders shown at checkout).
                   </div>
                   {!user && (
                     <div style={{ fontSize:"0.7rem", color:"var(--warm-gray)", marginBottom:12, textAlign:"center" }}>
@@ -2210,6 +2378,9 @@ export default function App() {
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:6 }}><span>Promo Discount</span><span>- {fmt(getPricing().promoDiscount)}</span></div>
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:10 }}><span>Delivery Charge</span><span>{fmt(getPricing().shippingFee)}</span></div>
                 <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid var(--border)", paddingTop:10, fontWeight:600 }}><span>Total</span><span>{fmt(getPricing().total)}</span></div>
+                <div style={{ marginTop:8, fontSize:"0.7rem", color:"var(--warm-gray)", lineHeight:1.6 }}>
+                  VAT included where applicable. Final VAT breakdown is shown for EU deliveries.
+                </div>
               </div>
 
               <div className="form-group">
@@ -2289,6 +2460,9 @@ export default function App() {
                     })}
                     {getPricing().promoDiscount > 0 && <div style={{ fontSize:"0.74rem", color:"var(--success)" }}>Promo ({getPricing().normalizedPromo}): -{fmt(getPricing().promoDiscount)}</div>}
                     <div style={{ marginTop:10, display:"flex", justifyContent:"space-between", fontWeight:600 }}><span>Grand Total</span><span>{fmt(getPricing().total)}</span></div>
+                    <div style={{ marginTop:6, fontSize:"0.7rem", color:"var(--warm-gray)", lineHeight:1.6 }}>
+                      VAT included where applicable. For EU orders, VAT is calculated based on delivery country.
+                    </div>
                   </div>
                   <div style={{ display:"flex", gap:10 }}>
                     <button className="filter-btn" onClick={() => setCheckoutStep(2)}>Back</button>
@@ -2351,6 +2525,14 @@ export default function App() {
           <div key={t.id} className={`toast${t.type === "success" ? " success" : ""}${t.removing ? " removing" : ""}`}>{t.msg}</div>
         ))}
       </div>
+
+      <CookieNotice
+        open={cookieOpen}
+        onClose={() => setCookieOpen(false)}
+        onSave={saveCookieConsent}
+        existing={cookieConsent}
+        navigate={navigate}
+      />
     </div>
   );
 }
@@ -2388,6 +2570,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
           {[
             { label: "Women", count: "48 pieces", cls: "cat-women", icon: "👗" },
             { label: "Men", count: "36 pieces", cls: "cat-men", icon: "🧥" },
+            { label: "Kids", count: "18 pieces", cls: "cat-children", icon: "🧸" },
             { label: "Accessories", count: "24 pieces", cls: "cat-access", icon: "👜" },
           ].map(cat => (
             <div key={cat.label} className="category-card" onClick={() => navigate("shop")}>
@@ -2482,7 +2665,7 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
         </div>
         <div style={{ display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
           <div className="filter-bar">
-            {["All","Women","Men","Accessories"].map(c => (
+            {["All","Women","Men","Kids","Accessories"].map(c => (
               <button key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
@@ -2533,7 +2716,7 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
           </div>
           <div className="detail-actions">
             <button className="add-cart-btn" onClick={() => addToCart(product, selectedSize)}>Add to Bag</button>
-            <button className="wish-btn" onClick={() => toggleWishlist(product.id)}>{wishlisted ? "♥" : "♡"}</button>
+            <button className={`wish-btn${wishlisted ? " active" : ""}`} onClick={() => toggleWishlist(product.id)}>{wishlisted ? "♥" : "♡"}</button>
           </div>
           <div style={{ marginTop:28, paddingTop:28, borderTop:"1px solid var(--border)" }}>
             {[["🚚","Free Express Delivery","On orders over $200"],["↩️","Easy Returns","30-day free returns"],["✦","Authenticity Guaranteed","100% genuine products"]].map(([icon,title,sub]) => (
@@ -2849,7 +3032,7 @@ function AboutPage({ navigate }) {
         <h1 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(2.5rem,6vw,5rem)", color:"var(--cream)", fontWeight:300, lineHeight:1.1 }}>Fashion with<br /><em style={{ color:"var(--gold-light)" }}>Purpose</em></h1>
       </div>
       <div style={{ maxWidth:780, margin:"0 auto", padding:"80px 40px" }}>
-        {[["Our Story","Velours was born from a simple belief: that luxury and sustainability are not mutually exclusive. Founded in Paris in 2018, we source only from artisans who share our commitment to ethical production and enduring quality."],
+        {[["Our Story","sanjiiiii was born from a simple belief: that luxury and sustainability are not mutually exclusive. Founded in Paris in 2018, we source only from artisans who share our commitment to ethical production and enduring quality."],
           ["Our Philosophy","We reject the notion of fast fashion. Every piece in our collection is designed to be worn for decades, not seasons. We work with heritage mills and independent craftspeople to ensure each garment tells a story of skilled hands and considered materials."],
           ["Sustainability","We are committed to reducing our environmental footprint at every step. From our organic and recycled materials to our carbon-neutral shipping, every decision is made with the planet in mind."]].map(([title,body],i) => (
           <div key={title} style={{ marginBottom:56, paddingBottom:56, borderBottom:i < 2 ? "1px solid var(--border)" : "none" }}>
@@ -2968,9 +3151,33 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
         <button className="form-submit" onClick={handle} disabled={loading || (mode === "register" && !pwAllOk)}>
           {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
         </button>
+
+        <div className="auth-divider">or</div>
+
+        <div className="social-login-grid">
+          <button className="btn-social" onClick={() => addToast("Google login is coming soon!", "info")}>
+            <span className="social-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+            </span>
+            Continue with Google
+          </button>
+          <button className="btn-social" onClick={() => addToast("Apple login is coming soon!", "info")}>
+            <span className="social-icon">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                <path d="M17.05 20.28c-.96.95-2.04 1.9-3.32 1.9-1.25 0-1.74-.78-3.19-.78-1.47 0-1.99.76-3.21.78-1.28.02-2.48-1.04-3.44-2.02-1.97-2.01-3.48-5.69-1.46-8.79 1-1.54 2.82-2.52 4.41-2.55 1.2-.02 2.33.72 3.07.72s1.9-.76 3.32-.62c.59.03 2.26.22 3.33 1.65-.09.05-1.99 1.05-1.97 3.34.02 2.76 2.65 3.73 2.7 3.75-.02.08-.43 1.34-1.24 2.61zM12.03 7.25c-.02-2.24 1.83-4.14 4.02-4.25.02.22.04.44.04.67 0 2.12-1.89 4.19-4.06 3.58z"/>
+              </svg>
+            </span>
+            Continue with Apple
+          </button>
+        </div>
         <div className="auth-switch">
           {mode === "login"
-            ? <>New to Velours? <button onClick={() => { setMode("register"); setError(""); }}>Create an account</button></>
+            ? <>New to sanjiiiii? <button onClick={() => { setMode("register"); setError(""); }}>Create an account</button></>
             : <>Already a member? <button onClick={() => { setMode("login"); setError(""); }}>Sign in</button></>}
         </div>
       </div>
@@ -2984,16 +3191,21 @@ function Footer({ navigate }) {
     <footer className="footer">
       <div className="footer-grid">
         <div>
-          <div className="footer-brand">Vel<span>ours</span></div>
+          <div className="footer-brand">sanj<span>iiiii</span></div>
           <p className="footer-desc">Luxury fashion curated for the modern connoisseur. Sustainable, ethical, timeless.</p>
         </div>
         <div>
           <div className="footer-col-title">Shop</div>
-          {["Women","Men","Accessories","New Arrivals","Sale"].map(l => <span key={l} className="footer-link" onClick={() => navigate("shop")}>{l}</span>)}
+          {["Women","Men","Kids","Accessories","New Arrivals","Sale"].map(l => <span key={l} className="footer-link" onClick={() => navigate("shop")}>{l}</span>)}
         </div>
         <div>
           <div className="footer-col-title">Help</div>
           {["Shipping & Returns","Size Guide","FAQ","Contact Us","Stores"].map(l => <span key={l} className="footer-link">{l}</span>)}
+          <span className="footer-link" onClick={() => navigate("privacy")}>Privacy Policy</span>
+          <span className="footer-link" onClick={() => navigate("terms")}>Terms</span>
+          <span className="footer-link" onClick={() => window.dispatchEvent(new Event("velours:cookie-settings"))}>
+            Cookie Settings
+          </span>
         </div>
         <div>
           <div className="footer-col-title">Company</div>
@@ -3001,11 +3213,159 @@ function Footer({ navigate }) {
         </div>
       </div>
       <div className="footer-bottom">
-        <span className="footer-copy">© 2026 Velours. All rights reserved.</span>
+        <span className="footer-copy">© 2026 sanjiiiii. All rights reserved.</span>
         <div className="footer-socials">
           {["𝕏","in","ig","fb"].map(s => <div key={s} className="social-btn">{s}</div>)}
         </div>
       </div>
     </footer>
+  );
+}
+
+function CookieNotice({ open, onClose, onSave, existing, navigate }) {
+  const [expanded, setExpanded] = useState(false);
+  const [analytics, setAnalytics] = useState(Boolean(existing?.analytics));
+  const [marketing, setMarketing] = useState(Boolean(existing?.marketing));
+
+  useEffect(() => {
+    if (!open) return;
+    setExpanded(false);
+    setAnalytics(Boolean(existing?.analytics));
+    setMarketing(Boolean(existing?.marketing));
+  }, [open, existing]);
+
+  if (!open) return null;
+
+  const acceptAll = () => onSave({ necessary: true, analytics: true, marketing: true });
+  const rejectAll = () => onSave({ necessary: true, analytics: false, marketing: false });
+  const saveCustom = () => onSave({ necessary: true, analytics, marketing });
+
+  return (
+    <>
+      {/* Cookie bar doesn't block the page (like CookieYes). Backdrop only when customizing. */}
+      {expanded && <div className="cookie-backdrop" onClick={onClose} />}
+      <div className="cookie-panel" role="dialog" aria-modal="true" aria-label="Cookie preferences">
+        <div className="cookie-top">
+          <div className="cookie-badge" aria-hidden="true">
+            <img
+              src="/cookie.png"
+              alt=""
+              style={{ width: 28, height: 28, display: "block", objectFit: "contain" }}
+              draggable="false"
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div className="cookie-title">Your privacy, your choice</div>
+            <div className="cookie-text">
+              We use cookies to keep the site secure, improve performance, and personalize experiences. You can change
+              your preferences anytime in our{" "}
+              <a onClick={() => { onClose(); navigate("privacy"); }}>Privacy Policy</a>.
+            </div>
+          </div>
+          <button className="cookie-close" onClick={onClose} aria-label="Close cookie notice">✕</button>
+        </div>
+
+        {!expanded ? (
+          <div className="cookie-actions">
+            <button className="cookie-btn ghost" onClick={() => setExpanded(true)}>Customize</button>
+            <button className="cookie-btn dark" onClick={rejectAll}>Reject non‑essential</button>
+            <button className="cookie-btn primary" onClick={acceptAll}>Accept all</button>
+          </div>
+        ) : (
+          <>
+            <div className="cookie-drawer">
+              <div className="cookie-row">
+                <div>
+                  <strong>Necessary</strong>
+                  <div><span>Required for security and core features.</span></div>
+                </div>
+                <div className="cookie-toggle">
+                  <div className="cookie-lock">Always on</div>
+                </div>
+              </div>
+              <div className="cookie-row">
+                <div>
+                  <strong>Analytics</strong>
+                  <div><span>Helps us understand what works and what doesn’t.</span></div>
+                </div>
+                <div className="cookie-toggle">
+                  <div className={`cookie-switch${analytics ? " on" : ""}`} onClick={() => setAnalytics(v => !v)} role="switch" aria-checked={analytics} />
+                </div>
+              </div>
+              <div className="cookie-row">
+                <div>
+                  <strong>Marketing</strong>
+                  <div><span>Used to show relevant offers across channels.</span></div>
+                </div>
+                <div className="cookie-toggle">
+                  <div className={`cookie-switch${marketing ? " on" : ""}`} onClick={() => setMarketing(v => !v)} role="switch" aria-checked={marketing} />
+                </div>
+              </div>
+            </div>
+            <div className="cookie-actions">
+              <button className="cookie-btn ghost" onClick={() => setExpanded(false)}>Back</button>
+              <button className="cookie-btn dark" onClick={rejectAll}>Reject non‑essential</button>
+              <button className="cookie-btn primary" onClick={saveCustom}>Save preferences</button>
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+function PrivacyPage({ navigate }) {
+  return (
+    <div className="legal-page">
+      <button onClick={() => navigate("home")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:24, display:"flex", alignItems:"center", gap:6 }}>
+        ← Back to Home
+      </button>
+      <div className="legal-card">
+        <div className="legal-kicker">Privacy</div>
+        <div className="legal-h1">Privacy Policy</div>
+        <p className="legal-p">
+          This is a demo storefront. We minimize personal data usage and store account/cart information locally in your browser.
+          If you sign in, your profile and orders are saved to localStorage on this device.
+        </p>
+        <ul style={{ paddingLeft: 18 }}>
+          <li className="legal-li"><strong>Necessary cookies</strong>: required for core functionality and security.</li>
+          <li className="legal-li"><strong>Analytics cookies</strong>: optional; help us improve the experience.</li>
+          <li className="legal-li"><strong>Marketing cookies</strong>: optional; used for personalized offers.</li>
+        </ul>
+        <p className="legal-p">
+          You can update your cookie preferences anytime by clearing site data in your browser, or using the cookie prompt when it appears.
+        </p>
+        <div className="legal-note">
+          For EU customers: we display pricing transparently, and VAT is included where applicable. VAT breakdown is shown during checkout for EU deliveries.
+        </div>
+      </div>
+      <Footer navigate={navigate} />
+    </div>
+  );
+}
+
+function TermsPage({ navigate }) {
+  return (
+    <div className="legal-page">
+      <button onClick={() => navigate("home")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:24, display:"flex", alignItems:"center", gap:6 }}>
+        ← Back to Home
+      </button>
+      <div className="legal-card">
+        <div className="legal-kicker">Legal</div>
+        <div className="legal-h1">Terms & Conditions</div>
+        <p className="legal-p">
+          This is a demo project. No real payments are processed and products are illustrative only.
+        </p>
+        <ul style={{ paddingLeft: 18 }}>
+          <li className="legal-li"><strong>Orders</strong>: created for demonstration purposes; saved locally on your device.</li>
+          <li className="legal-li"><strong>Pricing</strong>: displayed in USD; VAT included where applicable and shown for EU deliveries at checkout.</li>
+          <li className="legal-li"><strong>Returns</strong>: policies shown are sample terms.</li>
+        </ul>
+        <div className="legal-note">
+          If you are testing as a European client, make sure cookie consent is captured and the VAT disclosure is visible at checkout.
+        </div>
+      </div>
+      <Footer navigate={navigate} />
+    </div>
   );
 }
