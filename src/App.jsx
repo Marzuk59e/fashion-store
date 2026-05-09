@@ -219,20 +219,42 @@ const css = `
   @media (prefers-reduced-motion: reduce) {
     .cookie-panel { animation: none; }
   }
-  .cookie-top { display: flex; gap: 14px; padding: 14px 18px 12px; align-items: center; max-width: 1120px; margin: 0 auto; }
-  .cookie-badge {
-    flex: 0 0 auto;
-    width: 38px; height: 38px;
-    border-radius: 12px;
-    background: #B07A5A;
-    display: grid; place-items: center;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.10), 0 10px 26px rgba(0,0,0,0.10);
+.cookie-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  width: 100%;
+}
+.cookie-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.cookie-badge {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f4d7a1, #e7b96f);
+  border: 1px solid rgba(26,26,26,0.08);
+  display: grid;
+  place-items: center;
+}
+  .cookie-text {
+    font-size: 0.72rem;
+    color: var(--warm-gray);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
   }
-  .cookie-badge svg { width: 28px; height: 28px; }
-  .cookie-title { font-family: var(--font-serif); font-size: 1.05rem; letter-spacing: 0.02em; margin-bottom: 2px; color: var(--charcoal); }
-  .cookie-text { font-size: 0.72rem; color: var(--warm-gray); line-height: 1.6; }
   .cookie-text a { color: var(--charcoal); text-decoration: underline; cursor: pointer; }
-  .cookie-actions { display: flex; gap: 8px; padding: 0 18px 14px; flex-wrap: wrap; align-items: center; justify-content: flex-end; max-width: 1120px; margin: 0 auto; }
+.cookie-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: auto; }
   .cookie-btn {
     border: 1px solid var(--border);
     background: white;
@@ -248,8 +270,6 @@ const css = `
   .cookie-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,0,0,0.10); }
   .cookie-btn.primary { background: var(--gold); color: white; border-color: var(--gold); }
   .cookie-btn.primary:hover { background: #B8915A; border-color: #B8915A; }
-  .cookie-btn.dark { background: var(--charcoal); color: white; border-color: var(--charcoal); }
-  .cookie-btn.dark:hover { background: #111; border-color: #111; }
   .cookie-btn.ghost { background: transparent; }
   .cookie-drawer {
     border-top: 1px solid rgba(232,226,217,0.9);
@@ -294,6 +314,12 @@ const css = `
   .cookie-switch.on { background: rgba(201,169,110,0.35); border-color: rgba(201,169,110,0.65); }
   .cookie-switch.on::after { left: 22px; }
   .cookie-lock { font-size: 0.65rem; color: rgba(26,26,26,0.55); letter-spacing: 0.12em; text-transform: uppercase; }
+  @media (max-width: 860px) {
+    .cookie-top { flex-wrap: wrap; align-items: flex-start; }
+    .cookie-content { width: 100%; }
+    .cookie-text { white-space: normal; }
+    .cookie-actions { width: 100%; justify-content: flex-end; }
+  }
 
   .legal-page { padding: 100px 40px 60px; max-width: 1100px; margin: 0 auto; }
   .legal-card { background: white; border: 1px solid var(--border); padding: 28px; }
@@ -3237,7 +3263,6 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
   if (!open) return null;
 
   const acceptAll = () => onSave({ necessary: true, analytics: true, marketing: true });
-  const rejectAll = () => onSave({ necessary: true, analytics: false, marketing: false });
   const saveCustom = () => onSave({ necessary: true, analytics, marketing });
 
   return (
@@ -3246,69 +3271,66 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
       {expanded && <div className="cookie-backdrop" onClick={onClose} />}
       <div className="cookie-panel" role="dialog" aria-modal="true" aria-label="Cookie preferences">
         <div className="cookie-top">
-          <div className="cookie-badge" aria-hidden="true">
-            <img
-              src="/cookie.png"
-              alt=""
-              style={{ width: 28, height: 28, display: "block", objectFit: "contain" }}
-              draggable="false"
-            />
-          </div>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <div className="cookie-title">Your privacy, your choice</div>
+          <div className="cookie-content">
+            <div className="cookie-badge" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9c0-.62.06-1.22.18-1.8A2.5 2.5 0 0 0 6.7 6.7c.58-.12 1.18-.18 1.8-.18h3.5z"
+                  fill="#C1862D"
+                />
+                <circle cx="9" cy="10" r="1.2" fill="#8B5A2B" />
+                <circle cx="14.5" cy="9" r="1.1" fill="#8B5A2B" />
+                <circle cx="13" cy="14.5" r="1.3" fill="#8B5A2B" />
+              </svg>
+            </div>
             <div className="cookie-text">
-              We use cookies to keep the site secure, improve performance, and personalize experiences. You can change
-              your preferences anytime in our{" "}
+              We use cookies to keep the site secure, improve performance, and personalize experiences. See our{" "}
               <a onClick={() => { onClose(); navigate("privacy"); }}>Privacy Policy</a>.
             </div>
           </div>
-          <button className="cookie-close" onClick={onClose} aria-label="Close cookie notice">✕</button>
-        </div>
-
-        {!expanded ? (
-          <div className="cookie-actions">
-            <button className="cookie-btn ghost" onClick={() => setExpanded(true)}>Customize</button>
-            <button className="cookie-btn dark" onClick={rejectAll}>Reject non‑essential</button>
-            <button className="cookie-btn primary" onClick={acceptAll}>Accept all</button>
-          </div>
-        ) : (
-          <>
-            <div className="cookie-drawer">
-              <div className="cookie-row">
-                <div>
-                  <strong>Necessary</strong>
-                  <div><span>Required for security and core features.</span></div>
-                </div>
-                <div className="cookie-toggle">
-                  <div className="cookie-lock">Always on</div>
-                </div>
-              </div>
-              <div className="cookie-row">
-                <div>
-                  <strong>Analytics</strong>
-                  <div><span>Helps us understand what works and what doesn’t.</span></div>
-                </div>
-                <div className="cookie-toggle">
-                  <div className={`cookie-switch${analytics ? " on" : ""}`} onClick={() => setAnalytics(v => !v)} role="switch" aria-checked={analytics} />
-                </div>
-              </div>
-              <div className="cookie-row">
-                <div>
-                  <strong>Marketing</strong>
-                  <div><span>Used to show relevant offers across channels.</span></div>
-                </div>
-                <div className="cookie-toggle">
-                  <div className={`cookie-switch${marketing ? " on" : ""}`} onClick={() => setMarketing(v => !v)} role="switch" aria-checked={marketing} />
-                </div>
-              </div>
-            </div>
+          {!expanded ? (
             <div className="cookie-actions">
-              <button className="cookie-btn ghost" onClick={() => setExpanded(false)}>Back</button>
-              <button className="cookie-btn dark" onClick={rejectAll}>Reject non‑essential</button>
-              <button className="cookie-btn primary" onClick={saveCustom}>Save preferences</button>
+              <button className="cookie-btn ghost" onClick={() => setExpanded(true)}>Customize</button>
+              <button className="cookie-btn primary" onClick={acceptAll}>Accept All</button>
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              <div className="cookie-drawer">
+                <div className="cookie-row">
+                  <div>
+                    <strong>Necessary</strong>
+                    <div><span>Required for security and core features.</span></div>
+                  </div>
+                  <div className="cookie-toggle">
+                    <div className="cookie-lock">Always on</div>
+                  </div>
+                </div>
+                <div className="cookie-row">
+                  <div>
+                    <strong>Analytics</strong>
+                    <div><span>Helps us understand what works and what doesn’t.</span></div>
+                  </div>
+                  <div className="cookie-toggle">
+                    <div className={`cookie-switch${analytics ? " on" : ""}`} onClick={() => setAnalytics(v => !v)} role="switch" aria-checked={analytics} />
+                  </div>
+                </div>
+                <div className="cookie-row">
+                  <div>
+                    <strong>Marketing</strong>
+                    <div><span>Used to show relevant offers across channels.</span></div>
+                  </div>
+                  <div className="cookie-toggle">
+                    <div className={`cookie-switch${marketing ? " on" : ""}`} onClick={() => setMarketing(v => !v)} role="switch" aria-checked={marketing} />
+                  </div>
+                </div>
+              </div>
+              <div className="cookie-actions">
+                <button className="cookie-btn ghost" onClick={() => setExpanded(false)}>Back</button>
+                <button className="cookie-btn primary" onClick={saveCustom}>Save preferences</button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </>
   );
