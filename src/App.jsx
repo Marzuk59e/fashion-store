@@ -121,6 +121,33 @@ const css = `
 
   .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); }
   .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: white; width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; }
+  .checkout-modal {
+    top: 0;
+    left: 0;
+    transform: none;
+    width: 100vw;
+    max-width: none;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    animation: fadeIn 0.25s ease;
+  }
+  .checkout-modal .modal-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .checkout-modal .modal-body {
+    padding: 24px 28px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    max-height: calc(100vh - 82px);
+    overflow-y: auto;
+  }
   .modal-header { padding: 28px 32px 0; display: flex; justify-content: space-between; align-items: center; }
   .modal-title { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 400; }
   .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--warm-gray); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
@@ -208,7 +235,7 @@ const css = `
     background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(250,247,242,0.90));
     border-top: 1px solid rgba(232,226,217,0.95);
     box-shadow: 0 -18px 60px rgba(0,0,0,0.18);
-    border-radius: 18px 18px 0 0;
+    border-radius: 0;
     overflow: hidden;
     animation: cookieUp 520ms cubic-bezier(.22,1,.36,1) both;
   }
@@ -2268,7 +2295,7 @@ export default function App() {
       {checkoutOpen && (
         <>
           <div className="overlay-backdrop" onClick={closeCheckout} />
-          <div className="modal" style={{ maxWidth: 620 }}>
+          <div className="modal checkout-modal">
             <div className="modal-header">
               <div className="modal-title">Checkout</div>
               <button className="close-btn" onClick={closeCheckout}>✕</button>
@@ -3250,12 +3277,14 @@ function Footer({ navigate }) {
 
 function CookieNotice({ open, onClose, onSave, existing, navigate }) {
   const [expanded, setExpanded] = useState(false);
+  const [locked, setLocked] = useState(true);
   const [analytics, setAnalytics] = useState(Boolean(existing?.analytics));
   const [marketing, setMarketing] = useState(Boolean(existing?.marketing));
 
   useEffect(() => {
     if (!open) return;
     setExpanded(false);
+    setLocked(true);
     setAnalytics(Boolean(existing?.analytics));
     setMarketing(Boolean(existing?.marketing));
   }, [open, existing]);
@@ -3267,8 +3296,8 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
 
   return (
     <>
-      {/* Cookie bar doesn't block the page (like CookieYes). Backdrop only when customizing. */}
-      {expanded && <div className="cookie-backdrop" onClick={onClose} />}
+      {/* Lock page interaction until user picks Accept All or Customize. */}
+      {locked && <div className="cookie-backdrop" />}
       <div className="cookie-panel" role="dialog" aria-modal="true" aria-label="Cookie preferences">
         <div className="cookie-top">
           <div className="cookie-content">
@@ -3290,7 +3319,15 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
           </div>
           {!expanded ? (
             <div className="cookie-actions">
-              <button className="cookie-btn ghost" onClick={() => setExpanded(true)}>Customize</button>
+              <button
+                className="cookie-btn ghost"
+                onClick={() => {
+                  setExpanded(true);
+                  setLocked(false);
+                }}
+              >
+                Customize
+              </button>
               <button className="cookie-btn primary" onClick={acceptAll}>Accept All</button>
             </div>
           ) : (
