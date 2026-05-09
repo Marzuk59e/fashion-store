@@ -162,6 +162,8 @@ const css = `
   .cart-item-img { width: 72px; height: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
   .cart-item-info { flex: 1; }
   .cart-item-name { font-family: var(--font-serif); font-size: 0.95rem; margin-bottom: 4px; }
+  .cart-item-open { cursor: pointer; transition: opacity 0.2s; }
+  .cart-item-open:hover { opacity: 0.82; }
   .cart-item-meta { font-size: 0.7rem; color: var(--warm-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
   .cart-item-price { font-size: 0.8rem; font-weight: 600; color: var(--gold); }
   .qty-control { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
@@ -467,7 +469,8 @@ const css = `
   .product-detail { max-width: 1100px; margin: 0 auto; padding: 100px 40px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
   .detail-img { aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; font-size: 9rem; }
   .detail-brand { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
-  .detail-name { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 400; margin-bottom: 16px; line-height: 1.2; }
+  .detail-name { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 400; margin-bottom: 16px; line-height: 1.2; color: var(--charcoal); }
+  .product-detail .animate-fade { color: var(--charcoal); }
   .detail-price { font-size: 1.4rem; font-weight: 600; color: var(--charcoal); margin-bottom: 28px; }
   .detail-desc { font-size: 0.82rem; color: var(--warm-gray); line-height: 1.8; margin-bottom: 32px; }
   .size-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
@@ -1928,11 +1931,54 @@ export default function App() {
   const [shopSearchQuery, setShopSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [profileTab, setProfileTab] = useState("orders");
+  const checkoutPushCountRef = useRef(0);
+  const productLayerCountRef = useRef(0);
+  const ignorePopRef = useRef(false);
   const { toasts, add: addToast } = useToast();
+
+  const pushCheckoutHistory = (step) => {
+    const nextDepth = checkoutPushCountRef.current + 1;
+    checkoutPushCountRef.current = nextDepth;
+    history.pushState({ kind: "checkoutStep", step, depth: nextDepth }, "", "");
+  };
   const dialForCountry = (code) => COUNTRY_OPTIONS.find(c => c.code === code)?.dial || "+1";
 
   useEffect(() => {
     document.title = "sanjiiiii";
+  }, []);
+
+  useEffect(() => {
+    if (!window.history.state?.kind) {
+      history.replaceState({ kind: "app", page: "home", productId: null }, "", window.location.href);
+    }
+    const onPop = (e) => {
+      if (ignorePopRef.current) return;
+      const s = e.state;
+      if (s?.kind === "checkoutStep") {
+        productLayerCountRef.current = 0;
+        setCheckoutOpen(true);
+        setCheckoutStep(s.step);
+        checkoutPushCountRef.current = s.depth ?? 1;
+        return;
+      }
+      if (s?.kind === "app") {
+        setCheckoutOpen(false);
+        setCartOpen(false);
+        checkoutPushCountRef.current = 0;
+        if (s.page !== "product") productLayerCountRef.current = 0;
+        setPage(s.page);
+        if (s.productId) {
+          const pr = PRODUCTS.find((x) => x.id === s.productId);
+          setSelectedProduct(pr || null);
+        } else {
+          setSelectedProduct(null);
+        }
+        setShopSearchOpen(false);
+        setShopSearchQuery("");
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   // Restore session
@@ -2270,10 +2316,20 @@ export default function App() {
   };
 
   const closeCheckout = () => {
+    const d = checkoutPushCountRef.current + productLayerCountRef.current;
+    checkoutPushCountRef.current = 0;
+    productLayerCountRef.current = 0;
     setCheckoutOpen(false);
     setCheckoutStep(1);
     setCheckoutErrors({});
     setPromoCode("");
+    if (d > 0) {
+      ignorePopRef.current = true;
+      history.go(-d);
+      setTimeout(() => {
+        ignorePopRef.current = false;
+      }, 120);
+    }
   };
 
   const handleConfirmAddress = () => {
@@ -2293,10 +2349,7 @@ export default function App() {
     }
     setCheckoutErrors({});
     setCheckoutStep(2);
-  };
-
-  const handleContinueFromPaymentMethod = () => {
-    setCheckoutStep(3);
+    pushCheckoutHistory(2);
   };
 
   const handleConfirmPayment = () => {
@@ -2337,7 +2390,8 @@ export default function App() {
         }
       }
     }
-    setCheckoutStep(4);
+    setCheckoutStep(3);
+    pushCheckoutHistory(3);
   };
 
   const handlePlaceOrder = () => {
@@ -2457,19 +2511,69 @@ export default function App() {
   };
 
   const goToCollectionSearch = () => {
+    const unwind = checkoutPushCountRef.current + productLayerCountRef.current;
+    checkoutPushCountRef.current = 0;
+    productLayerCountRef.current = 0;
+    setCheckoutOpen(false);
     setSelectedProduct(null);
     setPage("shop");
     setShopSearchOpen(true);
     setShopSearchQuery("");
     window.scrollTo({ top: 0, behavior: "smooth" });
+    const pushApp = () => history.pushState({ kind: "app", page: "shop", productId: null }, "", "");
+    if (unwind > 0) {
+      ignorePopRef.current = true;
+      history.go(-unwind);
+      setTimeout(() => {
+        ignorePopRef.current = false;
+        pushApp();
+      }, 120);
+    } else {
+      pushApp();
+    }
   };
 
   const navigate = (p, product = null) => {
-    if (product) setSelectedProduct(product);
+    const unwind = checkoutPushCountRef.current + productLayerCountRef.current;
+    checkoutPushCountRef.current = 0;
+    productLayerCountRef.current = 0;
+    setCheckoutOpen(false);
+    setCartOpen(false);
+    if (p === "product" && product) setSelectedProduct(product);
+    else if (p !== "product") setSelectedProduct(null);
     setPage(p);
     setShopSearchOpen(false);
     setShopSearchQuery("");
     window.scrollTo({ top: 0, behavior: "smooth" });
+    const productId = p === "product" && product ? product.id : null;
+    const pushApp = () => history.pushState({ kind: "app", page: p, productId }, "", "");
+    if (unwind > 0) {
+      ignorePopRef.current = true;
+      history.go(-unwind);
+      setTimeout(() => {
+        ignorePopRef.current = false;
+        pushApp();
+      }, 120);
+    } else {
+      pushApp();
+    }
+  };
+
+  const openProductFromCart = (product) => {
+    setCartOpen(false);
+    navigate("product", product);
+  };
+
+  const openProductFromCheckoutFlow = (product) => {
+    setCheckoutOpen(false);
+    setCartOpen(false);
+    setSelectedProduct(product);
+    setPage("product");
+    setShopSearchOpen(false);
+    setShopSearchQuery("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    productLayerCountRef.current += 1;
+    history.pushState({ kind: "app", page: "product", productId: product.id }, "", "");
   };
 
   return (
@@ -2550,9 +2654,22 @@ export default function App() {
                 <div className="cart-items">
                   {cart.map((item, i) => (
                     <div key={i} className="cart-item">
-                      <div className="cart-item-img" style={{ background:`linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})` }}>{item.product.emoji}</div>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="cart-item-img cart-item-open"
+                        onClick={() => openProductFromCart(item.product)}
+                        onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
+                        style={{ background:`linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})` }}
+                      >{item.product.emoji}</div>
                       <div className="cart-item-info">
-                        <div className="cart-item-name">{item.product.name}</div>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="cart-item-name cart-item-open"
+                          onClick={() => openProductFromCart(item.product)}
+                          onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
+                        >{item.product.name}</div>
                         <div className="cart-item-meta">{item.product.brand} · Size {item.size}</div>
                         <div className="cart-item-price">{fmt(item.product.price)}</div>
                         <div className="qty-control">
@@ -2588,8 +2705,11 @@ export default function App() {
                         return;
                       }
                       setCartOpen(false);
+                      checkoutPushCountRef.current = 0;
+                      productLayerCountRef.current = 0;
                       setCheckoutStep(1);
                       setCheckoutOpen(true);
+                      pushCheckoutHistory(1);
                     }}
                   >
                     Proceed to Checkout
@@ -2613,6 +2733,44 @@ export default function App() {
             <div className="modal-body">
               {checkoutStep === 1 && (
                 <>
+              {cart.length > 0 && (
+                <div className="form-group">
+                  <label className="form-label">Your bag</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {cart.map((item, i) => (
+                      <button
+                        key={`${item.product.id}-${i}-${item.size}`}
+                        type="button"
+                        className="cart-item-open"
+                        onClick={() => openProductFromCheckoutFlow(item.product)}
+                        style={{
+                          display: "flex",
+                          gap: 14,
+                          alignItems: "center",
+                          padding: "12px 14px",
+                          border: "1px solid var(--border)",
+                          background: "var(--cream)",
+                          cursor: "pointer",
+                          textAlign: "left",
+                          width: "100%",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <span style={{ fontSize: "2rem", width: 56, textAlign: "center" }}>{item.product.emoji}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", color: "var(--charcoal)" }}>{item.product.name}</div>
+                          <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginTop: 4 }}>
+                            {item.product.brand} · Size {item.size} · Qty {item.qty} · {fmt(item.product.price)}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 10, lineHeight: 1.5 }}>
+                    Full product details like Collection. Your device or browser back button returns you to this checkout; your fields stay filled.
+                  </p>
+                </div>
+              )}
               <div className="form-row-two">
                 <div className="form-group">
                   <label className="form-label">First Name *</label>
@@ -2720,49 +2878,41 @@ export default function App() {
               <div className="form-group">
                 <label className="form-label">Delivery Option</label>
                 <div style={{ display:"flex", gap:8 }}>
-                  <button className={`filter-btn${checkoutDraft.deliveryType === "standard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "standard" })}>Standard ($8)</button>
-                  <button className={`filter-btn${checkoutDraft.deliveryType === "express" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "express" })}>Express ($20)</button>
+                  <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "standard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "standard" })}>Standard ($8)</button>
+                  <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "express" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "express" })}>Express ($20)</button>
                 </div>
               </div>
-              <button className="form-submit" onClick={handleConfirmAddress}>Confirm Delivery Address</button>
+
+              <p className="form-label" style={{ marginBottom: 14, marginTop: 8 }}>Choose how you would like to pay</p>
+              <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
+                {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={checkoutDraft.paymentMethod === opt.id}
+                    className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
+                    onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
+                  >
+                    <span className="pay-method-check" aria-hidden />
+                    <div className="pay-method-card-icon">
+                      <PayMethodIcon name={opt.icon} />
+                    </div>
+                    <div className="pay-method-card-text">
+                      <div className="pay-method-card-title">{opt.title}</div>
+                      <div className="pay-method-card-sub">{opt.sub}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <p className="pay-detail-hint" style={{ marginTop: 4 }}>
+                Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
+              </p>
+              <button type="button" className="form-submit" onClick={handleConfirmAddress}>Continue to payment details</button>
                 </>
               )}
 
               {checkoutStep === 2 && (
-                <>
-                  <p className="form-label" style={{ marginBottom: 14 }}>Choose how you would like to pay</p>
-                  <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
-                    {PAYMENT_METHOD_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={checkoutDraft.paymentMethod === opt.id}
-                        className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
-                        onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
-                      >
-                        <span className="pay-method-check" aria-hidden />
-                        <div className="pay-method-card-icon">
-                          <PayMethodIcon name={opt.icon} />
-                        </div>
-                        <div className="pay-method-card-text">
-                          <div className="pay-method-card-title">{opt.title}</div>
-                          <div className="pay-method-card-sub">{opt.sub}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="pay-detail-hint" style={{ marginTop: 4 }}>
-                    Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
-                  </p>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button type="button" className="filter-btn" onClick={() => setCheckoutStep(1)}>Back</button>
-                    <button type="button" className="form-submit" style={{ marginTop: 0 }} onClick={handleContinueFromPaymentMethod}>Continue</button>
-                  </div>
-                </>
-              )}
-
-              {checkoutStep === 3 && (
                 <>
               <div style={{ border:"1px solid var(--border)", padding:14, marginBottom:18, background:"var(--cream)" }}>
                 <div style={{ fontFamily:"var(--font-serif)", fontSize:"1.05rem", marginBottom:10 }}>Bill Summary</div>
@@ -2856,13 +3006,13 @@ export default function App() {
                 </>
               )}
               <div style={{ display:"flex", gap:10 }}>
-                <button type="button" className="filter-btn" onClick={() => setCheckoutStep(2)}>Back</button>
+                <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
                 <button type="button" className="form-submit" style={{ marginTop:0 }} onClick={handleConfirmPayment}>Continue to review</button>
               </div>
                 </>
               )}
 
-              {checkoutStep === 4 && (
+              {checkoutStep === 3 && (
                 <>
                   <p className="form-label" style={{ marginBottom: 16 }}>Review your receipt</p>
                   <div className="checkout-receipt">
@@ -2928,7 +3078,7 @@ export default function App() {
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "stretch" }}>
-                    <button type="button" className="filter-btn" onClick={() => setCheckoutStep(3)}>Back</button>
+                    <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
                     <button type="button" className="receipt-download-btn" onClick={downloadCheckoutReceipt}>Download receipt</button>
                     <button type="button" className="form-submit" style={{ marginTop: 0, flex: "2 1 180px" }} onClick={handlePlaceOrder}>Place Order</button>
                   </div>
