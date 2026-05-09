@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 const fontLink = document.createElement("link");
@@ -203,6 +203,73 @@ const css = `
   .btn-social:hover { background: var(--cream); border-color: var(--gold); }
   .social-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
 
+  .pay-method-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; max-width: 520px; }
+  .pay-method-card {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+    padding: 16px 44px 16px 16px;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: 2px;
+    width: 100%;
+  }
+  .pay-method-card:hover { border-color: rgba(201,169,110,0.65); box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+  .pay-method-card.selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 8px 24px rgba(201,169,110,0.14); }
+  .pay-method-card-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--cream); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--charcoal); }
+  .pay-method-card-text { flex: 1; min-width: 0; }
+  .pay-method-card-title { font-family: var(--font-serif); font-size: 1.05rem; color: var(--charcoal); margin-bottom: 4px; }
+  .pay-method-card-sub { font-size: 0.65rem; color: var(--warm-gray); letter-spacing: 0.04em; line-height: 1.45; }
+  .pay-method-check { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); transition: all 0.2s; flex-shrink: 0; }
+  .pay-method-card.selected .pay-method-check { background: var(--gold); border-color: var(--gold); }
+  .pay-method-check::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: white; opacity: 0; transform: scale(0); transition: 0.2s; }
+  .pay-method-card.selected .pay-method-check::after { opacity: 1; transform: scale(1); }
+  .pay-detail-hint { font-size: 0.72rem; color: var(--warm-gray); line-height: 1.65; padding: 14px 16px; background: var(--cream); border: 1px solid var(--border); margin-bottom: 16px; max-width: 520px; }
+
+  .checkout-receipt {
+    max-width: 400px;
+    margin: 0 0 20px 0;
+    padding: 28px 24px 32px;
+    background: linear-gradient(180deg, #FDFCFA 0%, #F5F2EC 100%);
+    border: 1px dashed rgba(26,26,26,0.35);
+    border-radius: 2px;
+    text-align: left;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 8px 28px rgba(0,0,0,0.07);
+  }
+  .checkout-receipt-store { font-family: var(--font-serif); font-size: 1.35rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--charcoal); margin-bottom: 2px; }
+  .checkout-receipt-tag { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--warm-gray); margin-bottom: 16px; }
+  .receipt-rule { height: 0; border: none; border-top: 1px dashed rgba(26,26,26,0.22); margin: 14px 0; }
+  .receipt-label { font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--warm-gray); margin: 12px 0 6px; }
+  .receipt-line { font-size: 0.74rem; color: var(--charcoal); line-height: 1.55; margin-bottom: 4px; }
+  .receipt-line-muted { font-size: 0.7rem; color: var(--warm-gray); line-height: 1.5; margin-bottom: 3px; }
+  .receipt-item-block { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dotted rgba(26,26,26,0.15); }
+  .receipt-item-name { font-size: 0.76rem; font-weight: 600; color: var(--charcoal); margin-bottom: 2px; }
+  .receipt-total-block { margin-top: 14px; padding-top: 10px; border-top: 1px dashed rgba(26,26,26,0.22); }
+  .receipt-total-line { font-size: 0.72rem; color: var(--charcoal); margin: 5px 0; }
+  .receipt-grand { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.06em; margin-top: 10px; color: var(--charcoal); }
+  .receipt-footer { font-size: 0.62rem; color: var(--warm-gray); margin-top: 18px; line-height: 1.6; }
+  .receipt-download-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 14px 16px;
+    background: white;
+    color: var(--charcoal);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .receipt-download-btn:hover { border-color: var(--gold); color: var(--gold); }
+
   .profile-layout { max-width: 1100px; margin: 0 auto; padding: 100px 40px 60px; }
   .profile-header { display: flex; gap: 28px; align-items: center; margin-bottom: 48px; padding-bottom: 40px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .avatar { width: 80px; height: 80px; background: var(--charcoal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 2rem; color: var(--gold-light); flex-shrink: 0; }
@@ -214,6 +281,27 @@ const css = `
 
   .shop-layout { padding: 88px 40px 60px; max-width: 1300px; margin: 0 auto; }
   .shop-header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+  .shop-search-wrap { position: relative; width: 100%; max-width: 520px; margin-bottom: 20px; flex: 1 1 100%; }
+  .shop-search-inner { display: flex; gap: 10px; align-items: center; background: white; border: 1px solid var(--border); padding: 10px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+  .shop-search-inner:focus-within { border-color: var(--gold); }
+  .shop-search-input { flex: 1; border: none; outline: none; font-family: var(--font-sans); font-size: 0.85rem; color: var(--charcoal); background: transparent; }
+  .shop-search-input::placeholder { color: rgba(111,104,95,0.55); }
+  .shop-search-close { flex-shrink: 0; background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--warm-gray); padding: 2px 4px; line-height: 1; }
+  .shop-search-close:hover { color: var(--charcoal); }
+  .shop-search-dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 6px); background: white; border: 1px solid var(--border); box-shadow: 0 12px 40px rgba(0,0,0,0.12); z-index: 50; max-height: 320px; overflow-y: auto; }
+  .shop-search-suggestion { display: flex; align-items: center; gap: 14px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .shop-search-suggestion:last-child { border-bottom: none; }
+  .shop-search-suggestion:hover { background: rgba(201,169,110,0.08); }
+  .shop-search-sug-emoji { font-size: 1.75rem; width: 44px; text-align: center; flex-shrink: 0; }
+  .shop-search-sug-text { flex: 1; min-width: 0; }
+  .shop-search-sug-name { font-family: var(--font-serif); font-size: 1rem; color: var(--charcoal); }
+  .shop-search-sug-meta { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-gray); margin-top: 2px; }
+  .shop-search-sug-badge { font-size: 0.58rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); flex-shrink: 0; }
+  .shop-search-empty { padding: 14px 16px; font-size: 0.78rem; color: var(--warm-gray); }
+  .product-price-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 10px; }
+  .product-price-was { text-decoration: line-through; color: var(--warm-gray); font-weight: 400; font-size: 0.78rem; }
+  .product-discount-pct { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--charcoal); }
+  .overlay-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .shop-title { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 400; }
   .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
   .filter-btn { padding: 7px 18px; border: 1px solid var(--border); background: none; font-family: var(--font-sans); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; color: var(--warm-gray); }
@@ -387,7 +475,8 @@ const css = `
   .size-btn:hover, .size-btn.selected { background: var(--charcoal); color: white; border-color: var(--charcoal); }
   .detail-actions { display: flex; gap: 12px; }
   .add-cart-btn { flex: 1; padding: 16px; background: var(--charcoal); color: white; border: none; cursor: pointer; font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; transition: background 0.3s; }
-  .add-cart-btn:hover { background: var(--gold); }
+  .add-cart-btn:hover:not(:disabled) { background: var(--gold); }
+  .add-cart-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .wish-btn { padding: 16px 20px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1.2rem; color: var(--charcoal); font-weight: 700; line-height: 1; transition: all 0.2s; }
   .wish-btn:hover { background: var(--charcoal); color: white; }
   .wish-btn.active { background: var(--gold); color: white; border-color: var(--gold); }
@@ -415,21 +504,21 @@ document.head.appendChild(styleTag);
 // ─── Products ─────────────────────────────────────────────────────────────────
 const PRODUCTS = [
   { id: 1, name: "Draped Silk Blouse", brand: "Maison Élite", price: 245, category: "Women", badge: "New", emoji: "👘", bg: ["#F5EEE6","#EDE4D8"], desc: "Luxuriously soft silk blouse with an elegant drape. Perfect for formal occasions and upscale casual wear.", sizes: ["XS","S","M","L","XL"] },
-  { id: 2, name: "Tailored Wool Blazer", brand: "L'Atelier", price: 480, category: "Men", badge: null, emoji: "🧥", bg: ["#E8ECF0","#D8DDE3"], desc: "Precision-tailored blazer crafted from merino wool. A wardrobe staple for boardroom to evening.", sizes: ["S","M","L","XL","XXL"] },
+  { id: 2, name: "Tailored Wool Blazer", brand: "L'Atelier", price: 480, category: "Men", badge: null, inStock: false, emoji: "🧥", bg: ["#E8ECF0","#D8DDE3"], desc: "Precision-tailored blazer crafted from merino wool. A wardrobe staple for boardroom to evening.", sizes: ["S","M","L","XL","XXL"] },
   { id: 3, name: "Sculptural Handbag", brand: "Cour Royal", price: 620, category: "Accessories", badge: "Bestseller", emoji: "👜", bg: ["#F0EAE0","#E8DDD0"], desc: "Architectural handbag handcrafted in full-grain leather. An investment piece that defines every look.", sizes: ["One Size"] },
-  { id: 4, name: "Wide-Leg Trousers", brand: "Maison Élite", price: 310, category: "Women", badge: null, emoji: "👖", bg: ["#EDEAE5","#E0DCCF"], desc: "Fluid wide-leg trousers in sustainable tencel. Elevated comfort with an impeccable silhouette.", sizes: ["XS","S","M","L","XL"] },
+  { id: 4, name: "Wide-Leg Trousers", brand: "Maison Élite", compareAt: 380, price: 310, category: "Women", badge: "Sale", emoji: "👖", bg: ["#EDEAE5","#E0DCCF"], desc: "Fluid wide-leg trousers in sustainable tencel. Elevated comfort with an impeccable silhouette.", sizes: ["XS","S","M","L","XL"] },
   { id: 5, name: "Oxford Leather Shoes", brand: "Brun & Co.", price: 395, category: "Men", badge: null, emoji: "👞", bg: ["#E8E0D0","#DDD5C0"], desc: "Hand-stitched Oxford shoes in burnished calfskin leather. Classic craftsmanship for the discerning gentleman.", sizes: ["40","41","42","43","44","45"] },
-  { id: 6, name: "Cashmere Scarf", brand: "Montagne", price: 185, category: "Accessories", badge: "Sale", emoji: "🧣", bg: ["#F0ECE4","#E8E0D4"], desc: "Pure cashmere scarf woven in Scotland. Incredibly soft with a refined herringbone pattern.", sizes: ["One Size"] },
+  { id: 6, name: "Cashmere Scarf", brand: "Montagne", compareAt: 245, price: 185, category: "Accessories", badge: "Sale", emoji: "🧣", bg: ["#F0ECE4","#E8E0D4"], desc: "Pure cashmere scarf woven in Scotland. Incredibly soft with a refined herringbone pattern.", sizes: ["One Size"] },
   { id: 7, name: "Slip Midi Dress", brand: "Soirée", price: 295, category: "Women", badge: "New", emoji: "👗", bg: ["#EEE8F0","#E4DDE8"], desc: "Bias-cut midi dress in liquid satin. Effortlessly elegant for any occasion.", sizes: ["XS","S","M","L"] },
-  { id: 8, name: "Slim Fit Chinos", brand: "L'Atelier", price: 195, category: "Men", badge: null, emoji: "🩲", bg: ["#EAE8E0","#DDDAC8"], desc: "Slim fit chinos in stretch cotton twill. Versatile, refined, and impeccably comfortable.", sizes: ["S","M","L","XL","XXL"] },
+  { id: 8, name: "Slim Fit Chinos", brand: "L'Atelier", compareAt: 245, price: 195, category: "Men", badge: "Sale", emoji: "🩲", bg: ["#EAE8E0","#DDDAC8"], desc: "Slim fit chinos in stretch cotton twill. Versatile, refined, and impeccably comfortable.", sizes: ["S","M","L","XL","XXL"] },
   { id: 9, name: "Gold Hoop Earrings", brand: "Cour Royal", price: 145, category: "Accessories", badge: null, emoji: "💍", bg: ["#F5F0E0","#EDE8D0"], desc: "Minimalist gold-plated hoop earrings. Lightweight yet statement-making.", sizes: ["One Size"] },
   { id: 10, name: "Linen Shirt Dress", brand: "Maison Élite", price: 265, category: "Women", badge: null, emoji: "👔", bg: ["#EEF0EA","#E4E8DC"], desc: "Relaxed shirt dress in washed Belgian linen. Understated sophistication.", sizes: ["XS","S","M","L","XL"] },
   { id: 11, name: "Merino Turtleneck", brand: "Montagne", price: 220, category: "Men", badge: "Bestseller", emoji: "🧶", bg: ["#E8EAF0","#D8DDE8"], desc: "Ultra-fine merino turtleneck in a versatile palette. An essential layer for colder months.", sizes: ["S","M","L","XL","XXL"] },
-  { id: 12, name: "Leather Belt", brand: "Brun & Co.", price: 135, category: "Accessories", badge: null, emoji: "👑", bg: ["#EDE8E0","#E0D8CC"], desc: "Vegetable-tanned leather belt with a polished brass buckle. The finishing touch every outfit deserves.", sizes: ["70cm","75cm","80cm","85cm","90cm"] },
+  { id: 12, name: "Leather Belt", brand: "Brun & Co.", compareAt: 175, price: 135, category: "Accessories", badge: "Sale", emoji: "👑", bg: ["#EDE8E0","#E0D8CC"], desc: "Vegetable-tanned leather belt with a polished brass buckle. The finishing touch every outfit deserves.", sizes: ["70cm","75cm","80cm","85cm","90cm"] },
   { id: 13, name: "Organic Cotton Hoodie", brand: "Petit Atelier", price: 68, category: "Kids", badge: "New", emoji: "🧸", bg: ["#EAF3F0","#DDEBE5"], desc: "Soft brushed hoodie in organic cotton. Built for playground days and cozy evenings.", sizes: ["2Y","3Y","4Y","5Y","6Y","7Y","8Y"] },
   { id: 14, name: "Denim Overalls Set", brand: "Petit Atelier", price: 82, category: "Kids", badge: null, emoji: "🧒", bg: ["#E9EDF5","#D8E0EF"], desc: "Classic denim overalls with an easy-fit tee. Durable, comfortable, and timeless.", sizes: ["2Y","3Y","4Y","5Y","6Y"] },
   { id: 15, name: "Rain Jacket", brand: "Nord Mini", price: 95, category: "Kids", badge: "Bestseller", emoji: "🌧️", bg: ["#EEF6F9","#DCECF3"], desc: "Lightweight waterproof jacket with sealed seams. Keeps little explorers dry in style.", sizes: ["3Y","4Y","5Y","6Y","7Y","8Y"] },
-  { id: 16, name: "Knit Beanie + Scarf", brand: "Nord Mini", price: 48, category: "Kids", badge: "Sale", emoji: "🧣", bg: ["#F2F0EA","#E5E2D6"], desc: "Warm knit set in a soft blend. Perfect for chilly mornings and weekend walks.", sizes: ["One Size"] },
+  { id: 16, name: "Knit Beanie + Scarf", brand: "Nord Mini", compareAt: 72, price: 48, category: "Kids", badge: "Sale", emoji: "🧣", bg: ["#F2F0EA","#E5E2D6"], desc: "Warm knit set in a soft blend. Perfect for chilly mornings and weekend walks.", sizes: ["One Size"] },
 ];
 
 const COUNTRY_OPTIONS = [
@@ -1611,6 +1700,100 @@ const USER_PROFILE_VERSION = 2;
 
 const fmt = (n) => `$${n.toLocaleString()}`;
 
+const saleDiscountPercent = (p) => {
+  if (p.compareAt == null || p.compareAt <= p.price) return 0;
+  return Math.round((1 - p.price / p.compareAt) * 100);
+};
+
+const productMatchesSearch = (p, query) => {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return false;
+  const hay = `${p.name} ${p.brand} ${p.category}`.toLowerCase();
+  return words.every((w) => hay.includes(w));
+};
+
+const isOnSale = (p) => p.compareAt != null && p.compareAt > p.price;
+
+const PAYMENT_METHOD_OPTIONS = [
+  {
+    id: "card",
+    title: "Card",
+    sub: "Visa, Mastercard, Amex",
+    icon: "card",
+  },
+  {
+    id: "paypal",
+    title: "PayPal",
+    sub: "Pay with your PayPal balance",
+    icon: "paypal",
+  },
+  {
+    id: "google_pay",
+    title: "Google Pay",
+    sub: "Fast checkout on supported devices",
+    icon: "google",
+  },
+  {
+    id: "apple_pay",
+    title: "Apple Pay",
+    sub: "Touch ID, Face ID, or device passcode",
+    icon: "apple",
+  },
+];
+
+const normalizePaymentMethodId = (raw) => {
+  if (raw === "visa" || raw === "mastercard") return "card";
+  if (PAYMENT_METHOD_OPTIONS.some((o) => o.id === raw)) return raw;
+  return "card";
+};
+
+const paymentMethodDisplay = (payment) => {
+  if (!payment?.method) return "—";
+  const m = payment.method;
+  const scheme = payment.cardScheme;
+  if (m === "visa") return "Card (Visa)";
+  if (m === "mastercard") return "Card (Mastercard)";
+  if (m === "card") return `Card (${scheme === "mastercard" ? "Mastercard" : "Visa"})`;
+  if (m === "paypal") return "PayPal";
+  if (m === "google_pay") return "Google Pay";
+  if (m === "apple_pay") return "Apple Pay";
+  return String(m).replace(/_/g, " ");
+};
+
+function PayMethodIcon({ name }) {
+  if (name === "card") {
+    return (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <path d="M2 10h20" />
+      </svg>
+    );
+  }
+  if (name === "paypal") {
+    return (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
+        <path d="M7 5h8a4.5 4.5 0 0 1 0 9h-3l-1.2 8H8.5L9.6 14H7.5L7 5z" strokeLinejoin="round" />
+        <path d="M9.5 5v7" />
+      </svg>
+    );
+  }
+  if (name === "google") {
+    return (
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.48-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+
 // ─── localStorage helpers ──────────────────────────────────────────────────────
 const LS = {
   getUser: (email) => {
@@ -1726,7 +1909,9 @@ export default function App() {
     state: "",
     postalCode: "",
     deliveryType: "standard",
-    paymentMethod: "visa",
+    paymentMethod: "card",
+    cardScheme: "visa",
+    paypalEmail: "",
     cardHolder: "",
     cardNumber: "",
     expiry: "",
@@ -1739,6 +1924,8 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [shopFilter, setShopFilter] = useState("All");
   const [shopSort, setShopSort] = useState("featured");
+  const [shopSearchOpen, setShopSearchOpen] = useState(false);
+  const [shopSearchQuery, setShopSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [profileTab, setProfileTab] = useState("orders");
   const { toasts, add: addToast } = useToast();
@@ -1826,7 +2013,9 @@ export default function App() {
         state: cached.state || "",
         postalCode: cached.postalCode || "",
         deliveryType: cached.deliveryType || "standard",
-        paymentMethod: cached.paymentMethod || "visa",
+        paymentMethod: normalizePaymentMethodId(cached.paymentMethod || "card"),
+        cardScheme: cached.cardScheme === "mastercard" ? "mastercard" : "visa",
+        paypalEmail: cached.paypalEmail || "",
         markAsDue: Boolean(cached.markAsDue),
       }));
       setPromoCode(cached.promoCode || "");
@@ -1846,6 +2035,8 @@ export default function App() {
         postalCode: checkoutDraft.postalCode,
         deliveryType: checkoutDraft.deliveryType,
         paymentMethod: checkoutDraft.paymentMethod,
+        cardScheme: checkoutDraft.cardScheme,
+        paypalEmail: checkoutDraft.paypalEmail,
         markAsDue: checkoutDraft.markAsDue,
         promoCode,
       };
@@ -1862,6 +2053,8 @@ export default function App() {
     checkoutDraft.postalCode,
     checkoutDraft.deliveryType,
     checkoutDraft.paymentMethod,
+    checkoutDraft.cardScheme,
+    checkoutDraft.paypalEmail,
     checkoutDraft.markAsDue,
     promoCode,
   ]);
@@ -2010,6 +2203,72 @@ export default function App() {
     return { shippingFee, subtotal, itemDiscount, discountedSubtotal, promoDiscount, total, normalizedPromo };
   };
 
+  const downloadCheckoutReceipt = () => {
+    const esc = (v) =>
+      String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    const p = getPricing();
+    const countryLabel = COUNTRY_OPTIONS.find((c) => c.code === checkoutDraft.country);
+    const countryLine = countryLabel ? `${countryLabel.flag} ${countryLabel.name}` : checkoutDraft.country || "—";
+    const payLabel = paymentMethodDisplay({ method: checkoutDraft.paymentMethod, cardScheme: checkoutDraft.cardScheme });
+    const payExtra = checkoutDraft.markAsDue
+      ? "Payment status: due"
+      : checkoutDraft.paymentMethod === "card" && checkoutDraft.cardNumber
+        ? maskCard(checkoutDraft.cardNumber)
+        : checkoutDraft.paymentMethod === "paypal" && checkoutDraft.paypalEmail?.trim()
+          ? checkoutDraft.paypalEmail.trim()
+          : "—";
+    const lines = cart.map((item) => {
+      const lineTotal = item.product.price * item.qty;
+      const lineDiscount = getProductDiscount(item);
+      let s = `${item.product.name} × ${item.qty}\n  ${fmt(lineTotal)}`;
+      if (lineDiscount > 0) s += `\n  Discount: -${fmt(lineDiscount)}`;
+      return esc(s);
+    });
+    const body = `
+<div class="checkout-receipt" style="max-width:400px;margin:0 auto;padding:28px 24px;background:#f9f7f4;border:1px dashed #333;font-family:Georgia,serif;text-align:left">
+  <div style="font-size:1.2rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px">SANJIIIII</div>
+  <div style="font-size:10px;letter-spacing:.2em;color:#666;margin-bottom:16px">ORDER SUMMARY · NOT YET PLACED</div>
+  <hr style="border:none;border-top:1px dashed #999;margin:12px 0">
+  <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.15em;margin:12px 0 6px">Date</div>
+  <div style="font-size:13px">${new Date().toLocaleString()}</div>
+  <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.15em;margin:12px 0 6px">Deliver to</div>
+  <div style="font-size:13px;line-height:1.5">${esc(`${checkoutDraft.firstName} ${checkoutDraft.lastName}`)}<br>${esc(checkoutDraft.email)}<br>${esc(checkoutDraft.address || "—")}<br>${esc(`${checkoutDraft.city}${checkoutDraft.state ? `, ${checkoutDraft.state}` : ""} ${checkoutDraft.postalCode}`)}<br>${esc(countryLine)}<br>Tel: ${esc(checkoutDraft.phoneCode)} ${esc(checkoutDraft.phone || "—")}</div>
+  <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.15em;margin:12px 0 6px">Delivery</div>
+  <div style="font-size:13px">${checkoutDraft.deliveryType === "express" ? "Express ($20)" : "Standard ($8)"}</div>
+  <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.15em;margin:12px 0 6px">Payment</div>
+  <div style="font-size:13px">${esc(payLabel)}</div>
+  <div style="font-size:13px;color:#555">${esc(payExtra)}</div>
+  <hr style="border:none;border-top:1px dashed #999;margin:14px 0">
+  <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.15em;margin-bottom:8px">Items</div>
+  <pre style="font-family:inherit;font-size:13px;white-space:pre-wrap;margin:0;line-height:1.5;text-align:left">${lines.join("\n\n")}</pre>
+  <hr style="border:none;border-top:1px dashed #999;margin:14px 0">
+  <div style="font-size:13px;margin:4px 0">Subtotal<br>${fmt(p.subtotal)}</div>
+  <div style="font-size:13px;margin:4px 0">Product discount<br>- ${fmt(p.itemDiscount)}</div>
+  <div style="font-size:13px;margin:4px 0">After discount<br>${fmt(p.discountedSubtotal)}</div>
+  ${p.promoDiscount > 0 ? `<div style="font-size:13px;margin:4px 0">Promo (${p.normalizedPromo})<br>- ${fmt(p.promoDiscount)}</div>` : ""}
+  <div style="font-size:13px;margin:4px 0">Shipping<br>${fmt(p.shippingFee)}</div>
+  <div style="font-size:15px;font-weight:700;margin-top:12px;letter-spacing:.05em">Total due<br>${fmt(p.total)}</div>
+  <div style="font-size:11px;color:#666;margin-top:16px;line-height:1.5">Taxes (EU VAT / US sales) would appear on the final invoice after payment. This file is a preview only — place the order in the app to confirm.</div>
+  <div style="font-size:11px;color:#999;margin-top:12px">Thank you for shopping with SANJIIIII</div>
+</div>`;
+    const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SANJIIIII — Receipt preview</title></head><body style="margin:0;padding:24px;background:#e8e4dc">${body}</body></html>`;
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sanjiiiii-receipt-preview-${Date.now()}.html`;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    addToast("Receipt downloaded", "success");
+  };
+
   const closeCheckout = () => {
     setCheckoutOpen(false);
     setCheckoutStep(1);
@@ -2036,6 +2295,10 @@ export default function App() {
     setCheckoutStep(2);
   };
 
+  const handleContinueFromPaymentMethod = () => {
+    setCheckoutStep(3);
+  };
+
   const handleConfirmPayment = () => {
     if (promoCode.trim() && promoCode.trim().toUpperCase() !== "SAVE10") {
       addToast("Promo code is invalid. Try SAVE10 or leave blank.");
@@ -2043,29 +2306,38 @@ export default function App() {
     }
 
     if (!checkoutDraft.markAsDue) {
-      if (!checkoutDraft.cardHolder || !checkoutDraft.cardNumber || !checkoutDraft.expiry || !checkoutDraft.cvv) {
-        addToast("Please fill payment card details.");
-        return;
-      }
-      const cardDigits = checkoutDraft.cardNumber.replace(/\D/g, "");
-      const cvvDigits = checkoutDraft.cvv.replace(/\D/g, "");
-      const [mm, yy] = checkoutDraft.expiry.split("/");
-      const month = Number(mm);
-      const year = Number(yy);
-      if (!isValidLuhn(cardDigits)) {
-        addToast("Card number is invalid.");
-        return;
-      }
-      if (!month || month < 1 || month > 12 || !year || yy?.length !== 2) {
-        addToast("Expiry must be MM/YY.");
-        return;
-      }
-      if (cvvDigits.length < 3 || cvvDigits.length > 4) {
-        addToast("CVV must be 3 or 4 digits.");
-        return;
+      const pm = checkoutDraft.paymentMethod;
+      if (pm === "card") {
+        if (!checkoutDraft.cardHolder || !checkoutDraft.cardNumber || !checkoutDraft.expiry || !checkoutDraft.cvv) {
+          addToast("Please fill payment card details.");
+          return;
+        }
+        const cardDigits = checkoutDraft.cardNumber.replace(/\D/g, "");
+        const cvvDigits = checkoutDraft.cvv.replace(/\D/g, "");
+        const [mm, yy] = checkoutDraft.expiry.split("/");
+        const month = Number(mm);
+        const year = Number(yy);
+        if (!isValidLuhn(cardDigits)) {
+          addToast("Card number is invalid.");
+          return;
+        }
+        if (!month || month < 1 || month > 12 || !year || yy?.length !== 2) {
+          addToast("Expiry must be MM/YY.");
+          return;
+        }
+        if (cvvDigits.length < 3 || cvvDigits.length > 4) {
+          addToast("CVV must be 3 or 4 digits.");
+          return;
+        }
+      } else if (pm === "paypal") {
+        const pe = checkoutDraft.paypalEmail?.trim();
+        if (!pe || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pe)) {
+          addToast("Please enter a valid PayPal email.");
+          return;
+        }
       }
     }
-    setCheckoutStep(3);
+    setCheckoutStep(4);
   };
 
   const handlePlaceOrder = () => {
@@ -2108,7 +2380,12 @@ export default function App() {
       },
       payment: {
         method: checkoutDraft.paymentMethod,
-        cardMasked: checkoutDraft.markAsDue ? null : maskCard(checkoutDraft.cardNumber),
+        cardScheme: checkoutDraft.paymentMethod === "card" ? checkoutDraft.cardScheme : null,
+        paypalEmail: checkoutDraft.paymentMethod === "paypal" && !checkoutDraft.markAsDue ? checkoutDraft.paypalEmail.trim() : null,
+        cardMasked:
+          checkoutDraft.markAsDue || checkoutDraft.paymentMethod !== "card"
+            ? null
+            : maskCard(checkoutDraft.cardNumber),
         status: checkoutDraft.markAsDue ? "due" : "completed",
         paidAt: checkoutDraft.markAsDue ? null : new Date().toISOString(),
         transactionId: checkoutDraft.markAsDue ? null : genTxId(),
@@ -2132,7 +2409,9 @@ export default function App() {
       state: "",
       postalCode: "",
       deliveryType: "standard",
-      paymentMethod: "visa",
+      paymentMethod: "card",
+      cardScheme: "visa",
+      paypalEmail: "",
       cardHolder: "",
       cardNumber: "",
       expiry: "",
@@ -2172,9 +2451,24 @@ export default function App() {
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
+  const closeShopSearch = () => {
+    setShopSearchOpen(false);
+    setShopSearchQuery("");
+  };
+
+  const goToCollectionSearch = () => {
+    setSelectedProduct(null);
+    setPage("shop");
+    setShopSearchOpen(true);
+    setShopSearchQuery("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const navigate = (p, product = null) => {
     if (product) setSelectedProduct(product);
     setPage(p);
+    setShopSearchOpen(false);
+    setShopSearchQuery("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -2189,7 +2483,7 @@ export default function App() {
           ))}
         </div>
         <div className="nav-icons">
-          <button className="icon-btn" onClick={() => navigate("shop")}>
+          <button type="button" className="icon-btn" onClick={goToCollectionSearch} aria-label="Search collection">
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
           </button>
           <button className="icon-btn" onClick={() => user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true)}>
@@ -2213,7 +2507,23 @@ export default function App() {
       </nav>
 
       {page === "home" && <HomePage navigate={navigate} products={PRODUCTS} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} />}
-      {page === "shop" && <ShopPage products={PRODUCTS} navigate={navigate} filter={shopFilter} setFilter={setShopFilter} sort={shopSort} setSort={setShopSort} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} />}
+      {page === "shop" && (
+        <ShopPage
+          products={PRODUCTS}
+          navigate={navigate}
+          filter={shopFilter}
+          setFilter={setShopFilter}
+          sort={shopSort}
+          setSort={setShopSort}
+          addToCart={addToCart}
+          toggleWishlist={toggleWishlist}
+          wishlist={wishlist}
+          searchOpen={shopSearchOpen}
+          onCloseSearch={closeShopSearch}
+          searchQuery={shopSearchQuery}
+          setSearchQuery={setShopSearchQuery}
+        />
+      )}
       {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} />}
       {page === "profile" && <ProfilePage user={user} cart={cart} wishlist={wishlist} products={PRODUCTS} logout={logout} tab={profileTab} setTab={setProfileTab} navigate={navigate} onMarkOrderPaid={handleOpenMarkPaid} onUpdateProfile={updateUserProfile} />}
       {page === "about" && <AboutPage navigate={navigate} />}
@@ -2301,9 +2611,6 @@ export default function App() {
               <button className="close-btn" onClick={closeCheckout}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:18, letterSpacing:"0.05em" }}>
-                Step {checkoutStep} of 3
-              </p>
               {checkoutStep === 1 && (
                 <>
               <div className="form-row-two">
@@ -2423,6 +2730,40 @@ export default function App() {
 
               {checkoutStep === 2 && (
                 <>
+                  <p className="form-label" style={{ marginBottom: 14 }}>Choose how you would like to pay</p>
+                  <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
+                    {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={checkoutDraft.paymentMethod === opt.id}
+                        className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
+                        onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
+                      >
+                        <span className="pay-method-check" aria-hidden />
+                        <div className="pay-method-card-icon">
+                          <PayMethodIcon name={opt.icon} />
+                        </div>
+                        <div className="pay-method-card-text">
+                          <div className="pay-method-card-title">{opt.title}</div>
+                          <div className="pay-method-card-sub">{opt.sub}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="pay-detail-hint" style={{ marginTop: 4 }}>
+                    Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
+                  </p>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button type="button" className="filter-btn" onClick={() => setCheckoutStep(1)}>Back</button>
+                    <button type="button" className="form-submit" style={{ marginTop: 0 }} onClick={handleContinueFromPaymentMethod}>Continue</button>
+                  </div>
+                </>
+              )}
+
+              {checkoutStep === 3 && (
+                <>
               <div style={{ border:"1px solid var(--border)", padding:14, marginBottom:18, background:"var(--cream)" }}>
                 <div style={{ fontFamily:"var(--font-serif)", fontSize:"1.05rem", marginBottom:10 }}>Bill Summary</div>
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:6 }}><span>Subtotal</span><span>{fmt(getPricing().subtotal)}</span></div>
@@ -2432,7 +2773,7 @@ export default function App() {
                 <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:10 }}><span>Delivery Charge</span><span>{fmt(getPricing().shippingFee)}</span></div>
                 <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid var(--border)", paddingTop:10, fontWeight:600 }}><span>Total</span><span>{fmt(getPricing().total)}</span></div>
                 <div style={{ marginTop:8, fontSize:"0.7rem", color:"var(--warm-gray)", lineHeight:1.6 }}>
-                  VAT included where applicable. Final VAT breakdown is shown for EU deliveries.
+                  Estimated taxes (EU VAT / US sales tax) follow your delivery address and would be calculated automatically with Stripe Tax in production.
                 </div>
               </div>
 
@@ -2442,12 +2783,43 @@ export default function App() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Payment Method</label>
-                <div style={{ display:"flex", gap:8 }}>
-                  <button className={`filter-btn${checkoutDraft.paymentMethod === "visa" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: "visa" })}>Visa</button>
-                  <button className={`filter-btn${checkoutDraft.paymentMethod === "mastercard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: "mastercard" })}>Mastercard</button>
+                <label className="form-label">Paying with</label>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
+                  {PAYMENT_METHOD_OPTIONS.find((o) => o.id === checkoutDraft.paymentMethod)?.title || "Payment"}
                 </div>
               </div>
+
+              {checkoutDraft.paymentMethod === "card" && (
+                <div className="form-group">
+                  <label className="form-label">Card network</label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "visa" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "visa" })}>Visa</button>
+                    <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "mastercard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "mastercard" })}>Mastercard</button>
+                  </div>
+                </div>
+              )}
+
+              {checkoutDraft.paymentMethod === "paypal" && !checkoutDraft.markAsDue && (
+                <div className="form-group">
+                  <label className="form-label">PayPal email</label>
+                  <input
+                    className="form-input"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={checkoutDraft.paypalEmail}
+                    onChange={e => setCheckoutDraft({ ...checkoutDraft, paypalEmail: e.target.value })}
+                  />
+                </div>
+              )}
+
+              {(checkoutDraft.paymentMethod === "google_pay" || checkoutDraft.paymentMethod === "apple_pay") && !checkoutDraft.markAsDue && (
+                <div className="pay-detail-hint">
+                  {checkoutDraft.paymentMethod === "google_pay"
+                    ? "On a live site, Google Pay would open here to confirm the total. No card numbers are entered on this page."
+                    : "On a live site, Apple Pay would authorize on your device. Continue when you are ready to finalize on the next step."}
+                </div>
+              )}
 
               <div style={{ marginBottom:14 }}>
                 <label style={{ fontSize:"0.75rem", cursor:"pointer", color:"var(--warm-gray)" }}>
@@ -2461,7 +2833,7 @@ export default function App() {
                 </label>
               </div>
 
-              {!checkoutDraft.markAsDue && (
+              {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && (
                 <>
                   <div className="form-group">
                     <label className="form-label">Card Holder</label>
@@ -2484,42 +2856,81 @@ export default function App() {
                 </>
               )}
               <div style={{ display:"flex", gap:10 }}>
-                <button className="filter-btn" onClick={() => setCheckoutStep(1)}>Back</button>
-                <button className="form-submit" style={{ marginTop:0 }} onClick={handleConfirmPayment}>Confirm Payment</button>
+                <button type="button" className="filter-btn" onClick={() => setCheckoutStep(2)}>Back</button>
+                <button type="button" className="form-submit" style={{ marginTop:0 }} onClick={handleConfirmPayment}>Continue to review</button>
               </div>
                 </>
               )}
 
-              {checkoutStep === 3 && (
+              {checkoutStep === 4 && (
                 <>
-                  <div style={{ background:"var(--cream)", border:"1px solid var(--border)", padding:14, marginBottom:14 }}>
-                    <div style={{ fontFamily:"var(--font-serif)", fontSize:"1.05rem", marginBottom:8 }}>Customer Bill</div>
-                    <div style={{ fontSize:"0.76rem", color:"var(--warm-gray)" }}>{checkoutDraft.firstName} {checkoutDraft.lastName}</div>
-                    <div style={{ fontSize:"0.76rem", color:"var(--warm-gray)" }}>{checkoutDraft.email}</div>
-                    <div style={{ fontSize:"0.76rem", color:"var(--warm-gray)" }}>{checkoutDraft.address}</div>
-                    <div style={{ fontSize:"0.76rem", color:"var(--warm-gray)" }}>{checkoutDraft.city}{checkoutDraft.state ? `, ${checkoutDraft.state}` : ""}, {checkoutDraft.postalCode}</div>
-                  </div>
-                  <div style={{ border:"1px solid var(--border)", padding:14, marginBottom:14 }}>
+                  <p className="form-label" style={{ marginBottom: 16 }}>Review your receipt</p>
+                  <div className="checkout-receipt">
+                    <div className="checkout-receipt-store">SANJIIIII</div>
+                    <div className="checkout-receipt-tag">Order summary · not yet placed</div>
+                    <hr className="receipt-rule" />
+                    <div className="receipt-label">Date</div>
+                    <div className="receipt-line">{new Date().toLocaleString()}</div>
+                    <div className="receipt-label">Deliver to</div>
+                    <div className="receipt-line">{checkoutDraft.firstName} {checkoutDraft.lastName}</div>
+                    <div className="receipt-line-muted">{checkoutDraft.email}</div>
+                    <div className="receipt-line-muted">{checkoutDraft.address || "—"}</div>
+                    <div className="receipt-line-muted">
+                      {checkoutDraft.city}{checkoutDraft.state ? `, ${checkoutDraft.state}` : ""} {checkoutDraft.postalCode}
+                    </div>
+                    <div className="receipt-line-muted">
+                      {(() => {
+                        const c = COUNTRY_OPTIONS.find((x) => x.code === checkoutDraft.country);
+                        return c ? `${c.flag} ${c.name}` : checkoutDraft.country || "—";
+                      })()}
+                    </div>
+                    <div className="receipt-line-muted">Tel: {checkoutDraft.phoneCode} {checkoutDraft.phone || "—"}</div>
+                    <div className="receipt-label">Delivery</div>
+                    <div className="receipt-line">{checkoutDraft.deliveryType === "express" ? "Express ($20)" : "Standard ($8)"}</div>
+                    <div className="receipt-label">Payment</div>
+                    <div className="receipt-line">{paymentMethodDisplay({ method: checkoutDraft.paymentMethod, cardScheme: checkoutDraft.cardScheme })}</div>
+                    {checkoutDraft.markAsDue && <div className="receipt-line-muted">Payment status: due</div>}
+                    {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "paypal" && checkoutDraft.paypalEmail?.trim() && (
+                      <div className="receipt-line-muted">{checkoutDraft.paypalEmail.trim()}</div>
+                    )}
+                    {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && checkoutDraft.cardNumber && (
+                      <div className="receipt-line-muted">{maskCard(checkoutDraft.cardNumber)}</div>
+                    )}
+                    <hr className="receipt-rule" />
+                    <div className="receipt-label">Items</div>
                     {cart.map((item, idx) => {
                       const lineTotal = item.product.price * item.qty;
                       const lineDiscount = getProductDiscount(item);
                       return (
-                        <div key={`${item.product.id}-${idx}`} style={{ borderBottom: idx < cart.length - 1 ? "1px solid var(--border)" : "none", paddingBottom:10, marginBottom:10 }}>
-                          <div style={{ fontSize:"0.78rem" }}>{item.product.name} x {item.qty}</div>
-                          <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)" }}>Price: {fmt(lineTotal)}</div>
-                          {lineDiscount > 0 && <div style={{ fontSize:"0.72rem", color:"var(--success)" }}>Discount: -{fmt(lineDiscount)}</div>}
+                        <div key={`${item.product.id}-${idx}`} className="receipt-item-block">
+                          <div className="receipt-item-name">{item.product.name} × {item.qty}</div>
+                          <div className="receipt-line-muted">{fmt(lineTotal)}</div>
+                          {lineDiscount > 0 && (
+                            <div className="receipt-line-muted" style={{ color: "var(--success)" }}>Discount: −{fmt(lineDiscount)}</div>
+                          )}
                         </div>
                       );
                     })}
-                    {getPricing().promoDiscount > 0 && <div style={{ fontSize:"0.74rem", color:"var(--success)" }}>Promo ({getPricing().normalizedPromo}): -{fmt(getPricing().promoDiscount)}</div>}
-                    <div style={{ marginTop:10, display:"flex", justifyContent:"space-between", fontWeight:600 }}><span>Grand Total</span><span>{fmt(getPricing().total)}</span></div>
-                    <div style={{ marginTop:6, fontSize:"0.7rem", color:"var(--warm-gray)", lineHeight:1.6 }}>
-                      VAT included where applicable. For EU orders, VAT is calculated based on delivery country.
+                    <div className="receipt-total-block">
+                      <div className="receipt-total-line">Subtotal — {fmt(getPricing().subtotal)}</div>
+                      <div className="receipt-total-line">Product discount — −{fmt(getPricing().itemDiscount)}</div>
+                      <div className="receipt-total-line">After discount — {fmt(getPricing().discountedSubtotal)}</div>
+                      {getPricing().promoDiscount > 0 && (
+                        <div className="receipt-total-line">Promo ({getPricing().normalizedPromo}) — −{fmt(getPricing().promoDiscount)}</div>
+                      )}
+                      <div className="receipt-total-line">Shipping — {fmt(getPricing().shippingFee)}</div>
+                      <div className="receipt-grand">Total due — {fmt(getPricing().total)}</div>
+                    </div>
+                    <div className="receipt-footer">
+                      Taxes (EU VAT / US sales tax) follow your address and would appear on the final invoice after payment.
+                      <br /><br />
+                      Thank you for shopping with SANJIIIII
                     </div>
                   </div>
-                  <div style={{ display:"flex", gap:10 }}>
-                    <button className="filter-btn" onClick={() => setCheckoutStep(2)}>Back</button>
-                    <button className="form-submit" style={{ marginTop:0 }} onClick={handlePlaceOrder}>Place Order</button>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "stretch" }}>
+                    <button type="button" className="filter-btn" onClick={() => setCheckoutStep(3)}>Back</button>
+                    <button type="button" className="receipt-download-btn" onClick={downloadCheckoutReceipt}>Download receipt</button>
+                    <button type="button" className="form-submit" style={{ marginTop: 0, flex: "2 1 180px" }} onClick={handlePlaceOrder}>Place Order</button>
                   </div>
                 </>
               )}
@@ -2547,7 +2958,8 @@ export default function App() {
                   Amount: {fmt(payConfirmOrder.total)}
                 </div>
                 <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:6 }}>
-                  Method: {payConfirmOrder.payment.method.toUpperCase()} {payConfirmOrder.payment.cardMasked ? `(${payConfirmOrder.payment.cardMasked})` : ""}
+                  Method: {paymentMethodDisplay(payConfirmOrder.payment)}
+                  {payConfirmOrder.payment.cardMasked ? ` (${payConfirmOrder.payment.cardMasked})` : ""}
                 </div>
                 <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)" }}>
                   Customer: {payConfirmOrder.delivery.fullName}
@@ -2673,6 +3085,21 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
         </div>
       </section>
 
+      <section className="section" style={{ background:"white" }}>
+        <div className="section-header animate-fade">
+          <p className="section-eyebrow">Best Value</p>
+          <h2 className="section-title"><em>Sales</em></h2>
+        </div>
+        <div className="products-grid">
+          {products.filter(isOnSale).slice(0, 4).map((p, i) => (
+            <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
+          ))}
+        </div>
+        <div style={{ textAlign:"center", marginTop:48 }}>
+          <button className="btn-primary" onClick={() => navigate("shop")}>Shop the Sale</button>
+        </div>
+      </section>
+
       <Footer navigate={navigate} />
     </div>
   );
@@ -2680,6 +3107,8 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
 function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wishlisted }) {
+  const inStock = product.inStock !== false;
+  const onSale = isOnSale(product);
   return (
     <div className={`product-card animate-fade-d${Math.min(delay + 1, 4)}`}>
       {product.badge && <div className="product-badge">{product.badge}</div>}
@@ -2689,37 +3118,60 @@ function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wish
       <div className="product-img" style={{ background:`linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }} onClick={() => navigate("product", product)}>
         <span className="product-emoji">{product.emoji}</span>
         <div className="product-actions-overlay">
-          <button className="overlay-btn overlay-btn-primary" onClick={e => { e.stopPropagation(); addToCart(product, product.sizes[0]); }}>Add to Bag</button>
-          <button className="overlay-btn overlay-btn-outline" onClick={e => { e.stopPropagation(); navigate("product", product); }}>View</button>
+          <button type="button" className="overlay-btn overlay-btn-primary" disabled={!inStock} onClick={e => { e.stopPropagation(); if (inStock) addToCart(product, product.sizes[0]); }}>{inStock ? "Add to Bag" : "Out of Stock"}</button>
+          <button type="button" className="overlay-btn overlay-btn-outline" onClick={e => { e.stopPropagation(); navigate("product", product); }}>View</button>
         </div>
       </div>
       <div className="product-info" onClick={() => navigate("product", product)}>
         <div className="product-brand">{product.brand}</div>
         <div className="product-name">{product.name}</div>
-        <div className="product-price">{fmt(product.price)}</div>
+        {onSale ? (
+          <div className="product-price-row">
+            <span className="product-price-was">{fmt(product.compareAt)}</span>
+            <span className="product-price">{fmt(product.price)}</span>
+            <span className="product-discount-pct">{saleDiscountPercent(product)}% off</span>
+          </div>
+        ) : (
+          <div className="product-price">{fmt(product.price)}</div>
+        )}
       </div>
     </div>
   );
 }
 
 // ─── Shop Page ────────────────────────────────────────────────────────────────
-function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToCart, toggleWishlist, wishlist }) {
-  let filtered = filter === "All" ? products : products.filter(p => p.category === filter);
-  if (sort === "price-asc") filtered = [...filtered].sort((a, b) => a.price - b.price);
-  if (sort === "price-desc") filtered = [...filtered].sort((a, b) => b.price - a.price);
-  if (sort === "new") filtered = [...filtered].filter(p => p.badge === "New").concat(filtered.filter(p => p.badge !== "New"));
+function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToCart, toggleWishlist, wishlist, searchOpen, onCloseSearch, searchQuery, setSearchQuery }) {
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    if (searchOpen) {
+      const id = requestAnimationFrame(() => searchInputRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [searchOpen]);
+
+  const { displayed, suggestions } = useMemo(() => {
+    let base = filter === "All" ? products : products.filter(p => p.category === filter);
+    if (sort === "price-asc") base = [...base].sort((a, b) => a.price - b.price);
+    if (sort === "price-desc") base = [...base].sort((a, b) => b.price - a.price);
+    if (sort === "new") base = [...base].filter(p => p.badge === "New").concat(base.filter(p => p.badge !== "New"));
+
+    const q = searchQuery.trim();
+    const displayed = q ? base.filter(p => productMatchesSearch(p, searchQuery)) : base;
+    const suggestions = q ? products.filter(p => productMatchesSearch(p, searchQuery)).slice(0, 6) : [];
+    return { displayed, suggestions };
+  }, [products, filter, sort, searchQuery]);
 
   return (
     <div className="shop-layout">
       <div className="shop-header animate-fade">
         <div>
           <h1 className="shop-title">The Collection</h1>
-          <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginTop:4 }}>{filtered.length} pieces</p>
+          <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginTop:4 }}>{displayed.length} pieces</p>
         </div>
         <div style={{ display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
           <div className="filter-bar">
             {["All","Women","Men","Kids","Accessories"].map(c => (
-              <button key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
+              <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
           <select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
@@ -2730,8 +3182,52 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
           </select>
         </div>
       </div>
+      {searchOpen && (
+        <div className="shop-search-wrap animate-fade">
+          <div className="shop-search-inner">
+            <svg width="18" height="18" fill="none" stroke="var(--gold)" strokeWidth="1.6" viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+            <input
+              ref={searchInputRef}
+              className="shop-search-input"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search by product name or brand…"
+              aria-autocomplete="list"
+              aria-expanded={Boolean(searchQuery.trim())}
+              autoComplete="off"
+            />
+            <button type="button" className="shop-search-close" onClick={onCloseSearch} aria-label="Close search">✕</button>
+          </div>
+          {searchQuery.trim() && (
+            <div className="shop-search-dropdown" role="listbox">
+              {suggestions.length === 0 ? (
+                <div className="shop-search-empty">No matches for that search.</div>
+              ) : (
+                suggestions.map(p => (
+                  <div
+                    key={p.id}
+                    role="option"
+                    className="shop-search-suggestion"
+                    onClick={() => navigate("product", p)}
+                  >
+                    <span className="shop-search-sug-emoji">{p.emoji}</span>
+                    <div className="shop-search-sug-text">
+                      <div className="shop-search-sug-name">{p.name}</div>
+                      <div className="shop-search-sug-meta">{p.brand} · {p.category}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      {p.inStock === false && <div className="shop-search-sug-badge">Out of stock</div>}
+                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--gold)", marginTop: p.inStock === false ? 4 : 0 }}>{fmt(p.price)}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <div className="products-grid">
-        {filtered.map((p, i) => (
+        {displayed.map((p, i) => (
           <ProductCard key={p.id} product={p} delay={i % 4} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
         ))}
       </div>
@@ -2744,6 +3240,8 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
 function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishlist }) {
   const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
   const wishlisted = wishlist.includes(product.id);
+  const inStock = product.inStock !== false;
+  const onSale = isOnSale(product);
   return (
     <div>
       <div className="product-detail">
@@ -2753,13 +3251,23 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
           </div>
         </div>
         <div className="animate-fade">
-          <button onClick={() => navigate("shop")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:24, display:"flex", alignItems:"center", gap:6 }}>
+          <button type="button" onClick={() => navigate("shop")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:24, display:"flex", alignItems:"center", gap:6 }}>
             ← Back to Collection
           </button>
           {product.badge && <div style={{ display:"inline-block", background:"var(--charcoal)", color:"white", fontSize:"0.58rem", fontWeight:700, letterSpacing:"0.15em", textTransform:"uppercase", padding:"4px 10px", marginBottom:16 }}>{product.badge}</div>}
           <div className="detail-brand">{product.brand}</div>
           <h1 className="detail-name">{product.name}</h1>
-          <div className="detail-price">{fmt(product.price)}</div>
+          {onSale ? (
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "10px 14px" }}>
+                <span style={{ textDecoration: "line-through", color: "var(--warm-gray)", fontSize: "1.05rem" }}>{fmt(product.compareAt)}</span>
+                <div className="detail-price" style={{ marginBottom: 0 }}>{fmt(product.price)}</div>
+                <span className="product-discount-pct">{saleDiscountPercent(product)}% off</span>
+              </div>
+            </div>
+          ) : (
+            <div className="detail-price">{fmt(product.price)}</div>
+          )}
           <p className="detail-desc">{product.desc}</p>
           <p style={{ fontSize:"0.65rem", letterSpacing:"0.2em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:10 }}>Select Size</p>
           <div className="size-grid">
@@ -2768,9 +3276,10 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
             ))}
           </div>
           <div className="detail-actions">
-            <button className="add-cart-btn" onClick={() => addToCart(product, selectedSize)}>Add to Bag</button>
-            <button className={`wish-btn${wishlisted ? " active" : ""}`} onClick={() => toggleWishlist(product.id)}>{wishlisted ? "♥" : "♡"}</button>
+            <button type="button" className="add-cart-btn" disabled={!inStock} onClick={() => inStock && addToCart(product, selectedSize)}>{inStock ? "Add to Bag" : "Out of Stock"}</button>
+            <button type="button" className={`wish-btn${wishlisted ? " active" : ""}`} onClick={() => toggleWishlist(product.id)}>{wishlisted ? "♥" : "♡"}</button>
           </div>
+          {!inStock && <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 12 }}>This piece is currently unavailable. You can still view details or save it to your wishlist.</p>}
           <div style={{ marginTop:28, paddingTop:28, borderTop:"1px solid var(--border)" }}>
             {[["🚚","Free Express Delivery","On orders over $200"],["↩️","Easy Returns","30-day free returns"],["✦","Authenticity Guaranteed","100% genuine products"]].map(([icon,title,sub]) => (
               <div key={title} style={{ display:"flex", gap:14, marginBottom:14, alignItems:"center" }}>
@@ -2877,7 +3386,9 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                       {new Date(o.createdAt).toLocaleString()} · {o.delivery.type === "express" ? "Express" : "Standard"} delivery
                     </div>
                     <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:6 }}>
-                      Method: {o.payment.method.toUpperCase()} {o.payment.cardMasked ? `(${o.payment.cardMasked})` : ""}
+                      Method: {paymentMethodDisplay(o.payment)}
+                      {o.payment.cardMasked ? ` (${o.payment.cardMasked})` : ""}
+                      {o.payment.paypalEmail ? ` · ${o.payment.paypalEmail}` : ""}
                     </div>
                     {o.payment.transactionId && (
                       <div style={{ fontSize:"0.7rem", color:"var(--warm-gray)", marginBottom:6 }}>
