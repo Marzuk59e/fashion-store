@@ -15,7 +15,7 @@ const css = `
     --charcoal: #1A1A1A;
     --gold: #C9A96E;
     --gold-light: #E8D5B0;
-    --warm-gray: #6F685F;
+    --warm-gray: #4F4841;
     --border: #E8E2D9;
     --white: #FFFFFF;
     --error: #C0392B;
@@ -23,7 +23,43 @@ const css = `
     --font-serif: 'Cormorant Garamond', Georgia, serif;
     --font-sans: 'Montserrat', sans-serif;
   }
-  body { background: var(--cream); color: var(--charcoal); font-family: var(--font-sans); }
+  body { background: var(--cream); color: var(--charcoal); font-family: var(--font-sans); font-weight: 500; line-height: 1.5; }
+  input, select, textarea, button { font-family: var(--font-sans); }
+
+  /* Readability boost on white/cream backgrounds */
+  .nav-link,
+  .product-brand,
+  .cart-item-meta,
+  .cart-total-label,
+  .form-label,
+  .form-error,
+  .auth-switch,
+  .pay-method-card-sub,
+  .pay-detail-hint,
+  .receipt-label,
+  .receipt-line-muted,
+  .receipt-footer,
+  .profile-email,
+  .shop-search-sug-meta,
+  .shop-search-empty,
+  .filter-btn {
+    color: var(--warm-gray);
+    font-weight: 500;
+  }
+  .nav-link { font-size: 0.76rem; }
+  .product-brand { font-size: 0.68rem; }
+  .cart-item-meta { font-size: 0.74rem; }
+  .cart-total-label { font-size: 0.74rem; }
+  .form-label { font-size: 0.7rem; }
+  .form-input { font-size: 0.9rem; color: #1f1b17; }
+  .pay-method-card-sub { font-size: 0.72rem; }
+  .pay-detail-hint { font-size: 0.78rem; }
+  .receipt-label { font-size: 0.64rem; }
+  .receipt-line { font-size: 0.8rem; color: #221e1a; }
+  .receipt-line-muted { font-size: 0.76rem; }
+  .receipt-footer { font-size: 0.68rem; }
+  .shop-search-sug-meta { font-size: 0.66rem; }
+  .filter-btn { font-size: 0.7rem; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--cream); }
   ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
@@ -113,7 +149,7 @@ const css = `
   .product-info { padding: 16px; }
   .product-brand { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--warm-gray); margin-bottom: 4px; }
   .product-name { font-family: var(--font-serif); font-size: 1.05rem; color: var(--charcoal); margin-bottom: 8px; }
-  .product-price { font-size: 0.85rem; font-weight: 600; color: var(--gold); }
+  .product-price { font-size: 0.92rem; font-weight: 500; color: var(--charcoal); }
   .product-badge { position: absolute; top: 12px; left: 12px; z-index: 2; background: var(--charcoal); color: white; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; }
   .wishlist-btn { position: absolute; top: 12px; right: 12px; z-index: 2; background: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; color: var(--charcoal); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); transition: all 0.2s; }
   .wishlist-btn:hover { transform: scale(1.12); }
@@ -122,15 +158,15 @@ const css = `
   .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); }
   .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: white; width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; }
   .checkout-modal {
-    top: 0;
-    left: 0;
-    transform: none;
-    width: 100vw;
-    max-width: none;
-    max-height: 100vh;
-    height: 100vh;
-    border-radius: 0;
-    animation: fadeIn 0.25s ease;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    width: min(1100px, 94vw);
+    max-width: 1100px;
+    max-height: 92vh;
+    height: auto;
+    border-radius: 4px;
+    animation: scaleIn 0.25s ease;
   }
   .checkout-modal .modal-header {
     padding: 20px 28px;
@@ -141,11 +177,12 @@ const css = `
     z-index: 2;
   }
   .checkout-modal .modal-body {
-    padding: 24px 28px 32px;
-    max-width: 1100px;
+    padding: 24px clamp(20px, 4vw, 48px) 40px;
+    max-width: none;
     margin: 0 auto;
     width: 100%;
-    max-height: calc(100vh - 82px);
+    box-sizing: border-box;
+    max-height: calc(92vh - 82px);
     overflow-y: auto;
   }
   .modal-header { padding: 28px 32px 0; display: flex; justify-content: space-between; align-items: center; }
@@ -165,7 +202,14 @@ const css = `
   .cart-item-open { cursor: pointer; transition: opacity 0.2s; }
   .cart-item-open:hover { opacity: 0.82; }
   .cart-item-meta { font-size: 0.7rem; color: var(--warm-gray); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
-  .cart-item-price { font-size: 0.8rem; font-weight: 600; color: var(--gold); }
+  .cart-item-price {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
   .qty-control { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   .qty-btn { width: 24px; height: 24px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--charcoal); }
   .qty-btn:hover { background: var(--charcoal); color: white; border-color: var(--charcoal); }
@@ -175,7 +219,14 @@ const css = `
   .cart-footer { padding: 20px 28px; border-top: 1px solid var(--border); position: sticky; bottom: 0; background: var(--cream); }
   .cart-total { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: baseline; }
   .cart-total-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--warm-gray); }
-  .cart-total-price { font-family: var(--font-serif); font-size: 1.4rem; color: var(--charcoal); }
+  .cart-total-price {
+    font-family: var(--font-sans);
+    font-size: 1.16rem;
+    font-weight: 700;
+    color: var(--charcoal);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
   .checkout-btn { width: 100%; padding: 16px; background: var(--charcoal); color: white; border: none; cursor: pointer; font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; transition: all 0.3s; }
   .checkout-btn:hover { background: var(--gold); }
   .empty-cart { text-align: center; padding: 60px 20px; color: var(--warm-gray); }
@@ -205,7 +256,10 @@ const css = `
   .btn-social:hover { background: var(--cream); border-color: var(--gold); }
   .social-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
 
-  .pay-method-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; max-width: 520px; }
+  .pay-method-grid { display: grid; gap: 12px; margin-bottom: 8px; width: 100%; max-width: none; }
+  @media (min-width: 900px) {
+    .pay-method-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+  }
   .pay-method-card {
     position: relative;
     display: flex;
@@ -231,11 +285,67 @@ const css = `
   .pay-method-card.selected .pay-method-check { background: var(--gold); border-color: var(--gold); }
   .pay-method-check::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: white; opacity: 0; transform: scale(0); transition: 0.2s; }
   .pay-method-card.selected .pay-method-check::after { opacity: 1; transform: scale(1); }
-  .pay-detail-hint { font-size: 0.72rem; color: var(--warm-gray); line-height: 1.65; padding: 14px 16px; background: var(--cream); border: 1px solid var(--border); margin-bottom: 16px; max-width: 520px; }
+  .pay-detail-hint { font-size: 0.72rem; color: var(--warm-gray); line-height: 1.65; padding: 14px 16px; background: var(--cream); border: 1px solid var(--border); margin-bottom: 16px; width: 100%; max-width: none; box-sizing: border-box; }
+
+  .checkout-card-details-panel {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
+    margin-bottom: 28px;
+    padding: 22px clamp(18px, 3vw, 28px) 24px;
+    background: linear-gradient(180deg, #FDFCFA 0%, #F6F3ED 100%);
+    border: 1px solid rgba(26,26,26,0.18);
+    border-radius: 3px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 10px 32px rgba(0,0,0,0.06);
+  }
+  .checkout-card-details-panel > .form-group:first-of-type { margin-top: 0; }
+  .checkout-card-details-title {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    letter-spacing: 0.06em;
+    color: var(--charcoal);
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed rgba(26,26,26,0.2);
+    text-align: center;
+    text-transform: none;
+  }
+
+  .card-details-box {
+    position: relative;
+    background: linear-gradient(180deg, #FFFEFC 0%, #F9F5EF 100%);
+    border: 1px solid rgba(201,169,110,0.5);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+    padding: 18px 16px 14px;
+    border-radius: 3px;
+    margin: 16px 0 18px;
+  }
+  .card-details-box::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--gold), #B8915A);
+    border-radius: 3px 0 0 3px;
+  }
+  .card-details-box-title {
+    display: block;
+    font-size: 0.67rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--charcoal);
+    margin: 0 0 14px;
+    padding-left: 10px;
+    text-align: center;
+    font-weight: 600;
+  }
 
   .checkout-receipt {
-    max-width: 400px;
-    margin: 0 0 20px 0;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto 24px auto;
     padding: 28px 24px 32px;
     background: linear-gradient(180deg, #FDFCFA 0%, #F5F2EC 100%);
     border: 1px dashed rgba(26,26,26,0.35);
@@ -353,13 +463,11 @@ const css = `
 }
 .cookie-badge {
   flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #f4d7a1, #e7b96f);
-  border: 1px solid rgba(26,26,26,0.08);
-  display: grid;
-  place-items: center;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
   .cookie-text {
     font-size: 0.72rem;
@@ -438,6 +546,17 @@ const css = `
     .cookie-actions { width: 100%; justify-content: flex-end; }
   }
 
+  @media (min-width: 1024px) {
+    .nav-link { font-size: 0.78rem; }
+    .form-label { font-size: 0.72rem; }
+    .form-input { font-size: 0.92rem; }
+    .pay-method-card-sub { font-size: 0.74rem; }
+    .pay-detail-hint { font-size: 0.8rem; }
+    .receipt-line { font-size: 0.82rem; }
+    .receipt-line-muted { font-size: 0.78rem; }
+    .filter-btn { font-size: 0.72rem; }
+  }
+
   .legal-page { padding: 100px 40px 60px; max-width: 1100px; margin: 0 auto; }
   .legal-card { background: white; border: 1px solid var(--border); padding: 28px; }
   .legal-kicker { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
@@ -487,7 +606,21 @@ const css = `
   @media (max-width: 768px) {
     .navbar { padding: 0 20px; }
     .nav-links { display: none; }
+    .nav-logo { font-size: 1.85rem; }
     .hero-title { font-size: clamp(2.2rem, 10vw, 4rem); }
+    .hero-sub { font-size: 0.9rem; }
+    .section-eyebrow { font-size: 0.76rem; }
+    .product-brand { font-size: 0.72rem; }
+    .product-name { font-size: 1.12rem; }
+    .cart-item-meta { font-size: 0.78rem; }
+    .form-label { font-size: 0.74rem; }
+    .form-input { font-size: 0.96rem; }
+    .pay-method-card-sub { font-size: 0.76rem; line-height: 1.5; }
+    .pay-detail-hint { font-size: 0.82rem; }
+    .receipt-label { font-size: 0.7rem; }
+    .receipt-line { font-size: 0.86rem; }
+    .receipt-line-muted { font-size: 0.8rem; }
+    .filter-btn { font-size: 0.74rem; }
     .categories-strip { grid-template-columns: 1fr; }
     .category-card { aspect-ratio: 2/1; }
     .section { padding: 60px 20px; }
@@ -506,22 +639,22 @@ document.head.appendChild(styleTag);
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 const PRODUCTS = [
-  { id: 1, name: "Draped Silk Blouse", brand: "Maison Élite", price: 245, category: "Women", badge: "New", emoji: "👘", bg: ["#F5EEE6","#EDE4D8"], desc: "Luxuriously soft silk blouse with an elegant drape. Perfect for formal occasions and upscale casual wear.", sizes: ["XS","S","M","L","XL"] },
-  { id: 2, name: "Tailored Wool Blazer", brand: "L'Atelier", price: 480, category: "Men", badge: null, inStock: false, emoji: "🧥", bg: ["#E8ECF0","#D8DDE3"], desc: "Precision-tailored blazer crafted from merino wool. A wardrobe staple for boardroom to evening.", sizes: ["S","M","L","XL","XXL"] },
-  { id: 3, name: "Sculptural Handbag", brand: "Cour Royal", price: 620, category: "Accessories", badge: "Bestseller", emoji: "👜", bg: ["#F0EAE0","#E8DDD0"], desc: "Architectural handbag handcrafted in full-grain leather. An investment piece that defines every look.", sizes: ["One Size"] },
-  { id: 4, name: "Wide-Leg Trousers", brand: "Maison Élite", compareAt: 380, price: 310, category: "Women", badge: "Sale", emoji: "👖", bg: ["#EDEAE5","#E0DCCF"], desc: "Fluid wide-leg trousers in sustainable tencel. Elevated comfort with an impeccable silhouette.", sizes: ["XS","S","M","L","XL"] },
-  { id: 5, name: "Oxford Leather Shoes", brand: "Brun & Co.", price: 395, category: "Men", badge: null, emoji: "👞", bg: ["#E8E0D0","#DDD5C0"], desc: "Hand-stitched Oxford shoes in burnished calfskin leather. Classic craftsmanship for the discerning gentleman.", sizes: ["40","41","42","43","44","45"] },
-  { id: 6, name: "Cashmere Scarf", brand: "Montagne", compareAt: 245, price: 185, category: "Accessories", badge: "Sale", emoji: "🧣", bg: ["#F0ECE4","#E8E0D4"], desc: "Pure cashmere scarf woven in Scotland. Incredibly soft with a refined herringbone pattern.", sizes: ["One Size"] },
-  { id: 7, name: "Slip Midi Dress", brand: "Soirée", price: 295, category: "Women", badge: "New", emoji: "👗", bg: ["#EEE8F0","#E4DDE8"], desc: "Bias-cut midi dress in liquid satin. Effortlessly elegant for any occasion.", sizes: ["XS","S","M","L"] },
-  { id: 8, name: "Slim Fit Chinos", brand: "L'Atelier", compareAt: 245, price: 195, category: "Men", badge: "Sale", emoji: "🩲", bg: ["#EAE8E0","#DDDAC8"], desc: "Slim fit chinos in stretch cotton twill. Versatile, refined, and impeccably comfortable.", sizes: ["S","M","L","XL","XXL"] },
-  { id: 9, name: "Gold Hoop Earrings", brand: "Cour Royal", price: 145, category: "Accessories", badge: null, emoji: "💍", bg: ["#F5F0E0","#EDE8D0"], desc: "Minimalist gold-plated hoop earrings. Lightweight yet statement-making.", sizes: ["One Size"] },
-  { id: 10, name: "Linen Shirt Dress", brand: "Maison Élite", price: 265, category: "Women", badge: null, emoji: "👔", bg: ["#EEF0EA","#E4E8DC"], desc: "Relaxed shirt dress in washed Belgian linen. Understated sophistication.", sizes: ["XS","S","M","L","XL"] },
-  { id: 11, name: "Merino Turtleneck", brand: "Montagne", price: 220, category: "Men", badge: "Bestseller", emoji: "🧶", bg: ["#E8EAF0","#D8DDE8"], desc: "Ultra-fine merino turtleneck in a versatile palette. An essential layer for colder months.", sizes: ["S","M","L","XL","XXL"] },
-  { id: 12, name: "Leather Belt", brand: "Brun & Co.", compareAt: 175, price: 135, category: "Accessories", badge: "Sale", emoji: "👑", bg: ["#EDE8E0","#E0D8CC"], desc: "Vegetable-tanned leather belt with a polished brass buckle. The finishing touch every outfit deserves.", sizes: ["70cm","75cm","80cm","85cm","90cm"] },
-  { id: 13, name: "Organic Cotton Hoodie", brand: "Petit Atelier", price: 68, category: "Kids", badge: "New", emoji: "🧸", bg: ["#EAF3F0","#DDEBE5"], desc: "Soft brushed hoodie in organic cotton. Built for playground days and cozy evenings.", sizes: ["2Y","3Y","4Y","5Y","6Y","7Y","8Y"] },
-  { id: 14, name: "Denim Overalls Set", brand: "Petit Atelier", price: 82, category: "Kids", badge: null, emoji: "🧒", bg: ["#E9EDF5","#D8E0EF"], desc: "Classic denim overalls with an easy-fit tee. Durable, comfortable, and timeless.", sizes: ["2Y","3Y","4Y","5Y","6Y"] },
-  { id: 15, name: "Rain Jacket", brand: "Nord Mini", price: 95, category: "Kids", badge: "Bestseller", emoji: "🌧️", bg: ["#EEF6F9","#DCECF3"], desc: "Lightweight waterproof jacket with sealed seams. Keeps little explorers dry in style.", sizes: ["3Y","4Y","5Y","6Y","7Y","8Y"] },
-  { id: 16, name: "Knit Beanie + Scarf", brand: "Nord Mini", compareAt: 72, price: 48, category: "Kids", badge: "Sale", emoji: "🧣", bg: ["#F2F0EA","#E5E2D6"], desc: "Warm knit set in a soft blend. Perfect for chilly mornings and weekend walks.", sizes: ["One Size"] },
+  { id: 1, name: "Draped Silk Blouse", brand: "Maison Élite", price: 245, category: "Women", badge: "New", emoji: "👘", bg: ["#F5EEE6", "#EDE4D8"], desc: "Luxuriously soft silk blouse with an elegant drape. Perfect for formal occasions and upscale casual wear.", sizes: ["XS", "S", "M", "L", "XL"] },
+  { id: 2, name: "Tailored Wool Blazer", brand: "L'Atelier", price: 480, category: "Men", badge: null, inStock: false, emoji: "🧥", bg: ["#E8ECF0", "#D8DDE3"], desc: "Precision-tailored blazer crafted from merino wool. A wardrobe staple for boardroom to evening.", sizes: ["S", "M", "L", "XL", "XXL"] },
+  { id: 3, name: "Sculptural Handbag", brand: "Cour Royal", price: 620, category: "Accessories", badge: "Bestseller", emoji: "👜", bg: ["#F0EAE0", "#E8DDD0"], desc: "Architectural handbag handcrafted in full-grain leather. An investment piece that defines every look.", sizes: ["One Size"] },
+  { id: 4, name: "Wide-Leg Trousers", brand: "Maison Élite", compareAt: 380, price: 310, category: "Women", badge: "Sale", emoji: "👖", bg: ["#EDEAE5", "#E0DCCF"], desc: "Fluid wide-leg trousers in sustainable tencel. Elevated comfort with an impeccable silhouette.", sizes: ["XS", "S", "M", "L", "XL"] },
+  { id: 5, name: "Oxford Leather Shoes", brand: "Brun & Co.", price: 395, category: "Men", badge: null, emoji: "👞", bg: ["#E8E0D0", "#DDD5C0"], desc: "Hand-stitched Oxford shoes in burnished calfskin leather. Classic craftsmanship for the discerning gentleman.", sizes: ["40", "41", "42", "43", "44", "45"] },
+  { id: 6, name: "Cashmere Scarf", brand: "Montagne", compareAt: 245, price: 185, category: "Accessories", badge: "Sale", emoji: "🧣", bg: ["#F0ECE4", "#E8E0D4"], desc: "Pure cashmere scarf woven in Scotland. Incredibly soft with a refined herringbone pattern.", sizes: ["One Size"] },
+  { id: 7, name: "Slip Midi Dress", brand: "Soirée", price: 295, category: "Women", badge: "New", emoji: "👗", bg: ["#EEE8F0", "#E4DDE8"], desc: "Bias-cut midi dress in liquid satin. Effortlessly elegant for any occasion.", sizes: ["XS", "S", "M", "L"] },
+  { id: 8, name: "Slim Fit Chinos", brand: "L'Atelier", compareAt: 245, price: 195, category: "Men", badge: "Sale", emoji: "🩲", bg: ["#EAE8E0", "#DDDAC8"], desc: "Slim fit chinos in stretch cotton twill. Versatile, refined, and impeccably comfortable.", sizes: ["S", "M", "L", "XL", "XXL"] },
+  { id: 9, name: "Gold Hoop Earrings", brand: "Cour Royal", price: 145, category: "Accessories", badge: null, emoji: "💍", bg: ["#F5F0E0", "#EDE8D0"], desc: "Minimalist gold-plated hoop earrings. Lightweight yet statement-making.", sizes: ["One Size"] },
+  { id: 10, name: "Linen Shirt Dress", brand: "Maison Élite", price: 265, category: "Women", badge: null, emoji: "👔", bg: ["#EEF0EA", "#E4E8DC"], desc: "Relaxed shirt dress in washed Belgian linen. Understated sophistication.", sizes: ["XS", "S", "M", "L", "XL"] },
+  { id: 11, name: "Merino Turtleneck", brand: "Montagne", price: 220, category: "Men", badge: "Bestseller", emoji: "🧶", bg: ["#E8EAF0", "#D8DDE8"], desc: "Ultra-fine merino turtleneck in a versatile palette. An essential layer for colder months.", sizes: ["S", "M", "L", "XL", "XXL"] },
+  { id: 12, name: "Leather Belt", brand: "Brun & Co.", compareAt: 175, price: 135, category: "Accessories", badge: "Sale", emoji: "👑", bg: ["#EDE8E0", "#E0D8CC"], desc: "Vegetable-tanned leather belt with a polished brass buckle. The finishing touch every outfit deserves.", sizes: ["70cm", "75cm", "80cm", "85cm", "90cm"] },
+  { id: 13, name: "Organic Cotton Hoodie", brand: "Petit Atelier", price: 68, category: "Kids", badge: "New", emoji: "🧸", bg: ["#EAF3F0", "#DDEBE5"], desc: "Soft brushed hoodie in organic cotton. Built for playground days and cozy evenings.", sizes: ["2Y", "3Y", "4Y", "5Y", "6Y", "7Y", "8Y"] },
+  { id: 14, name: "Denim Overalls Set", brand: "Petit Atelier", price: 82, category: "Kids", badge: null, emoji: "🧒", bg: ["#E9EDF5", "#D8E0EF"], desc: "Classic denim overalls with an easy-fit tee. Durable, comfortable, and timeless.", sizes: ["2Y", "3Y", "4Y", "5Y", "6Y"] },
+  { id: 15, name: "Rain Jacket", brand: "Nord Mini", price: 95, category: "Kids", badge: "Bestseller", emoji: "🌧️", bg: ["#EEF6F9", "#DCECF3"], desc: "Lightweight waterproof jacket with sealed seams. Keeps little explorers dry in style.", sizes: ["3Y", "4Y", "5Y", "6Y", "7Y", "8Y"] },
+  { id: 16, name: "Knit Beanie + Scarf", brand: "Nord Mini", compareAt: 72, price: 48, category: "Kids", badge: "Sale", emoji: "🧣", bg: ["#F2F0EA", "#E5E2D6"], desc: "Warm knit set in a soft blend. Perfect for chilly mornings and weekend walks.", sizes: ["One Size"] },
 ];
 
 const COUNTRY_OPTIONS = [
@@ -1803,16 +1936,16 @@ const LS = {
     try { const d = localStorage.getItem(`velours_user_${email}`); return d ? JSON.parse(d) : null; } catch { return null; }
   },
   saveUser: (user) => {
-    try { localStorage.setItem(`velours_user_${user.email}`, JSON.stringify(user)); } catch {}
+    try { localStorage.setItem(`velours_user_${user.email}`, JSON.stringify(user)); } catch { }
   },
   getSession: () => {
     try { const d = localStorage.getItem("velours_session"); return d ? JSON.parse(d) : null; } catch { return null; }
   },
   saveSession: (email) => {
-    try { localStorage.setItem("velours_session", JSON.stringify({ email })); } catch {}
+    try { localStorage.setItem("velours_session", JSON.stringify({ email })); } catch { }
   },
   clearSession: () => {
-    try { localStorage.removeItem("velours_session"); } catch {}
+    try { localStorage.removeItem("velours_session"); } catch { }
   },
 };
 
@@ -1825,7 +1958,7 @@ const readCookieConsent = () => {
   }
 };
 const writeCookieConsent = (consent) => {
-  try { localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent)); } catch {}
+  try { localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify(consent)); } catch { }
 };
 
 const splitName = (full) => {
@@ -1932,6 +2065,7 @@ export default function App() {
   const [scrolled, setScrolled] = useState(false);
   const [profileTab, setProfileTab] = useState("orders");
   const checkoutPushCountRef = useRef(0);
+  const checkoutProfileSyncRef = useRef(null);
   const productLayerCountRef = useRef(0);
   const ignorePopRef = useRef(false);
   const { toasts, add: addToast } = useToast();
@@ -2021,23 +2155,49 @@ export default function App() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Auto-fill checkout from saved profile to reduce typing
+  useEffect(() => {
+    if (!checkoutOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [checkoutOpen]);
+
+  // Auto-fill + keep checkout aligned with profile edits (without overwriting manual edits)
   useEffect(() => {
     if (!checkoutOpen || !user) return;
     const u = normalizeUser(user);
     const p = u.profile || {};
-    setCheckoutDraft((prev) => ({
-      ...prev,
-      firstName: prev.firstName || u.firstName || "",
-      lastName: prev.lastName || u.lastName || "",
-      email: prev.email || u.email || "",
-      country: prev.country || p.country || "",
-      phoneCode: dialForCountry((prev.country || p.country) || "US"),
-      address: prev.address || p.address || "",
-      city: prev.city || p.city || "",
-      state: prev.state || p.state || "",
-      postalCode: prev.postalCode || p.postalCode || "",
-    }));
+    const nextFromProfile = {
+      firstName: u.firstName || "",
+      lastName: u.lastName || "",
+      email: u.email || "",
+      country: p.country || "",
+      address: p.address || "",
+      city: p.city || "",
+      state: p.state || "",
+      postalCode: p.postalCode || "",
+    };
+    setCheckoutDraft((prev) => {
+      const last = checkoutProfileSyncRef.current;
+      const next = { ...prev };
+      const maybeSync = (key) => {
+        const prevVal = String(prev[key] ?? "");
+        const lastVal = String(last?.[key] ?? "");
+        const profileVal = String(nextFromProfile[key] ?? "");
+        if (!last) {
+          if (!prevVal) next[key] = profileVal;
+          return;
+        }
+        if (prevVal === lastVal) next[key] = profileVal;
+      };
+
+      (["firstName", "lastName", "email", "country", "address", "city", "state", "postalCode"]).forEach(maybeSync);
+      next.phoneCode = dialForCountry(next.country || "US");
+      checkoutProfileSyncRef.current = { ...nextFromProfile };
+      return next;
+    });
   }, [checkoutOpen, user]);
 
   useEffect(() => {
@@ -2054,6 +2214,7 @@ export default function App() {
         email: cached.email || "",
         country,
         phoneCode: dialForCountry(country || "US"),
+        phone: cached.phone || "",
         address: cached.address || "",
         city: cached.city || "",
         state: cached.state || "",
@@ -2065,7 +2226,7 @@ export default function App() {
         markAsDue: Boolean(cached.markAsDue),
       }));
       setPromoCode(cached.promoCode || "");
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -2075,6 +2236,7 @@ export default function App() {
         lastName: checkoutDraft.lastName,
         email: checkoutDraft.email,
         country: checkoutDraft.country,
+        phone: checkoutDraft.phone,
         address: checkoutDraft.address,
         city: checkoutDraft.city,
         state: checkoutDraft.state,
@@ -2087,7 +2249,7 @@ export default function App() {
         promoCode,
       };
       localStorage.setItem(CHECKOUT_CACHE_KEY, JSON.stringify(safeDraft));
-    } catch {}
+    } catch { }
   }, [
     checkoutDraft.firstName,
     checkoutDraft.lastName,
@@ -2450,7 +2612,7 @@ export default function App() {
     setCart([]);
     persist([], wishlist, user, updatedOrders);
     closeCheckout();
-    try { localStorage.removeItem(CHECKOUT_CACHE_KEY); } catch {}
+    try { localStorage.removeItem(CHECKOUT_CACHE_KEY); } catch { }
     setCheckoutDraft({
       firstName: "",
       lastName: "",
@@ -2582,30 +2744,30 @@ export default function App() {
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
         <button className="nav-logo" onClick={() => navigate("home")}>sanj<span>iiiii</span></button>
         <div className="nav-links">
-          {[["home","Home"],["shop","Collection"],["about","About"]].map(([p,l]) => (
+          {[["home", "Home"], ["shop", "Collection"], ["about", "About"]].map(([p, l]) => (
             <button key={p} className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
           ))}
         </div>
         <div className="nav-icons">
           <button type="button" className="icon-btn" onClick={goToCollectionSearch} aria-label="Search collection">
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
           </button>
           <button className="icon-btn" onClick={() => user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true)}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
             {wishlist.length > 0 && <span className="badge">{wishlist.length}</span>}
           </button>
           <button className="icon-btn" onClick={() => setCartOpen(true)}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
             {cartCount > 0 && <span className="badge">{cartCount}</span>}
           </button>
           {user ? (
             <button className="icon-btn" onClick={() => navigate("profile")}>
-              <div style={{ width:30, height:30, borderRadius:"50%", background:"var(--charcoal)", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--gold)", fontFamily:"var(--font-serif)", fontWeight:600, fontSize:"0.85rem" }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
                 {user.name[0].toUpperCase()}
               </div>
             </button>
           ) : (
-            <button className="btn-primary" style={{ padding:"8px 20px", fontSize:"0.65rem" }} onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
+            <button className="btn-primary" style={{ padding: "8px 20px", fontSize: "0.65rem" }} onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
           )}
         </div>
       </nav>
@@ -2640,14 +2802,14 @@ export default function App() {
           <div className="overlay-backdrop" onClick={() => setCartOpen(false)} />
           <div className="cart-drawer">
             <div className="cart-header">
-              <div className="cart-title">Shopping Bag <span style={{ fontFamily:"var(--font-sans)", fontSize:"0.75rem", color:"var(--warm-gray)", fontWeight:400 }}>({cartCount})</span></div>
+              <div className="cart-title">Shopping Bag <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--warm-gray)", fontWeight: 400 }}>({cartCount})</span></div>
               <button className="close-btn" onClick={() => setCartOpen(false)}>✕</button>
             </div>
             {cart.length === 0 ? (
               <div className="empty-cart">
                 <div className="empty-icon">🛍</div>
                 <p>Your bag is empty</p>
-                <button className="btn-primary" style={{ marginTop:24 }} onClick={() => { setCartOpen(false); navigate("shop"); }}>Explore Collection</button>
+                <button className="btn-primary" style={{ marginTop: 24 }} onClick={() => { setCartOpen(false); navigate("shop"); }}>Explore Collection</button>
               </div>
             ) : (
               <>
@@ -2660,7 +2822,7 @@ export default function App() {
                         className="cart-item-img cart-item-open"
                         onClick={() => openProductFromCart(item.product)}
                         onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
-                        style={{ background:`linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})` }}
+                        style={{ background: `linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})` }}
                       >{item.product.emoji}</div>
                       <div className="cart-item-info">
                         <div
@@ -2687,12 +2849,12 @@ export default function App() {
                     <span className="cart-total-label">Subtotal</span>
                     <span className="cart-total-price">{fmt(cartTotal)}</span>
                   </div>
-                  <div style={{ fontSize:"0.68rem", color:"var(--warm-gray)", textAlign:"center", margin:"-6px 0 12px", letterSpacing:"0.02em" }}>
+                  <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", textAlign: "center", margin: "-6px 0 12px", letterSpacing: "0.02em" }}>
                     VAT included where applicable (EU orders shown at checkout).
                   </div>
                   {!user && (
-                    <div style={{ fontSize:"0.7rem", color:"var(--warm-gray)", marginBottom:12, textAlign:"center" }}>
-                      <span onClick={() => { setCartOpen(false); setAuthMode("login"); setAuthOpen(true); }} style={{ cursor:"pointer", textDecoration:"underline", color:"var(--gold)" }}>Sign in</span> to save your bag
+                    <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginBottom: 12, textAlign: "center" }}>
+                      <span onClick={() => { setCartOpen(false); setAuthMode("login"); setAuthOpen(true); }} style={{ cursor: "pointer", textDecoration: "underline", color: "var(--gold)" }}>Sign in</span> to save your bag
                     </div>
                   )}
                   <button
@@ -2733,282 +2895,285 @@ export default function App() {
             <div className="modal-body">
               {checkoutStep === 1 && (
                 <>
-              {cart.length > 0 && (
-                <div className="form-group">
-                  <label className="form-label">Your bag</label>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {cart.map((item, i) => (
-                      <button
-                        key={`${item.product.id}-${i}-${item.size}`}
-                        type="button"
-                        className="cart-item-open"
-                        onClick={() => openProductFromCheckoutFlow(item.product)}
-                        style={{
-                          display: "flex",
-                          gap: 14,
-                          alignItems: "center",
-                          padding: "12px 14px",
-                          border: "1px solid var(--border)",
-                          background: "var(--cream)",
-                          cursor: "pointer",
-                          textAlign: "left",
-                          width: "100%",
-                          borderRadius: 2,
+                  {cart.length > 0 && (
+                    <div className="form-group">
+                      <label className="form-label">Your bag</label>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {cart.map((item, i) => (
+                          <button
+                            key={`${item.product.id}-${i}-${item.size}`}
+                            type="button"
+                            className="cart-item-open"
+                            onClick={() => openProductFromCheckoutFlow(item.product)}
+                            style={{
+                              display: "flex",
+                              gap: 14,
+                              alignItems: "center",
+                              padding: "12px 14px",
+                              border: "1px solid var(--border)",
+                              background: "var(--cream)",
+                              cursor: "pointer",
+                              textAlign: "left",
+                              width: "100%",
+                              borderRadius: 2,
+                            }}
+                          >
+                            <span style={{ fontSize: "2rem", width: 56, textAlign: "center" }}>{item.product.emoji}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", color: "var(--charcoal)" }}>{item.product.name}</div>
+                              <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginTop: 4 }}>
+                                {item.product.brand} · Size {item.size} · Qty {item.qty} · {fmt(item.product.price)}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 10, lineHeight: 1.5 }}>
+                        Full product details like Collection. Your device or browser back button returns you to this checkout; your fields stay filled.
+                      </p>
+                    </div>
+                  )}
+                  <div className="form-row-two">
+                    <div className="form-group">
+                      <label className="form-label">First Name *</label>
+                      <input
+                        className={`form-input${checkoutErrors.firstName ? " invalid" : ""}`}
+                        value={checkoutDraft.firstName}
+                        onChange={e => {
+                          setCheckoutDraft({ ...checkoutDraft, firstName: e.target.value });
+                          if (checkoutErrors.firstName) setCheckoutErrors({ ...checkoutErrors, firstName: false });
                         }}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Last Name *</label>
+                      <input
+                        className={`form-input${checkoutErrors.lastName ? " invalid" : ""}`}
+                        value={checkoutDraft.lastName}
+                        onChange={e => {
+                          setCheckoutDraft({ ...checkoutDraft, lastName: e.target.value });
+                          if (checkoutErrors.lastName) setCheckoutErrors({ ...checkoutErrors, lastName: false });
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Email *</label>
+                    <input
+                      className={`form-input${checkoutErrors.email ? " invalid" : ""}`}
+                      type="email"
+                      value={checkoutDraft.email}
+                      onChange={e => {
+                        setCheckoutDraft({ ...checkoutDraft, email: e.target.value });
+                        if (checkoutErrors.email) setCheckoutErrors({ ...checkoutErrors, email: false });
+                      }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Country / Region *</label>
+                    <select
+                      className={`form-input${checkoutErrors.country ? " invalid" : ""}`}
+                      value={checkoutDraft.country}
+                      onChange={e => {
+                        const selectedCountry = COUNTRY_OPTIONS.find(c => c.code === e.target.value) || COUNTRY_OPTIONS[0];
+                        setCheckoutDraft({ ...checkoutDraft, country: selectedCountry.code, phoneCode: selectedCountry.dial });
+                        if (checkoutErrors.country) setCheckoutErrors({ ...checkoutErrors, country: false });
+                      }}
+                    >
+                      <option value="">Default</option>
+                      {COUNTRY_OPTIONS.map(c => (
+                        <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">City *</label>
+                    <input
+                      className={`form-input${checkoutErrors.city ? " invalid" : ""}`}
+                      value={checkoutDraft.city}
+                      onChange={e => {
+                        setCheckoutDraft({ ...checkoutDraft, city: e.target.value });
+                        if (checkoutErrors.city) setCheckoutErrors({ ...checkoutErrors, city: false });
+                      }}
+                    />
+                  </div>
+
+                  <div className="form-row-two">
+                    <div className="form-group">
+                      <label className="form-label">State</label>
+                      <input className="form-input" value={checkoutDraft.state} onChange={e => setCheckoutDraft({ ...checkoutDraft, state: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Postal Code *</label>
+                      <input
+                        className={`form-input${checkoutErrors.postalCode ? " invalid" : ""}`}
+                        value={checkoutDraft.postalCode}
+                        onChange={e => {
+                          setCheckoutDraft({ ...checkoutDraft, postalCode: e.target.value });
+                          if (checkoutErrors.postalCode) setCheckoutErrors({ ...checkoutErrors, postalCode: false });
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Address</label>
+                    <input className="form-input" value={checkoutDraft.address} onChange={e => setCheckoutDraft({ ...checkoutDraft, address: e.target.value })} />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Phone Number</label>
+                    <div className="phone-wrap">
+                      <span className="phone-code">{checkoutDraft.phoneCode}</span>
+                      <input
+                        className="form-input"
+                        placeholder="Phone number"
+                        value={checkoutDraft.phone}
+                        onChange={e => setCheckoutDraft({ ...checkoutDraft, phone: e.target.value.replace(/[^\d\s-]/g, "") })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Delivery Option</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "standard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "standard" })}>Standard ($8)</button>
+                      <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "express" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "express" })}>Express ($20)</button>
+                    </div>
+                  </div>
+
+                  <p className="form-label" style={{ marginBottom: 14, marginTop: 8 }}>Choose how you would like to pay</p>
+                  <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
+                    {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={checkoutDraft.paymentMethod === opt.id}
+                        className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
+                        onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
                       >
-                        <span style={{ fontSize: "2rem", width: 56, textAlign: "center" }}>{item.product.emoji}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", color: "var(--charcoal)" }}>{item.product.name}</div>
-                          <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginTop: 4 }}>
-                            {item.product.brand} · Size {item.size} · Qty {item.qty} · {fmt(item.product.price)}
-                          </div>
+                        <span className="pay-method-check" aria-hidden />
+                        <div className="pay-method-card-icon">
+                          <PayMethodIcon name={opt.icon} />
+                        </div>
+                        <div className="pay-method-card-text">
+                          <div className="pay-method-card-title">{opt.title}</div>
+                          <div className="pay-method-card-sub">{opt.sub}</div>
                         </div>
                       </button>
                     ))}
                   </div>
-                  <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 10, lineHeight: 1.5 }}>
-                    Full product details like Collection. Your device or browser back button returns you to this checkout; your fields stay filled.
+                  <p className="pay-detail-hint" style={{ marginTop: 4 }}>
+                    Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
                   </p>
-                </div>
-              )}
-              <div className="form-row-two">
-                <div className="form-group">
-                  <label className="form-label">First Name *</label>
-                  <input
-                    className={`form-input${checkoutErrors.firstName ? " invalid" : ""}`}
-                    value={checkoutDraft.firstName}
-                    onChange={e => {
-                      setCheckoutDraft({ ...checkoutDraft, firstName: e.target.value });
-                      if (checkoutErrors.firstName) setCheckoutErrors({ ...checkoutErrors, firstName: false });
-                    }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Last Name *</label>
-                  <input
-                    className={`form-input${checkoutErrors.lastName ? " invalid" : ""}`}
-                    value={checkoutDraft.lastName}
-                    onChange={e => {
-                      setCheckoutDraft({ ...checkoutDraft, lastName: e.target.value });
-                      if (checkoutErrors.lastName) setCheckoutErrors({ ...checkoutErrors, lastName: false });
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Email *</label>
-                <input
-                  className={`form-input${checkoutErrors.email ? " invalid" : ""}`}
-                  type="email"
-                  value={checkoutDraft.email}
-                  onChange={e => {
-                    setCheckoutDraft({ ...checkoutDraft, email: e.target.value });
-                    if (checkoutErrors.email) setCheckoutErrors({ ...checkoutErrors, email: false });
-                  }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Country / Region *</label>
-                <select
-                  className={`form-input${checkoutErrors.country ? " invalid" : ""}`}
-                  value={checkoutDraft.country}
-                  onChange={e => {
-                    const selectedCountry = COUNTRY_OPTIONS.find(c => c.code === e.target.value) || COUNTRY_OPTIONS[0];
-                    setCheckoutDraft({ ...checkoutDraft, country: selectedCountry.code, phoneCode: selectedCountry.dial });
-                    if (checkoutErrors.country) setCheckoutErrors({ ...checkoutErrors, country: false });
-                  }}
-                >
-                  <option value="">Default</option>
-                  {COUNTRY_OPTIONS.map(c => (
-                    <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">City *</label>
-                <input
-                  className={`form-input${checkoutErrors.city ? " invalid" : ""}`}
-                  value={checkoutDraft.city}
-                  onChange={e => {
-                    setCheckoutDraft({ ...checkoutDraft, city: e.target.value });
-                    if (checkoutErrors.city) setCheckoutErrors({ ...checkoutErrors, city: false });
-                  }}
-                />
-              </div>
-
-              <div className="form-row-two">
-                <div className="form-group">
-                  <label className="form-label">State</label>
-                  <input className="form-input" value={checkoutDraft.state} onChange={e => setCheckoutDraft({ ...checkoutDraft, state: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Postal Code *</label>
-                  <input
-                    className={`form-input${checkoutErrors.postalCode ? " invalid" : ""}`}
-                    value={checkoutDraft.postalCode}
-                    onChange={e => {
-                      setCheckoutDraft({ ...checkoutDraft, postalCode: e.target.value });
-                      if (checkoutErrors.postalCode) setCheckoutErrors({ ...checkoutErrors, postalCode: false });
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Address</label>
-                <input className="form-input" value={checkoutDraft.address} onChange={e => setCheckoutDraft({ ...checkoutDraft, address: e.target.value })} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Phone Number</label>
-                <div className="phone-wrap">
-                  <span className="phone-code">{checkoutDraft.phoneCode}</span>
-                  <input
-                    className="form-input"
-                    placeholder="Phone number"
-                    value={checkoutDraft.phone}
-                    onChange={e => setCheckoutDraft({ ...checkoutDraft, phone: e.target.value.replace(/[^\d\s-]/g, "") })}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Delivery Option</label>
-                <div style={{ display:"flex", gap:8 }}>
-                  <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "standard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "standard" })}>Standard ($8)</button>
-                  <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "express" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "express" })}>Express ($20)</button>
-                </div>
-              </div>
-
-              <p className="form-label" style={{ marginBottom: 14, marginTop: 8 }}>Choose how you would like to pay</p>
-              <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
-                {PAYMENT_METHOD_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={checkoutDraft.paymentMethod === opt.id}
-                    className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
-                    onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
-                  >
-                    <span className="pay-method-check" aria-hidden />
-                    <div className="pay-method-card-icon">
-                      <PayMethodIcon name={opt.icon} />
-                    </div>
-                    <div className="pay-method-card-text">
-                      <div className="pay-method-card-title">{opt.title}</div>
-                      <div className="pay-method-card-sub">{opt.sub}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <p className="pay-detail-hint" style={{ marginTop: 4 }}>
-                Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
-              </p>
-              <button type="button" className="form-submit" onClick={handleConfirmAddress}>Continue to payment details</button>
+                  <button type="button" className="form-submit" onClick={handleConfirmAddress}>Continue to payment details</button>
                 </>
               )}
 
               {checkoutStep === 2 && (
                 <>
-              <div style={{ border:"1px solid var(--border)", padding:14, marginBottom:18, background:"var(--cream)" }}>
-                <div style={{ fontFamily:"var(--font-serif)", fontSize:"1.05rem", marginBottom:10 }}>Bill Summary</div>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:6 }}><span>Subtotal</span><span>{fmt(getPricing().subtotal)}</span></div>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:6 }}><span>Product Discount</span><span>- {fmt(getPricing().itemDiscount)}</span></div>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:6 }}><span>After Product Discount</span><span>{fmt(getPricing().discountedSubtotal)}</span></div>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:6 }}><span>Promo Discount</span><span>- {fmt(getPricing().promoDiscount)}</span></div>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.78rem", marginBottom:10 }}><span>Delivery Charge</span><span>{fmt(getPricing().shippingFee)}</span></div>
-                <div style={{ display:"flex", justifyContent:"space-between", borderTop:"1px solid var(--border)", paddingTop:10, fontWeight:600 }}><span>Total</span><span>{fmt(getPricing().total)}</span></div>
-                <div style={{ marginTop:8, fontSize:"0.7rem", color:"var(--warm-gray)", lineHeight:1.6 }}>
-                  Estimated taxes (EU VAT / US sales tax) follow your delivery address and would be calculated automatically with Stripe Tax in production.
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Promo Code (if any)</label>
-                <input className="form-input" placeholder="Use SAVE10" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Paying with</label>
-                <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
-                  {PAYMENT_METHOD_OPTIONS.find((o) => o.id === checkoutDraft.paymentMethod)?.title || "Payment"}
-                </div>
-              </div>
-
-              {checkoutDraft.paymentMethod === "card" && (
-                <div className="form-group">
-                  <label className="form-label">Card network</label>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "visa" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "visa" })}>Visa</button>
-                    <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "mastercard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "mastercard" })}>Mastercard</button>
-                  </div>
-                </div>
-              )}
-
-              {checkoutDraft.paymentMethod === "paypal" && !checkoutDraft.markAsDue && (
-                <div className="form-group">
-                  <label className="form-label">PayPal email</label>
-                  <input
-                    className="form-input"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    value={checkoutDraft.paypalEmail}
-                    onChange={e => setCheckoutDraft({ ...checkoutDraft, paypalEmail: e.target.value })}
-                  />
-                </div>
-              )}
-
-              {(checkoutDraft.paymentMethod === "google_pay" || checkoutDraft.paymentMethod === "apple_pay") && !checkoutDraft.markAsDue && (
-                <div className="pay-detail-hint">
-                  {checkoutDraft.paymentMethod === "google_pay"
-                    ? "On a live site, Google Pay would open here to confirm the total. No card numbers are entered on this page."
-                    : "On a live site, Apple Pay would authorize on your device. Continue when you are ready to finalize on the next step."}
-                </div>
-              )}
-
-              <div style={{ marginBottom:14 }}>
-                <label style={{ fontSize:"0.75rem", cursor:"pointer", color:"var(--warm-gray)" }}>
-                  <input
-                    type="checkbox"
-                    checked={checkoutDraft.markAsDue}
-                    onChange={e => setCheckoutDraft({ ...checkoutDraft, markAsDue: e.target.checked })}
-                    style={{ marginRight:8 }}
-                  />
-                  Save order as payment due
-                </label>
-              </div>
-
-              {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && (
-                <>
-                  <div className="form-group">
-                    <label className="form-label">Card Holder</label>
-                    <input className="form-input" value={checkoutDraft.cardHolder} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardHolder: e.target.value })} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Card Number</label>
-                    <input className="form-input" placeholder="4111 1111 1111 1111" value={checkoutDraft.cardNumber} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardNumber: formatCardNumber(e.target.value) })} />
-                  </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                    <div className="form-group">
-                      <label className="form-label">Expiry</label>
-                      <input className="form-input" maxLength={5} placeholder="MM/YY" value={checkoutDraft.expiry} onChange={e => setCheckoutDraft({ ...checkoutDraft, expiry: formatExpiry(e.target.value) })} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">CVV</label>
-                      <input className="form-input" maxLength={4} placeholder="123" value={checkoutDraft.cvv} onChange={e => setCheckoutDraft({ ...checkoutDraft, cvv: e.target.value.replace(/\D/g, "") })} />
+                  <div style={{ border: "1px solid var(--border)", padding: 14, marginBottom: 18, background: "var(--cream)" }}>
+                    <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", marginBottom: 10 }}>Bill Summary</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Subtotal</span><span>{fmt(getPricing().subtotal)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Product Discount</span><span>- {fmt(getPricing().itemDiscount)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>After Product Discount</span><span>{fmt(getPricing().discountedSubtotal)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Promo Discount</span><span>- {fmt(getPricing().promoDiscount)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 10 }}><span>Delivery Charge</span><span>{fmt(getPricing().shippingFee)}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 10, fontWeight: 600 }}><span>Total</span><span>{fmt(getPricing().total)}</span></div>
+                    <div style={{ marginTop: 8, fontSize: "0.7rem", color: "var(--warm-gray)", lineHeight: 1.6 }}>
+                      Estimated taxes (EU VAT / US sales tax) follow your delivery address and would be calculated automatically with Stripe Tax in production.
                     </div>
                   </div>
-                </>
-              )}
-              <div style={{ display:"flex", gap:10 }}>
-                <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
-                <button type="button" className="form-submit" style={{ marginTop:0 }} onClick={handleConfirmPayment}>Continue to review</button>
-              </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Promo Code (if any)</label>
+                    <input className="form-input" placeholder="Use SAVE10" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Paying with</label>
+                    <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
+                      {PAYMENT_METHOD_OPTIONS.find((o) => o.id === checkoutDraft.paymentMethod)?.title || "Payment"}
+                    </div>
+                  </div>
+
+                  {checkoutDraft.paymentMethod === "card" && (
+                    <div className="form-group">
+                      <label className="form-label">Card network</label>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "visa" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "visa" })}>Visa</button>
+                        <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "mastercard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "mastercard" })}>Mastercard</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {checkoutDraft.paymentMethod === "paypal" && !checkoutDraft.markAsDue && (
+                    <div className="form-group">
+                      <label className="form-label">PayPal email</label>
+                      <input
+                        className="form-input"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="you@example.com"
+                        value={checkoutDraft.paypalEmail}
+                        onChange={e => setCheckoutDraft({ ...checkoutDraft, paypalEmail: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  {(checkoutDraft.paymentMethod === "google_pay" || checkoutDraft.paymentMethod === "apple_pay") && !checkoutDraft.markAsDue && (
+                    <div className="pay-detail-hint">
+                      {checkoutDraft.paymentMethod === "google_pay"
+                        ? "On a live site, Google Pay would open here to confirm the total. No card numbers are entered on this page."
+                        : "On a live site, Apple Pay would authorize on your device. Continue when you are ready to finalize on the next step."}
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontSize: "0.75rem", cursor: "pointer", color: "var(--warm-gray)" }}>
+                      <input
+                        type="checkbox"
+                        checked={checkoutDraft.markAsDue}
+                        onChange={e => setCheckoutDraft({ ...checkoutDraft, markAsDue: e.target.checked })}
+                        style={{ marginRight: 8 }}
+                      />
+                      Save order as payment due
+                    </label>
+                  </div>
+
+                  {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && (
+                    <>
+                      <div className="card-details-box">
+                        <p className="card-details-box-title">Card Details</p>
+                        <div className="form-group">
+                          <label className="form-label">Card Holder</label>
+                          <input className="form-input" value={checkoutDraft.cardHolder} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardHolder: e.target.value })} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Card Number</label>
+                          <input className="form-input" placeholder="4111 1111 1111 1111" value={checkoutDraft.cardNumber} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardNumber: formatCardNumber(e.target.value) })} />
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                          <div className="form-group">
+                            <label className="form-label">Expiry</label>
+                            <input className="form-input" maxLength={5} placeholder="MM/YY" value={checkoutDraft.expiry} onChange={e => setCheckoutDraft({ ...checkoutDraft, expiry: formatExpiry(e.target.value) })} />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">CVV</label>
+                            <input className="form-input" maxLength={4} placeholder="123" value={checkoutDraft.cvv} onChange={e => setCheckoutDraft({ ...checkoutDraft, cvv: e.target.value.replace(/\D/g, "") })} />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
+                    <button type="button" className="form-submit" style={{ marginTop: 0 }} onClick={handleConfirmPayment}>Continue to review</button>
+                  </div>
                 </>
               )}
 
@@ -3099,25 +3264,25 @@ export default function App() {
               <button className="close-btn" onClick={() => setPayConfirmOrder(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:18, letterSpacing:"0.05em" }}>
+              <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 18, letterSpacing: "0.05em" }}>
                 Please verify this order before marking payment as completed.
               </p>
-              <div style={{ background:"var(--cream)", border:"1px solid var(--border)", padding:14, marginBottom:16 }}>
-                <div style={{ fontFamily:"var(--font-serif)", fontSize:"1rem", marginBottom:8 }}>{payConfirmOrder.id}</div>
-                <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:6 }}>
+              <div style={{ background: "var(--cream)", border: "1px solid var(--border)", padding: 14, marginBottom: 16 }}>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: "1rem", marginBottom: 8 }}>{payConfirmOrder.id}</div>
+                <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
                   Amount: {fmt(payConfirmOrder.total)}
                 </div>
-                <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:6 }}>
+                <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
                   Method: {paymentMethodDisplay(payConfirmOrder.payment)}
                   {payConfirmOrder.payment.cardMasked ? ` (${payConfirmOrder.payment.cardMasked})` : ""}
                 </div>
-                <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)" }}>
+                <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
                   Customer: {payConfirmOrder.delivery.fullName}
                 </div>
               </div>
-              <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                 <button className="filter-btn" onClick={() => setPayConfirmOrder(null)}>Cancel</button>
-                <button className="btn-primary" style={{ padding:"10px 18px", fontSize:"0.65rem" }} onClick={handleConfirmMarkPaid}>
+                <button className="btn-primary" style={{ padding: "10px 18px", fontSize: "0.65rem" }} onClick={handleConfirmMarkPaid}>
                   Confirm Paid
                 </button>
               </div>
@@ -3173,8 +3338,8 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
       <div className="marquee-wrapper">
         <div className="marquee-track">
           {[...Array(2)].map((_, i) =>
-            ["Free shipping over $200","Sustainably crafted","Gift wrapping available","New arrivals weekly","Members save 15%"].map((t, j) => (
-              <span key={`${i}-${j}`} className="marquee-item">{t} <span style={{ color:"rgba(201,169,110,0.4)" }}>◆</span></span>
+            ["Free shipping over $200", "Sustainably crafted", "Gift wrapping available", "New arrivals weekly", "Members save 15%"].map((t, j) => (
+              <span key={`${i}-${j}`} className="marquee-item">{t} <span style={{ color: "rgba(201,169,110,0.4)" }}>◆</span></span>
             ))
           )}
         </div>
@@ -3199,7 +3364,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
         </div>
       </section>
 
-      <section className="section" style={{ background:"white" }}>
+      <section className="section" style={{ background: "white" }}>
         <div className="section-header animate-fade">
           <p className="section-eyebrow">Hand-Picked</p>
           <h2 className="section-title">Editor's <em>Picks</em></h2>
@@ -3211,10 +3376,10 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
         </div>
       </section>
 
-      <section style={{ background:"var(--charcoal)", padding:"80px 40px", textAlign:"center" }}>
-        <p style={{ fontSize:"0.68rem", letterSpacing:"0.3em", textTransform:"uppercase", color:"var(--gold)", marginBottom:16 }}>Members Club</p>
-        <h2 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(1.8rem,4vw,3rem)", color:"var(--cream)", fontWeight:300, marginBottom:16 }}>Join for <em>Exclusive</em> Benefits</h2>
-        <p style={{ fontSize:"0.8rem", color:"rgba(250,247,242,0.55)", maxWidth:480, margin:"0 auto 36px", lineHeight:1.8 }}>
+      <section style={{ background: "var(--charcoal)", padding: "80px 40px", textAlign: "center" }}>
+        <p style={{ fontSize: "0.68rem", letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 16 }}>Members Club</p>
+        <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.8rem,4vw,3rem)", color: "var(--cream)", fontWeight: 300, marginBottom: 16 }}>Join for <em>Exclusive</em> Benefits</h2>
+        <p style={{ fontSize: "0.8rem", color: "rgba(250,247,242,0.55)", maxWidth: 480, margin: "0 auto 36px", lineHeight: 1.8 }}>
           Free express shipping · Early access · Members-only sales · Personal styling
         </p>
         <button className="btn-primary" onClick={() => navigate("shop")}>Shop the Collection</button>
@@ -3230,12 +3395,12 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
             <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
           ))}
         </div>
-        <div style={{ textAlign:"center", marginTop:48 }}>
+        <div style={{ textAlign: "center", marginTop: 48 }}>
           <button className="btn-primary" onClick={() => navigate("shop")}>View All Pieces</button>
         </div>
       </section>
 
-      <section className="section" style={{ background:"white" }}>
+      <section className="section" style={{ background: "white" }}>
         <div className="section-header animate-fade">
           <p className="section-eyebrow">Best Value</p>
           <h2 className="section-title"><em>Sales</em></h2>
@@ -3245,7 +3410,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
             <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
           ))}
         </div>
-        <div style={{ textAlign:"center", marginTop:48 }}>
+        <div style={{ textAlign: "center", marginTop: 48 }}>
           <button className="btn-primary" onClick={() => navigate("shop")}>Shop the Sale</button>
         </div>
       </section>
@@ -3265,7 +3430,7 @@ function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wish
       <button className={`wishlist-btn${wishlisted ? " active" : ""}`} onClick={e => { e.stopPropagation(); toggleWishlist(product.id); }}>
         {wishlisted ? "♥" : "♡"}
       </button>
-      <div className="product-img" style={{ background:`linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }} onClick={() => navigate("product", product)}>
+      <div className="product-img" style={{ background: `linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }} onClick={() => navigate("product", product)}>
         <span className="product-emoji">{product.emoji}</span>
         <div className="product-actions-overlay">
           <button type="button" className="overlay-btn overlay-btn-primary" disabled={!inStock} onClick={e => { e.stopPropagation(); if (inStock) addToCart(product, product.sizes[0]); }}>{inStock ? "Add to Bag" : "Out of Stock"}</button>
@@ -3316,11 +3481,11 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
       <div className="shop-header animate-fade">
         <div>
           <h1 className="shop-title">The Collection</h1>
-          <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginTop:4 }}>{displayed.length} pieces</p>
+          <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{displayed.length} pieces</p>
         </div>
-        <div style={{ display:"flex", gap:12, alignItems:"center", flexWrap:"wrap" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div className="filter-bar">
-            {["All","Women","Men","Kids","Accessories"].map(c => (
+            {["All", "Women", "Men", "Kids", "Accessories"].map(c => (
               <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
@@ -3335,7 +3500,7 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
       {searchOpen && (
         <div className="shop-search-wrap animate-fade">
           <div className="shop-search-inner">
-            <svg width="18" height="18" fill="none" stroke="var(--gold)" strokeWidth="1.6" viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+            <svg width="18" height="18" fill="none" stroke="var(--gold)" strokeWidth="1.6" viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
             <input
               ref={searchInputRef}
               className="shop-search-input"
@@ -3396,15 +3561,15 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
     <div>
       <div className="product-detail">
         <div className="animate-scale">
-          <div className="detail-img" style={{ background:`linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }}>
-            <span style={{ fontSize:"9rem" }}>{product.emoji}</span>
+          <div className="detail-img" style={{ background: `linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }}>
+            <span style={{ fontSize: "9rem" }}>{product.emoji}</span>
           </div>
         </div>
         <div className="animate-fade">
-          <button type="button" onClick={() => navigate("shop")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:24, display:"flex", alignItems:"center", gap:6 }}>
+          <button type="button" onClick={() => navigate("shop")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)", marginBottom: 24, display: "flex", alignItems: "center", gap: 6 }}>
             ← Back to Collection
           </button>
-          {product.badge && <div style={{ display:"inline-block", background:"var(--charcoal)", color:"white", fontSize:"0.58rem", fontWeight:700, letterSpacing:"0.15em", textTransform:"uppercase", padding:"4px 10px", marginBottom:16 }}>{product.badge}</div>}
+          {product.badge && <div style={{ display: "inline-block", background: "var(--charcoal)", color: "white", fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", padding: "4px 10px", marginBottom: 16 }}>{product.badge}</div>}
           <div className="detail-brand">{product.brand}</div>
           <h1 className="detail-name">{product.name}</h1>
           {onSale ? (
@@ -3419,7 +3584,7 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
             <div className="detail-price">{fmt(product.price)}</div>
           )}
           <p className="detail-desc">{product.desc}</p>
-          <p style={{ fontSize:"0.65rem", letterSpacing:"0.2em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:10 }}>Select Size</p>
+          <p style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--warm-gray)", marginBottom: 10 }}>Select Size</p>
           <div className="size-grid">
             {product.sizes.map(s => (
               <button key={s} className={`size-btn${selectedSize === s ? " selected" : ""}`} onClick={() => setSelectedSize(s)}>{s}</button>
@@ -3430,13 +3595,13 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
             <button type="button" className={`wish-btn${wishlisted ? " active" : ""}`} onClick={() => toggleWishlist(product.id)}>{wishlisted ? "♥" : "♡"}</button>
           </div>
           {!inStock && <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 12 }}>This piece is currently unavailable. You can still view details or save it to your wishlist.</p>}
-          <div style={{ marginTop:28, paddingTop:28, borderTop:"1px solid var(--border)" }}>
-            {[["🚚","Free Express Delivery","On orders over $200"],["↩️","Easy Returns","30-day free returns"],["✦","Authenticity Guaranteed","100% genuine products"]].map(([icon,title,sub]) => (
-              <div key={title} style={{ display:"flex", gap:14, marginBottom:14, alignItems:"center" }}>
-                <span style={{ fontSize:"1.2rem" }}>{icon}</span>
+          <div style={{ marginTop: 28, paddingTop: 28, borderTop: "1px solid var(--border)" }}>
+            {[["🚚", "Free Express Delivery", "On orders over $200"], ["↩️", "Easy Returns", "30-day free returns"], ["✦", "Authenticity Guaranteed", "100% genuine products"]].map(([icon, title, sub]) => (
+              <div key={title} style={{ display: "flex", gap: 14, marginBottom: 14, alignItems: "center" }}>
+                <span style={{ fontSize: "1.2rem" }}>{icon}</span>
                 <div>
-                  <div style={{ fontSize:"0.72rem", fontWeight:600 }}>{title}</div>
-                  <div style={{ fontSize:"0.68rem", color:"var(--warm-gray)" }}>{sub}</div>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 600 }}>{title}</div>
+                  <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)" }}>{sub}</div>
                 </div>
               </div>
             ))}
@@ -3476,8 +3641,8 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
     });
   }, [user]);
   if (!user) return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:20, paddingTop:64 }}>
-      <p style={{ fontFamily:"var(--font-serif)", fontSize:"1.5rem" }}>Please sign in to view your profile</p>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 20, paddingTop: 64 }}>
+      <p style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem" }}>Please sign in to view your profile</p>
       <button className="btn-primary" onClick={() => navigate("home")}>Go Home</button>
     </div>
   );
@@ -3489,16 +3654,16 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
         <div>
           <div className="profile-name">{normalizedUser.name}</div>
           <div className="profile-email">{normalizedUser.email}</div>
-          <div style={{ marginTop:8, fontSize:"0.65rem", color:"var(--gold)", letterSpacing:"0.15em", textTransform:"uppercase" }}>✦ Member</div>
+          <div style={{ marginTop: 8, fontSize: "0.65rem", color: "var(--gold)", letterSpacing: "0.15em", textTransform: "uppercase" }}>✦ Member</div>
         </div>
-        <button onClick={logout} style={{ marginLeft:"auto", background:"none", border:"1px solid var(--border)", cursor:"pointer", padding:"8px 20px", fontSize:"0.65rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", transition:"all 0.2s" }}
-          onMouseOver={e => { e.currentTarget.style.background="var(--charcoal)"; e.currentTarget.style.color="white"; }}
-          onMouseOut={e => { e.currentTarget.style.background="none"; e.currentTarget.style.color="var(--warm-gray)"; }}>
+        <button onClick={logout} style={{ marginLeft: "auto", background: "none", border: "1px solid var(--border)", cursor: "pointer", padding: "8px 20px", fontSize: "0.65rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)", transition: "all 0.2s" }}
+          onMouseOver={e => { e.currentTarget.style.background = "var(--charcoal)"; e.currentTarget.style.color = "white"; }}
+          onMouseOut={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--warm-gray)"; }}>
           Sign Out
         </button>
       </div>
       <div className="profile-tabs">
-        {[["orders","Orders"],["cart","Saved Bag"],["wishlist","Wishlist"],["settings","Settings"]].map(([id,label]) => (
+        {[["orders", "Orders"], ["cart", "Saved Bag"], ["wishlist", "Wishlist"], ["settings", "Settings"]].map(([id, label]) => (
           <button key={id} className={`profile-tab${tab === id ? " active" : ""}`} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
@@ -3506,24 +3671,24 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
         {tab === "orders" && (
           <div>
             {(user.orders || []).length === 0 ? (
-              <div style={{ textAlign:"center", padding:"60px 20px", color:"var(--warm-gray)" }}>
-                <div style={{ fontSize:"3rem", marginBottom:16 }}>📦</div>
-                <p style={{ fontFamily:"var(--font-serif)", fontSize:"1.2rem", marginBottom:8, color:"var(--charcoal)" }}>No orders yet</p>
-                <p style={{ fontSize:"0.75rem", marginBottom:24 }}>Your orders will appear here.</p>
+              <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--warm-gray)" }}>
+                <div style={{ fontSize: "3rem", marginBottom: 16 }}>📦</div>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: "1.2rem", marginBottom: 8, color: "var(--charcoal)" }}>No orders yet</p>
+                <p style={{ fontSize: "0.75rem", marginBottom: 24 }}>Your orders will appear here.</p>
                 <button className="btn-primary" onClick={() => navigate("shop")}>Start Shopping</button>
               </div>
             ) : (
-              <div style={{ display:"grid", gap:14 }}>
+              <div style={{ display: "grid", gap: 14 }}>
                 {user.orders.map((o) => (
-                  <div key={o.id} style={{ background:"white", padding:16, border:"1px solid var(--border)" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, gap:8, flexWrap:"wrap" }}>
-                      <div style={{ fontFamily:"var(--font-serif)", fontSize:"1rem" }}>{o.id}</div>
+                  <div key={o.id} style={{ background: "white", padding: 16, border: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+                      <div style={{ fontFamily: "var(--font-serif)", fontSize: "1rem" }}>{o.id}</div>
                       <span
                         style={{
-                          fontSize:"0.65rem",
-                          letterSpacing:"0.12em",
-                          textTransform:"uppercase",
-                          padding:"4px 10px",
+                          fontSize: "0.65rem",
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                          padding: "4px 10px",
                           background: o.payment.status === "completed" ? "rgba(39,174,96,.12)" : "rgba(192,57,43,.12)",
                           color: o.payment.status === "completed" ? "var(--success)" : "var(--error)",
                           fontWeight: 700,
@@ -3532,53 +3697,53 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                         {o.payment.status === "completed" ? "Payment Completed" : "Payment Due"}
                       </span>
                     </div>
-                    <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:6 }}>
+                    <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
                       {new Date(o.createdAt).toLocaleString()} · {o.delivery.type === "express" ? "Express" : "Standard"} delivery
                     </div>
-                    <div style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:6 }}>
+                    <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
                       Method: {paymentMethodDisplay(o.payment)}
                       {o.payment.cardMasked ? ` (${o.payment.cardMasked})` : ""}
                       {o.payment.paypalEmail ? ` · ${o.payment.paypalEmail}` : ""}
                     </div>
                     {o.payment.transactionId && (
-                      <div style={{ fontSize:"0.7rem", color:"var(--warm-gray)", marginBottom:6 }}>
+                      <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginBottom: 6 }}>
                         Transaction: {o.payment.transactionId}
                       </div>
                     )}
                     {o.payment.paidAt && (
-                      <div style={{ fontSize:"0.7rem", color:"var(--warm-gray)", marginBottom:6 }}>
+                      <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginBottom: 6 }}>
                         Paid At: {new Date(o.payment.paidAt).toLocaleString()}
                       </div>
                     )}
-                    <div style={{ fontSize:"0.78rem", fontWeight:600, color:"var(--charcoal)" }}>
+                    <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>
                       Total: {fmt(o.total)}
                     </div>
-                    <div style={{ fontSize:"0.7rem", color:"var(--warm-gray)", marginTop:8, marginBottom:10 }}>
+                    <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginTop: 8, marginBottom: 10 }}>
                       {o.items.length} item{o.items.length !== 1 ? "s" : ""} · {o.delivery.fullName}, {o.delivery.city}
                     </div>
-                    <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button className="filter-btn" onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}>
                         {expandedOrderId === o.id ? "Hide Items" : "View Items"}
                       </button>
                       {o.payment.status === "due" && (
-                        <button className="btn-primary" style={{ padding:"8px 14px", fontSize:"0.62rem" }} onClick={() => onMarkOrderPaid(o)}>
+                        <button className="btn-primary" style={{ padding: "8px 14px", fontSize: "0.62rem" }} onClick={() => onMarkOrderPaid(o)}>
                           Mark as Paid
                         </button>
                       )}
                     </div>
                     {expandedOrderId === o.id && (
-                      <div style={{ marginTop:12, borderTop:"1px solid var(--border)", paddingTop:12, display:"grid", gap:8 }}>
+                      <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12, display: "grid", gap: 8 }}>
                         {o.items.map((item, idx) => (
-                          <div key={`${o.id}-${idx}`} style={{ display:"flex", justifyContent:"space-between", gap:12, fontSize:"0.74rem" }}>
-                            <span style={{ color:"var(--warm-gray)" }}>{item.product.name} · Size {item.size} · Qty {item.qty}</span>
-                            <span style={{ fontWeight:600 }}>{fmt(item.product.price * item.qty)}</span>
+                          <div key={`${o.id}-${idx}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: "0.74rem" }}>
+                            <span style={{ color: "var(--warm-gray)" }}>{item.product.name} · Size {item.size} · Qty {item.qty}</span>
+                            <span style={{ fontWeight: 600 }}>{fmt(item.product.price * item.qty)}</span>
                           </div>
                         ))}
-                        <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.72rem", color:"var(--warm-gray)", marginTop:4 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>
                           <span>Subtotal</span>
                           <span>{fmt(o.subtotal)}</span>
                         </div>
-                        <div style={{ display:"flex", justifyContent:"space-between", fontSize:"0.72rem", color:"var(--warm-gray)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--warm-gray)" }}>
                           <span>Shipping</span>
                           <span>{fmt(o.shippingFee)}</span>
                         </div>
@@ -3592,20 +3757,20 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
         )}
         {tab === "cart" && (
           <div>
-            <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:24, letterSpacing:"0.1em" }}>{cart.length} item{cart.length !== 1 ? "s" : ""} · Synced to your account</p>
+            <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 24, letterSpacing: "0.1em" }}>{cart.length} item{cart.length !== 1 ? "s" : ""} · Synced to your account</p>
             {cart.length === 0 ? (
-              <div style={{ textAlign:"center", padding:"40px 20px" }}>
-                <div style={{ fontSize:"3rem", marginBottom:16 }}>🛍</div>
-                <button className="btn-primary" style={{ marginTop:20 }} onClick={() => navigate("shop")}>Shop Now</button>
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ fontSize: "3rem", marginBottom: 16 }}>🛍</div>
+                <button className="btn-primary" style={{ marginTop: 20 }} onClick={() => navigate("shop")}>Shop Now</button>
               </div>
             ) : (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:20 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 20 }}>
                 {cart.map((item, i) => (
-                  <div key={i} style={{ background:"white", padding:16, cursor:"pointer" }} onClick={() => navigate("product", item.product)}>
-                    <div style={{ background:`linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})`, height:140, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"3.5rem", marginBottom:12 }}>{item.product.emoji}</div>
-                    <div style={{ fontFamily:"var(--font-serif)", fontSize:"0.95rem", marginBottom:4 }}>{item.product.name}</div>
-                    <div style={{ fontSize:"0.68rem", color:"var(--warm-gray)", marginBottom:4 }}>Size {item.size} · Qty {item.qty}</div>
-                    <div style={{ fontSize:"0.8rem", fontWeight:600, color:"var(--gold)" }}>{fmt(item.product.price * item.qty)}</div>
+                  <div key={i} style={{ background: "white", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", item.product)}>
+                    <div style={{ background: `linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})`, height: 140, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", marginBottom: 12 }}>{item.product.emoji}</div>
+                    <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", marginBottom: 4 }}>{item.product.name}</div>
+                    <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 4 }}>Size {item.size} · Qty {item.qty}</div>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--gold)" }}>{fmt(item.product.price * item.qty)}</div>
                   </div>
                 ))}
               </div>
@@ -3614,20 +3779,20 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
         )}
         {tab === "wishlist" && (
           <div>
-            <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:24 }}>{wishlistProducts.length} saved item{wishlistProducts.length !== 1 ? "s" : ""}</p>
+            <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 24 }}>{wishlistProducts.length} saved item{wishlistProducts.length !== 1 ? "s" : ""}</p>
             {wishlistProducts.length === 0 ? (
-              <div style={{ textAlign:"center", padding:"40px 20px" }}>
-                <div style={{ fontSize:"3rem", marginBottom:16 }}>♡</div>
-                <button className="btn-primary" style={{ marginTop:20 }} onClick={() => navigate("shop")}>Explore Collection</button>
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ fontSize: "3rem", marginBottom: 16 }}>♡</div>
+                <button className="btn-primary" style={{ marginTop: 20 }} onClick={() => navigate("shop")}>Explore Collection</button>
               </div>
             ) : (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:20 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 20 }}>
                 {wishlistProducts.map(p => (
-                  <div key={p.id} style={{ background:"white", padding:16, cursor:"pointer" }} onClick={() => navigate("product", p)}>
-                    <div style={{ background:`linear-gradient(135deg,${p.bg[0]},${p.bg[1]})`, height:140, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"3.5rem", marginBottom:12 }}>{p.emoji}</div>
-                    <div style={{ fontFamily:"var(--font-serif)", fontSize:"0.95rem", marginBottom:4 }}>{p.name}</div>
-                    <div style={{ fontSize:"0.68rem", color:"var(--warm-gray)", marginBottom:4 }}>{p.brand}</div>
-                    <div style={{ fontSize:"0.8rem", fontWeight:600, color:"var(--gold)" }}>{fmt(p.price)}</div>
+                  <div key={p.id} style={{ background: "white", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", p)}>
+                    <div style={{ background: `linear-gradient(135deg,${p.bg[0]},${p.bg[1]})`, height: 140, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", marginBottom: 12 }}>{p.emoji}</div>
+                    <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", marginBottom: 4 }}>{p.name}</div>
+                    <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 4 }}>{p.brand}</div>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--gold)" }}>{fmt(p.price)}</div>
                   </div>
                 ))}
               </div>
@@ -3635,16 +3800,16 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
           </div>
         )}
         {tab === "settings" && (
-          <div style={{ maxWidth:480 }}>
-            <h3 style={{ fontFamily:"var(--font-serif)", fontSize:"1.2rem", marginBottom:20 }}>Account Details</h3>
-            <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
-              <button className="filter-btn" onClick={() => { setEditingSettings(!editingSettings); }}>
+          <div style={{ maxWidth: 840, width: "100%" }}>
+            <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.2rem", marginBottom: 20 }}>Account Details</h3>
+            <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+              <button className={`filter-btn${!editingSettings ? " active" : ""}`} onClick={() => { setEditingSettings(!editingSettings); }}>
                 {editingSettings ? "Cancel" : "Edit"}
               </button>
               {editingSettings && (
                 <button
                   className="btn-primary"
-                  style={{ padding:"8px 14px", fontSize:"0.62rem" }}
+                  style={{ padding: "8px 14px", fontSize: "0.62rem" }}
                   onClick={() => {
                     const nextFirst = settingsDraft.firstName.trim();
                     const nextLast = settingsDraft.lastName.trim();
@@ -3668,40 +3833,39 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
             </div>
 
             {!editingSettings ? (
-              <div style={{ display:"grid", gap:12 }}>
+              <div style={{ display: "grid", gap: 12 }}>
                 {[
-                  ["First Name", normalizedUser.firstName || ""],
-                  ["Last Name", normalizedUser.lastName || ""],
+                  ["Name", `${normalizedUser.firstName || ""}${normalizedUser.lastName ? ` ${normalizedUser.lastName}` : ""}`.trim() || "—"],
                   ["Email", normalizedUser.email || ""],
                   ["Country / Region", normalizedUser.profile?.country || "—"],
                   ["City", normalizedUser.profile?.city || "—"],
                   ["Address", normalizedUser.profile?.address || "—"],
                   ["Postal Code", normalizedUser.profile?.postalCode || "—"],
                   ["Member Since", "2026"],
-                ].map(([label,value]) => (
-                  <div key={label} style={{ padding:"14px 16px", background:"white", display:"flex", justifyContent:"space-between", gap:10 }}>
-                    <span style={{ fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)" }}>{label}</span>
-                    <span style={{ fontSize:"0.82rem", fontWeight:500, textAlign:"right" }}>{value}</span>
+                ].map(([label, value]) => (
+                  <div key={label} style={{ padding: "14px 16px", background: "white", display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <span style={{ fontSize: "0.68rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)" }}>{label}</span>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 500, textAlign: "right" }}>{value}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ display:"grid", gap:12, background:"white", padding:16, border:"1px solid var(--border)" }}>
+              <div style={{ display: "grid", gap: 12, background: "white", padding: 16, border: "1px solid var(--border)" }}>
                 <div className="form-row-two">
-                  <div className="form-group" style={{ marginBottom:0 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">First Name *</label>
                     <input className="form-input" value={settingsDraft.firstName} onChange={(e) => setSettingsDraft({ ...settingsDraft, firstName: e.target.value })} />
                   </div>
-                  <div className="form-group" style={{ marginBottom:0 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Last Name</label>
                     <input className="form-input" value={settingsDraft.lastName} onChange={(e) => setSettingsDraft({ ...settingsDraft, lastName: e.target.value })} />
                   </div>
                 </div>
-                <div className="form-group" style={{ marginBottom:0 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Email</label>
                   <input className="form-input" value={settingsDraft.email} disabled />
                 </div>
-                <div className="form-group" style={{ marginBottom:0 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Country / Region (optional)</label>
                   <select className="form-input" value={settingsDraft.country} onChange={(e) => setSettingsDraft({ ...settingsDraft, country: e.target.value })}>
                     <option value="">—</option>
@@ -3711,24 +3875,24 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                   </select>
                 </div>
                 <div className="form-row-two">
-                  <div className="form-group" style={{ marginBottom:0 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">City (optional)</label>
                     <input className="form-input" value={settingsDraft.city} onChange={(e) => setSettingsDraft({ ...settingsDraft, city: e.target.value })} />
                   </div>
-                  <div className="form-group" style={{ marginBottom:0 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">Postal Code (optional)</label>
                     <input className="form-input" value={settingsDraft.postalCode} onChange={(e) => setSettingsDraft({ ...settingsDraft, postalCode: e.target.value })} />
                   </div>
                 </div>
-                <div className="form-group" style={{ marginBottom:0 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label">Address (optional)</label>
                   <input className="form-input" value={settingsDraft.address} onChange={(e) => setSettingsDraft({ ...settingsDraft, address: e.target.value })} />
                 </div>
               </div>
             )}
-            <div style={{ marginTop:24, padding:20, background:"var(--charcoal)", color:"white" }}>
-              <p style={{ fontSize:"0.65rem", letterSpacing:"0.2em", textTransform:"uppercase", color:"var(--gold)", marginBottom:8 }}>✦ Active Member</p>
-              <p style={{ fontFamily:"var(--font-serif)", fontSize:"1.1rem" }}>You're enjoying all member benefits</p>
+            <div style={{ marginTop: 24, padding: 20, background: "var(--charcoal)", color: "white" }}>
+              <p style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 8 }}>✦ Active Member</p>
+              <p style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem" }}>You're enjoying all member benefits</p>
             </div>
           </div>
         )}
@@ -3741,20 +3905,20 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
 function AboutPage({ navigate }) {
   return (
     <div>
-      <div style={{ background:"var(--charcoal)", padding:"120px 40px 80px", textAlign:"center" }}>
-        <p style={{ fontSize:"0.7rem", letterSpacing:"0.3em", textTransform:"uppercase", color:"var(--gold)", marginBottom:20 }}>Est. 2018</p>
-        <h1 style={{ fontFamily:"var(--font-serif)", fontSize:"clamp(2.5rem,6vw,5rem)", color:"var(--cream)", fontWeight:300, lineHeight:1.1 }}>Fashion with<br /><em style={{ color:"var(--gold-light)" }}>Purpose</em></h1>
+      <div style={{ background: "var(--charcoal)", padding: "120px 40px 80px", textAlign: "center" }}>
+        <p style={{ fontSize: "0.7rem", letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 20 }}>Est. 2018</p>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(2.5rem,6vw,5rem)", color: "var(--cream)", fontWeight: 300, lineHeight: 1.1 }}>Fashion with<br /><em style={{ color: "var(--gold-light)" }}>Purpose</em></h1>
       </div>
-      <div style={{ maxWidth:780, margin:"0 auto", padding:"80px 40px" }}>
-        {[["Our Story","sanjiiiii was born from a simple belief: that luxury and sustainability are not mutually exclusive. Founded in Paris in 2018, we source only from artisans who share our commitment to ethical production and enduring quality."],
-          ["Our Philosophy","We reject the notion of fast fashion. Every piece in our collection is designed to be worn for decades, not seasons. We work with heritage mills and independent craftspeople to ensure each garment tells a story of skilled hands and considered materials."],
-          ["Sustainability","We are committed to reducing our environmental footprint at every step. From our organic and recycled materials to our carbon-neutral shipping, every decision is made with the planet in mind."]].map(([title,body],i) => (
-          <div key={title} style={{ marginBottom:56, paddingBottom:56, borderBottom:i < 2 ? "1px solid var(--border)" : "none" }}>
-            <h2 style={{ fontFamily:"var(--font-serif)", fontSize:"1.8rem", fontWeight:400, marginBottom:16 }}>{title}</h2>
-            <p style={{ fontSize:"0.88rem", lineHeight:1.9, color:"var(--warm-gray)" }}>{body}</p>
+      <div style={{ maxWidth: 780, margin: "0 auto", padding: "80px 40px" }}>
+        {[["Our Story", "sanjiiiii was born from a simple belief: that luxury and sustainability are not mutually exclusive. Founded in Paris in 2018, we source only from artisans who share our commitment to ethical production and enduring quality."],
+        ["Our Philosophy", "We reject the notion of fast fashion. Every piece in our collection is designed to be worn for decades, not seasons. We work with heritage mills and independent craftspeople to ensure each garment tells a story of skilled hands and considered materials."],
+        ["Sustainability", "We are committed to reducing our environmental footprint at every step. From our organic and recycled materials to our carbon-neutral shipping, every decision is made with the planet in mind."]].map(([title, body], i) => (
+          <div key={title} style={{ marginBottom: 56, paddingBottom: 56, borderBottom: i < 2 ? "1px solid var(--border)" : "none" }}>
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.8rem", fontWeight: 400, marginBottom: 16 }}>{title}</h2>
+            <p style={{ fontSize: "0.88rem", lineHeight: 1.9, color: "var(--warm-gray)" }}>{body}</p>
           </div>
         ))}
-        <div style={{ textAlign:"center" }}>
+        <div style={{ textAlign: "center" }}>
           <button className="btn-primary" onClick={() => navigate("shop")}>Shop the Collection</button>
         </div>
       </div>
@@ -3765,7 +3929,7 @@ function AboutPage({ navigate }) {
 
 // ─── Auth Modal ───────────────────────────────────────────────────────────────
 function AuthModal({ mode, setMode, onClose, onSubmit }) {
-  const [form, setForm] = useState({ firstName:"", lastName:"", email:"", password:"" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -3794,7 +3958,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
         <button className="close-btn" onClick={onClose}>✕</button>
       </div>
       <div className="modal-body">
-        <p style={{ fontSize:"0.72rem", color:"var(--warm-gray)", marginBottom:24, letterSpacing:"0.05em" }}>
+        <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 24, letterSpacing: "0.05em" }}>
           {mode === "login" ? "Sign in to access your saved bag and wishlist." : "Join for exclusive benefits and seamless shopping."}
         </p>
         {mode === "register" && (
@@ -3811,11 +3975,11 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
         )}
         <div className="form-group">
           <label className="form-label">Email *</label>
-          <input className="form-input" type="email" placeholder="you@example.com" value={form.email} onChange={e => setForm({...form, email:e.target.value})} />
+          <input className="form-input" type="email" placeholder="you@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
         </div>
         <div className="form-group">
           <label className="form-label">Password</label>
-          <div style={{ position:"relative" }}>
+          <div style={{ position: "relative" }}>
             <input
               className="form-input"
               type={showPass ? "text" : "password"}
@@ -3825,15 +3989,15 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && handle()}
-              style={{ paddingRight:44 }}
+              style={{ paddingRight: 44 }}
             />
-  <button type="button" onClick={() => setShowPass(!showPass)} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"var(--warm-gray)", fontSize:"1.1rem" }}>
-    {showPass ? "🙈" : "👁"}
-  </button>
-</div>
+            <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--warm-gray)", fontSize: "1.1rem" }}>
+              {showPass ? "🙈" : "👁"}
+            </button>
+          </div>
           {mode === "register" && (
-            <div style={{ marginTop:8 }}>
-              <div style={{ display:"grid", gap:6, fontSize:"0.7rem", lineHeight:1.4 }}>
+            <div style={{ marginTop: 8 }}>
+              <div style={{ display: "grid", gap: 6, fontSize: "0.7rem", lineHeight: 1.4 }}>
                 {[
                   ["8+ characters", pwChecks.length],
                   ["Uppercase letter (A-Z)", pwChecks.upper],
@@ -3841,7 +4005,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
                   ["A number (0-9)", pwChecks.number],
                   ["A symbol (!@#$...)", pwChecks.symbol],
                 ].map(([label, ok]) => (
-                  <div key={label} style={{ display:"flex", alignItems:"center", gap:8, color: ok ? "var(--success)" : "var(--error)" }}>
+                  <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, color: ok ? "var(--success)" : "var(--error)" }}>
                     <span style={{ fontWeight: 900 }}>{ok ? "✓" : "•"}</span>
                     <span>{label}</span>
                   </div>
@@ -3850,11 +4014,11 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
             </div>
           )}
           {mode === "login" && (
-            <div style={{ marginTop:10, textAlign:"right" }}>
+            <div style={{ marginTop: 10, textAlign: "right" }}>
               <button
                 type="button"
                 onClick={() => setError("Forgot password isn’t available in this demo yet. Please create a new account or contact support.")}
-                style={{ background:"none", border:"none", cursor:"pointer", color:"var(--gold)", fontWeight:600, fontSize:"0.72rem", textDecoration:"underline" }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontWeight: 600, fontSize: "0.72rem", textDecoration: "underline" }}
               >
                 Forgot password?
               </button>
@@ -3872,10 +4036,10 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
           <button className="btn-social" onClick={() => addToast("Google login is coming soon!", "info")}>
             <span className="social-icon">
               <svg viewBox="0 0 24 24" width="18" height="18">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
             </span>
             Continue with Google
@@ -3883,7 +4047,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
           <button className="btn-social" onClick={() => addToast("Apple login is coming soon!", "info")}>
             <span className="social-icon">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M17.05 20.28c-.96.95-2.04 1.9-3.32 1.9-1.25 0-1.74-.78-3.19-.78-1.47 0-1.99.76-3.21.78-1.28.02-2.48-1.04-3.44-2.02-1.97-2.01-3.48-5.69-1.46-8.79 1-1.54 2.82-2.52 4.41-2.55 1.2-.02 2.33.72 3.07.72s1.9-.76 3.32-.62c.59.03 2.26.22 3.33 1.65-.09.05-1.99 1.05-1.97 3.34.02 2.76 2.65 3.73 2.7 3.75-.02.08-.43 1.34-1.24 2.61zM12.03 7.25c-.02-2.24 1.83-4.14 4.02-4.25.02.22.04.44.04.67 0 2.12-1.89 4.19-4.06 3.58z"/>
+                <path d="M17.05 20.28c-.96.95-2.04 1.9-3.32 1.9-1.25 0-1.74-.78-3.19-.78-1.47 0-1.99.76-3.21.78-1.28.02-2.48-1.04-3.44-2.02-1.97-2.01-3.48-5.69-1.46-8.79 1-1.54 2.82-2.52 4.41-2.55 1.2-.02 2.33.72 3.07.72s1.9-.76 3.32-.62c.59.03 2.26.22 3.33 1.65-.09.05-1.99 1.05-1.97 3.34.02 2.76 2.65 3.73 2.7 3.75-.02.08-.43 1.34-1.24 2.61zM12.03 7.25c-.02-2.24 1.83-4.14 4.02-4.25.02.22.04.44.04.67 0 2.12-1.89 4.19-4.06 3.58z" />
               </svg>
             </span>
             Continue with Apple
@@ -3910,11 +4074,11 @@ function Footer({ navigate }) {
         </div>
         <div>
           <div className="footer-col-title">Shop</div>
-          {["Women","Men","Kids","Accessories","New Arrivals","Sale"].map(l => <span key={l} className="footer-link" onClick={() => navigate("shop")}>{l}</span>)}
+          {["Women", "Men", "Kids", "Accessories", "New Arrivals", "Sale"].map(l => <span key={l} className="footer-link" onClick={() => navigate("shop")}>{l}</span>)}
         </div>
         <div>
           <div className="footer-col-title">Help</div>
-          {["Shipping & Returns","Size Guide","FAQ","Contact Us","Stores"].map(l => <span key={l} className="footer-link">{l}</span>)}
+          {["Shipping & Returns", "Size Guide", "FAQ", "Contact Us", "Stores"].map(l => <span key={l} className="footer-link">{l}</span>)}
           <span className="footer-link" onClick={() => navigate("privacy")}>Privacy Policy</span>
           <span className="footer-link" onClick={() => navigate("terms")}>Terms</span>
           <span className="footer-link" onClick={() => window.dispatchEvent(new Event("velours:cookie-settings"))}>
@@ -3923,13 +4087,13 @@ function Footer({ navigate }) {
         </div>
         <div>
           <div className="footer-col-title">Company</div>
-          {["Our Story","Sustainability","Careers","Press"].map(l => <span key={l} className="footer-link" onClick={() => navigate("about")}>{l}</span>)}
+          {["Our Story", "Sustainability", "Careers", "Press"].map(l => <span key={l} className="footer-link" onClick={() => navigate("about")}>{l}</span>)}
         </div>
       </div>
       <div className="footer-bottom">
         <span className="footer-copy">© 2026 sanjiiiii. All rights reserved.</span>
         <div className="footer-socials">
-          {["𝕏","in","ig","fb"].map(s => <div key={s} className="social-btn">{s}</div>)}
+          {["𝕏", "in", "ig", "fb"].map(s => <div key={s} className="social-btn">{s}</div>)}
         </div>
       </div>
     </footer>
@@ -3963,14 +4127,23 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
         <div className="cookie-top">
           <div className="cookie-content">
             <div className="cookie-badge" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9c0-.62.06-1.22.18-1.8A2.5 2.5 0 0 0 6.7 6.7c.58-.12 1.18-.18 1.8-.18h3.5z"
-                  fill="#C1862D"
-                />
-                <circle cx="9" cy="10" r="1.2" fill="#8B5A2B" />
-                <circle cx="14.5" cy="9" r="1.1" fill="#8B5A2B" />
-                <circle cx="13" cy="14.5" r="1.3" fill="#8B5A2B" />
+              <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <clipPath id="cookieBite">
+                    <path d="M0 0 H32 V32 H0 Z" />
+                    <circle cx="25" cy="6" r="7" />
+                  </clipPath>
+                  <mask id="biteMask">
+                    <rect width="32" height="32" fill="white" />
+                    <circle cx="25" cy="6" r="7" fill="black" />
+                  </mask>
+                </defs>
+                <circle cx="15" cy="17" r="13" fill="#C9A96E" mask="url(#biteMask)" />
+                <circle cx="10" cy="14" r="1.5" fill="#7A5230" mask="url(#biteMask)" />
+                <circle cx="16" cy="12" r="1.3" fill="#7A5230" mask="url(#biteMask)" />
+                <circle cx="11" cy="21" r="1.4" fill="#7A5230" mask="url(#biteMask)" />
+                <circle cx="19" cy="20" r="1.5" fill="#7A5230" mask="url(#biteMask)" />
+                <circle cx="20" cy="14" r="1.2" fill="#7A5230" mask="url(#biteMask)" />
               </svg>
             </div>
             <div className="cookie-text">
@@ -4037,7 +4210,7 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
 function PrivacyPage({ navigate }) {
   return (
     <div className="legal-page">
-      <button onClick={() => navigate("home")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:24, display:"flex", alignItems:"center", gap:6 }}>
+      <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)", marginBottom: 24, display: "flex", alignItems: "center", gap: 6 }}>
         ← Back to Home
       </button>
       <div className="legal-card">
@@ -4067,7 +4240,7 @@ function PrivacyPage({ navigate }) {
 function TermsPage({ navigate }) {
   return (
     <div className="legal-page">
-      <button onClick={() => navigate("home")} style={{ background:"none", border:"none", cursor:"pointer", fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:"var(--warm-gray)", marginBottom:24, display:"flex", alignItems:"center", gap:6 }}>
+      <button onClick={() => navigate("home")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)", marginBottom: 24, display: "flex", alignItems: "center", gap: 6 }}>
         ← Back to Home
       </button>
       <div className="legal-card">
