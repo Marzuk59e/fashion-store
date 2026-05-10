@@ -237,6 +237,7 @@ const css = `
   .form-row-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .form-label { display: block; text-align: left; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--warm-gray); margin-bottom: 8px; }
   .form-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); background: var(--cream); font-family: var(--font-sans); font-size: 0.85rem; color: var(--charcoal); transition: border-color 0.2s; outline: none; }
+  .form-input.muted-select { color: #8E867C; }
   .form-input:focus { border-color: var(--gold); }
   .form-input.invalid { border-color: var(--error); background: #FFF4F2; }
   .phone-wrap { display: flex; align-items: center; border: 1px solid var(--border); background: var(--cream); }
@@ -2164,6 +2165,10 @@ export default function App() {
     };
   }, [checkoutOpen]);
 
+  useEffect(() => {
+    if (!checkoutOpen) checkoutProfileSyncRef.current = null;
+  }, [checkoutOpen]);
+
   // Auto-fill + keep checkout aligned with profile edits (without overwriting manual edits)
   useEffect(() => {
     if (!checkoutOpen || !user) return;
@@ -2187,7 +2192,7 @@ export default function App() {
         const lastVal = String(last?.[key] ?? "");
         const profileVal = String(nextFromProfile[key] ?? "");
         if (!last) {
-          if (!prevVal) next[key] = profileVal;
+          next[key] = profileVal;
           return;
         }
         if (prevVal === lastVal) next[key] = profileVal;
@@ -2974,7 +2979,7 @@ export default function App() {
                   <div className="form-group">
                     <label className="form-label">Country / Region *</label>
                     <select
-                      className={`form-input${checkoutErrors.country ? " invalid" : ""}`}
+                      className={`form-input${checkoutErrors.country ? " invalid" : ""}${!checkoutDraft.country ? " muted-select" : ""}`}
                       value={checkoutDraft.country}
                       onChange={e => {
                         const selectedCountry = COUNTRY_OPTIONS.find(c => c.code === e.target.value) || COUNTRY_OPTIONS[0];
