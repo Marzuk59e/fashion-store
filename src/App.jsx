@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth, googleProvider, db } from "./firebase.js";
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 const fontLink = document.createElement("link");
@@ -155,8 +158,8 @@ const css = `
   .wishlist-btn:hover { transform: scale(1.12); }
   .wishlist-btn.active { background: var(--gold); color: white; }
 
-  .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); }
-  .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: white; width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; }
+  .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); overscroll-behavior: none; touch-action: none; }
+  .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: white; width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
   .checkout-modal {
     top: 50%;
     left: 50%;
@@ -167,6 +170,8 @@ const css = `
     height: auto;
     border-radius: 4px;
     animation: scaleIn 0.25s ease;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
   .checkout-modal .modal-header {
     padding: 20px 28px;
@@ -184,6 +189,7 @@ const css = `
     box-sizing: border-box;
     max-height: calc(92vh - 82px);
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .modal-header { padding: 28px 32px 0; display: flex; justify-content: space-between; align-items: center; }
   .modal-title { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 400; }
@@ -191,7 +197,7 @@ const css = `
   .close-btn:hover { color: var(--charcoal); }
   .modal-body { padding: 24px 32px 32px; }
 
-  .cart-drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 420px; max-width: 100vw; background: var(--cream); z-index: 1200; overflow-y: auto; border-left: 1px solid var(--border); animation: fadeInRight 0.3s ease; }
+  .cart-drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 420px; max-width: 100vw; background: var(--cream); z-index: 1200; overflow-y: auto; border-left: 1px solid var(--border); animation: fadeInRight 0.3s ease; overscroll-behavior: contain; touch-action: pan-y; }
   .cart-header { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--cream); z-index: 1; }
   .cart-title { font-family: var(--font-serif); font-size: 1.5rem; }
   .cart-items { padding: 20px 28px; }
@@ -426,7 +432,7 @@ const css = `
   .toast.success { border-left-color: var(--success); }
   .toast.removing { animation: toastOut 0.3s ease forwards; }
 
-  .cookie-backdrop { position: fixed; inset: 0; background: rgba(10,12,16,0.22); backdrop-filter: blur(3px); z-index: 2100; animation: fadeIn 0.25s ease both; }
+  .cookie-backdrop { position: fixed; inset: 0; background: rgba(10,12,16,0.22); backdrop-filter: blur(3px); z-index: 2100; animation: fadeIn 0.25s ease both; overscroll-behavior: none; touch-action: none; }
 
   /* Cookie bar (full-width + slide-up) */
   .cookie-panel {
@@ -2008,6 +2014,22 @@ const getPasswordChecks = (pw) => {
   };
 };
 
+const mergeGuestBag = (baseCart, guestCart) => {
+  const merged = [...(baseCart || [])];
+  for (const item of guestCart || []) {
+    const ex = merged.findIndex((i) => i.product.id === item.product.id && i.size === item.size);
+    if (ex >= 0) merged[ex] = { ...merged[ex], qty: merged[ex].qty + item.qty };
+    else merged.push(item);
+  }
+  return merged;
+};
+
+const toFirestoreUser = (u) => {
+  const clean = normalizeUser({ ...u });
+  delete clean.password;
+  return JSON.parse(JSON.stringify(clean));
+};
+
 // ─── Toast hook ───────────────────────────────────────────────────────────────
 let toastId = 0;
 function useToast() {
@@ -2065,11 +2087,34 @@ export default function App() {
   const [shopSearchQuery, setShopSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [profileTab, setProfileTab] = useState("orders");
+  const [googleAuthBusy, setGoogleAuthBusy] = useState(false);
   const checkoutPushCountRef = useRef(0);
   const checkoutProfileSyncRef = useRef(null);
   const productLayerCountRef = useRef(0);
   const ignorePopRef = useRef(false);
+  const cartRef = useRef(cart);
+  const wishlistRef = useRef(wishlist);
   const { toasts, add: addToast } = useToast();
+  const addToastRef = useRef(addToast);
+
+  useEffect(() => {
+    addToastRef.current = addToast;
+  }, [addToast]);
+
+  useEffect(() => {
+    cartRef.current = cart;
+    wishlistRef.current = wishlist;
+  }, [cart, wishlist]);
+
+  const saveUserToCloud = async (updated) => {
+    if (!updated?.firebaseUid) return;
+    try {
+      await setDoc(doc(db, "users", updated.firebaseUid), toFirestoreUser(updated), { merge: true });
+    } catch (e) {
+      console.error(e);
+      addToast("Cloud sync failed. Data is saved on this device.", "error");
+    }
+  };
 
   const pushCheckoutHistory = (step) => {
     const nextDepth = checkoutPushCountRef.current + 1;
@@ -2116,13 +2161,68 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // Restore session
+  // Firebase session + local email/password session
   useEffect(() => {
-    const session = LS.getSession();
-    if (session) {
-      const u = normalizeUser(LS.getUser(session.email));
-      if (u) { LS.saveUser(u); setUser(u); setCart(u.cart || []); setWishlist(u.wishlist || []); }
-    }
+    const unsub = onAuthStateChanged(auth, async (fbUser) => {
+      try {
+        if (fbUser) {
+          const ref = doc(db, "users", fbUser.uid);
+          const snap = await getDoc(ref);
+          const parsedNames = splitName(fbUser.displayName || "");
+          let base;
+          if (snap.exists()) {
+            base = normalizeUser({ ...snap.data(), firebaseUid: fbUser.uid });
+          } else {
+            const localLegacy = normalizeUser(LS.getUser(fbUser.email || ""));
+            base = normalizeUser({
+              email: fbUser.email,
+              firstName: localLegacy?.firstName || parsedNames.firstName,
+              lastName: localLegacy?.lastName || parsedNames.lastName,
+              name: localLegacy?.name || (fbUser.displayName || "").trim() || (fbUser.email || "").split("@")[0] || "Member",
+              profile: localLegacy?.profile || {},
+              cart: localLegacy?.cart || [],
+              wishlist: localLegacy?.wishlist || [],
+              orders: localLegacy?.orders || [],
+              firebaseUid: fbUser.uid,
+            });
+            if (!base.name) base.name = fullName({ firstName: base.firstName, lastName: base.lastName });
+          }
+          const mergedCart = mergeGuestBag(base.cart, cartRef.current);
+          const mergedWish = [...new Set([...(base.wishlist || []), ...wishlistRef.current])];
+          const finalUser = normalizeUser({ ...base, cart: mergedCart, wishlist: mergedWish, firebaseUid: fbUser.uid });
+          finalUser.name = fullName({ firstName: finalUser.firstName, lastName: finalUser.lastName }) || finalUser.name || "";
+          LS.saveUser(finalUser);
+          LS.saveSession(finalUser.email);
+          setUser(finalUser);
+          setCart(mergedCart);
+          setWishlist(mergedWish);
+          await setDoc(ref, toFirestoreUser(finalUser), { merge: true });
+        } else {
+          const session = LS.getSession();
+          if (session?.email) {
+            const u = normalizeUser(LS.getUser(session.email));
+            if (u && !u.firebaseUid) {
+              LS.saveUser(u);
+              setUser(u);
+              setCart(u.cart || []);
+              setWishlist(u.wishlist || []);
+            } else {
+              setUser(null);
+              setCart([]);
+              setWishlist([]);
+            }
+          } else {
+            setUser(null);
+            setCart([]);
+            setWishlist([]);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        addToastRef.current("Could not load account from cloud. Create a Firestore database and deploy rules (see firestore.rules).", "error");
+      }
+    });
+    return () => unsub();
   }, []);
 
   // Cookie consent (GDPR)
@@ -2156,14 +2256,25 @@ export default function App() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const overlayBlocksBackgroundScroll =
+    checkoutOpen ||
+    cartOpen ||
+    authOpen ||
+    Boolean(payConfirmOrder) ||
+    cookieOpen ||
+    shopSearchOpen;
+
   useEffect(() => {
-    if (!checkoutOpen) return;
-    const prevOverflow = document.body.style.overflow;
+    if (!overlayBlocksBackgroundScroll) return;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prevOverflow;
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
     };
-  }, [checkoutOpen]);
+  }, [overlayBlocksBackgroundScroll]);
 
   useEffect(() => {
     if (!checkoutOpen) checkoutProfileSyncRef.current = null;
@@ -2282,6 +2393,7 @@ export default function App() {
     };
     LS.saveUser(updated);
     setUser(updated);
+    void saveUserToCloud(updated);
   };
 
   const updateUserProfile = (patch) => {
@@ -2295,6 +2407,7 @@ export default function App() {
     next.name = fullName({ firstName: next.firstName, lastName: next.lastName });
     LS.saveUser(next);
     setUser(next);
+    void saveUserToCloud(next);
   };
 
   const addToCart = (product, size) => {
@@ -2361,9 +2474,31 @@ export default function App() {
     return null;
   };
 
-  const logout = () => {
+  const loginWithGoogle = async () => {
+    setGoogleAuthBusy(true);
+    try {
+      const { user: gu } = await signInWithPopup(auth, googleProvider);
+      setAuthOpen(false);
+      const first = gu.displayName?.trim()?.split(/\s+/)?.[0];
+      addToast(`Welcome${first ? `, ${first}` : ""}! 👋`, "success");
+    } catch (e) {
+      const code = e?.code;
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        addToast(e?.message || "Google sign-in failed.", "error");
+      }
+    } finally {
+      setGoogleAuthBusy(false);
+    }
+  };
+
+  const logout = async () => {
     LS.clearSession();
-    setUser(null); setCart([]); setWishlist([]);
+    setUser(null);
+    setCart([]);
+    setWishlist([]);
+    try {
+      if (auth.currentUser) await signOut(auth);
+    } catch { /* noop */ }
     setPage("home");
     addToast("Signed out successfully.");
   };
@@ -3300,7 +3435,15 @@ export default function App() {
       {authOpen && (
         <>
           <div className="overlay-backdrop" onClick={() => setAuthOpen(false)} />
-          <AuthModal mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} onSubmit={login} />
+          <AuthModal
+            mode={authMode}
+            setMode={setAuthMode}
+            onClose={() => setAuthOpen(false)}
+            onSubmit={login}
+            onGoogle={loginWithGoogle}
+            googleBusy={googleAuthBusy}
+            addToast={addToast}
+          />
         </>
       )}
 
@@ -3933,7 +4076,7 @@ function AboutPage({ navigate }) {
 }
 
 // ─── Auth Modal ───────────────────────────────────────────────────────────────
-function AuthModal({ mode, setMode, onClose, onSubmit }) {
+function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, addToast }) {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -4038,7 +4181,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
         <div className="auth-divider">or</div>
 
         <div className="social-login-grid">
-          <button className="btn-social" onClick={() => addToast("Google login is coming soon!", "info")}>
+          <button type="button" className="btn-social" disabled={googleBusy} onClick={() => void onGoogle?.()}>
             <span className="social-icon">
               <svg viewBox="0 0 24 24" width="18" height="18">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -4047,9 +4190,9 @@ function AuthModal({ mode, setMode, onClose, onSubmit }) {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
             </span>
-            Continue with Google
+            {googleBusy ? "Connecting…" : "Continue with Google"}
           </button>
-          <button className="btn-social" onClick={() => addToast("Apple login is coming soon!", "info")}>
+          <button type="button" className="btn-social" onClick={() => addToast?.("Apple login is coming soon!", "info")}>
             <span className="social-icon">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M17.05 20.28c-.96.95-2.04 1.9-3.32 1.9-1.25 0-1.74-.78-3.19-.78-1.47 0-1.99.76-3.21.78-1.28.02-2.48-1.04-3.44-2.02-1.97-2.01-3.48-5.69-1.46-8.79 1-1.54 2.82-2.52 4.41-2.55 1.2-.02 2.33.72 3.07.72s1.9-.76 3.32-.62c.59.03 2.26.22 3.33 1.65-.09.05-1.99 1.05-1.97 3.34.02 2.76 2.65 3.73 2.7 3.75-.02.08-.43 1.34-1.24 2.61zM12.03 7.25c-.02-2.24 1.83-4.14 4.02-4.25.02.22.04.44.04.67 0 2.12-1.89 4.19-4.06 3.58z" />
@@ -4223,7 +4366,7 @@ function PrivacyPage({ navigate }) {
         <div className="legal-h1">Privacy Policy</div>
         <p className="legal-p">
           This is a demo storefront. We minimize personal data usage and store account/cart information locally in your browser.
-          If you sign in, your profile and orders are saved to localStorage on this device.
+          Email accounts stay on this device (localStorage). Google sign-in syncs your bag, wishlist, and orders to Firestore for your account.
         </p>
         <ul style={{ paddingLeft: 18 }}>
           <li className="legal-li"><strong>Necessary cookies</strong>: required for core functionality and security.</li>
