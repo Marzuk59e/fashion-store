@@ -208,7 +208,16 @@ const css = `
   .cart-header { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--cream); z-index: 1; }
   .cart-title { font-family: var(--font-serif); font-size: 1.5rem; }
   .cart-items { padding: 20px 28px; }
-  .cart-item { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border); animation: fadeIn 0.3s ease; }
+  .cart-item-wrap { padding: 16px 0; border-bottom: 1px solid var(--border); animation: fadeIn 0.3s ease; }
+  .cart-item-wrap .cart-item { display: flex; gap: 14px; padding: 0; border-bottom: none; animation: none; }
+  .cart-stock-above {
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin-bottom: 10px;
+    text-decoration: line-through;
+  }
   .cart-item-img { width: 72px; height: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
   .cart-item-info { flex: 1; }
   .cart-item-name { font-family: var(--font-serif); font-size: 0.95rem; margin-bottom: 4px; }
@@ -223,6 +232,21 @@ const css = `
     letter-spacing: 0.01em;
     font-variant-numeric: tabular-nums lining-nums;
   }
+  .cart-oos-cta {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-top: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+  .cart-oos-cta:hover { text-decoration: underline; }
+  .qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .qty-control { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   .qty-btn { width: 24px; height: 24px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--charcoal); }
   .qty-btn:hover { background: var(--charcoal); color: white; border-color: var(--charcoal); }
@@ -518,19 +542,43 @@ const css = `
     overscroll-behavior: none;
     touch-action: none;
   }
-  .cookie-customize-modal {
-    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  @keyframes cookieModalIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  /* Flex layer keeps modal centered; avoids scaleIn() overwriting translate(-50%,-50%). */
+  .cookie-modal-layer {
+    position: fixed;
+    inset: 0;
     z-index: 2112;
-    width: min(520px, calc(100vw - 28px));
-    max-height: min(720px, calc(100vh - 40px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(12px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+    pointer-events: none;
+    overscroll-behavior: none;
+  }
+  .cookie-customize-modal {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    z-index: 1;
+    width: min(520px, 100%);
+    max-height: min(720px, calc(100dvh - 24px));
+    min-height: 0;
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     background: linear-gradient(180deg, #fff 0%, #faf8f5 100%);
     border: 1px solid rgba(232,226,217,0.95);
     border-radius: 6px;
     box-shadow: 0 28px 90px rgba(0,0,0,0.22);
     padding: 26px 24px 22px;
-    animation: scaleIn 0.28s ease both;
+    pointer-events: auto;
+    animation: cookieModalIn 0.28s ease both;
   }
   .cookie-modal-title {
     font-family: var(--font-serif);
@@ -3092,7 +3140,7 @@ export default function App() {
         </div>
       </nav>
 
-      {page === "home" && <HomePage navigate={navigate} products={PRODUCTS} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} />}
+      {page === "home" && <HomePage navigate={navigate} products={PRODUCTS} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
       {page === "shop" && (
         <ShopPage
           products={PRODUCTS}
@@ -3108,9 +3156,10 @@ export default function App() {
           onCloseSearch={closeShopSearch}
           searchQuery={shopSearchQuery}
           setSearchQuery={setShopSearchQuery}
+          onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")}
         />
       )}
-      {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} />}
+      {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
       {page === "profile" && <ProfilePage user={user} cart={cart} wishlist={wishlist} products={PRODUCTS} logout={logout} tab={profileTab} setTab={setProfileTab} navigate={navigate} onMarkOrderPaid={handleOpenMarkPaid} onUpdateProfile={updateUserProfile} />}
       {page === "about" && <AboutPage navigate={navigate} />}
       {page === "privacy" && <PrivacyPage navigate={navigate} />}
@@ -3134,35 +3183,50 @@ export default function App() {
             ) : (
               <>
                 <div className="cart-items">
-                  {cart.map((item, i) => (
-                    <div key={i} className="cart-item">
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        className="cart-item-img cart-item-open"
-                        onClick={() => openProductFromCart(item.product)}
-                        onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
-                        style={{ background: `linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})` }}
-                      >{item.product.emoji}</div>
-                      <div className="cart-item-info">
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          className="cart-item-name cart-item-open"
-                          onClick={() => openProductFromCart(item.product)}
-                          onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
-                        >{item.product.name}</div>
-                        <div className="cart-item-meta">{item.product.brand} · Size {item.size}</div>
-                        <div className="cart-item-price">{fmt(item.product.price)}</div>
-                        <div className="qty-control">
-                          <button className="qty-btn" onClick={() => updateQty(i, -1)}>−</button>
-                          <span className="qty-num">{item.qty}</span>
-                          <button className="qty-btn" onClick={() => updateQty(i, 1)}>+</button>
-                          <button className="remove-btn" onClick={() => removeFromCart(i)}>Remove</button>
+                  {cart.map((item, i) => {
+                    const oos = item.product.inStock === false;
+                    return (
+                      <div className="cart-item-wrap" key={`${item.product.id}-${item.size}-${i}`}>
+                        {oos && <div className="cart-stock-above">Stock</div>}
+                        <div className="cart-item">
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            className="cart-item-img cart-item-open"
+                            onClick={() => openProductFromCart(item.product)}
+                            onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
+                            style={{ background: `linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})` }}
+                          >{item.product.emoji}</div>
+                          <div className="cart-item-info">
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              className="cart-item-name cart-item-open"
+                              onClick={() => openProductFromCart(item.product)}
+                              onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
+                            >{item.product.name}</div>
+                            <div className="cart-item-meta">{item.product.brand} · Size {item.size}</div>
+                            <div className="cart-item-price">{fmt(item.product.price)}</div>
+                            {oos && (
+                              <button
+                                type="button"
+                                className="cart-oos-cta"
+                                onClick={() => addToast(`Stock request noted for “${item.product.name}”.`, "info")}
+                              >
+                                Request for stock
+                              </button>
+                            )}
+                            <div className="qty-control">
+                              <button type="button" className="qty-btn" onClick={() => updateQty(i, -1)}>−</button>
+                              <span className="qty-num">{item.qty}</span>
+                              <button type="button" className="qty-btn" onClick={() => updateQty(i, 1)} disabled={oos}>+</button>
+                              <button type="button" className="remove-btn" onClick={() => removeFromCart(i)}>Remove</button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="cart-footer">
                   <div className="cart-total">
@@ -3242,7 +3306,12 @@ export default function App() {
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", color: "var(--charcoal)" }}>{item.product.name}</div>
                               <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginTop: 4 }}>
-                                {item.product.brand} · Size {item.size} · Qty {item.qty} · {fmt(item.product.price)}
+                                {item.product.brand} · Size {item.size} · Qty {item.qty}
+                                {isOnSale(item.product) ? (
+                                  <> · <span style={{ textDecoration: "line-through", marginRight: 6 }}>{fmt(item.product.compareAt)}</span>{fmt(item.product.price)}</>
+                                ) : (
+                                  <> · {fmt(item.product.price)}</>
+                                )}
                               </div>
                             </div>
                           </button>
@@ -3647,7 +3716,7 @@ export default function App() {
 }
 
 // ─── Home Page ────────────────────────────────────────────────────────────────
-function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
+function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist, onRequestStock }) {
   return (
     <div>
       <section className="hero">
@@ -3700,7 +3769,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
         </div>
         <div className="products-grid">
           {products.filter(p => p.badge).map((p, i) => (
-            <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
+            <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
           ))}
         </div>
       </section>
@@ -3721,7 +3790,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
         </div>
         <div className="products-grid">
           {products.slice(6, 10).map((p, i) => (
-            <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
+            <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
           ))}
         </div>
         <div style={{ textAlign: "center", marginTop: 48 }}>
@@ -3736,7 +3805,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
         </div>
         <div className="products-grid">
           {products.filter(isOnSale).slice(0, 4).map((p, i) => (
-            <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
+            <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
           ))}
         </div>
         <div style={{ textAlign: "center", marginTop: 48 }}>
@@ -3750,7 +3819,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist }) {
 }
 
 // ─── Product Card ─────────────────────────────────────────────────────────────
-function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wishlisted }) {
+function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wishlisted, onRequestStock }) {
   const inStock = product.inStock !== false;
   const onSale = isOnSale(product);
   return (
@@ -3762,7 +3831,17 @@ function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wish
       <div className="product-img" style={{ background: `linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }} onClick={() => navigate("product", product)}>
         <span className="product-emoji">{product.emoji}</span>
         <div className="product-actions-overlay">
-          <button type="button" className="overlay-btn overlay-btn-primary" disabled={!inStock} onClick={e => { e.stopPropagation(); if (inStock) addToCart(product, product.sizes[0]); }}>{inStock ? "Add to Bag" : "Out of Stock"}</button>
+          <button
+            type="button"
+            className="overlay-btn overlay-btn-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (inStock) addToCart(product, product.sizes[0]);
+              else onRequestStock?.(product.name);
+            }}
+          >
+            {inStock ? "Add to Bag" : "Request for stock"}
+          </button>
           <button type="button" className="overlay-btn overlay-btn-outline" onClick={e => { e.stopPropagation(); navigate("product", product); }}>View</button>
         </div>
       </div>
@@ -3784,7 +3863,7 @@ function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wish
 }
 
 // ─── Shop Page ────────────────────────────────────────────────────────────────
-function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToCart, toggleWishlist, wishlist, searchOpen, onCloseSearch, searchQuery, setSearchQuery }) {
+function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToCart, toggleWishlist, wishlist, searchOpen, onCloseSearch, searchQuery, setSearchQuery, onRequestStock }) {
   const searchInputRef = useRef(null);
   useEffect(() => {
     if (searchOpen) {
@@ -3860,7 +3939,7 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
                       <div className="shop-search-sug-meta">{p.brand} · {p.category}</div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      {p.inStock === false && <div className="shop-search-sug-badge">Out of stock</div>}
+                      {p.inStock === false && <div className="shop-search-sug-badge">Request for stock</div>}
                       <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--gold)", marginTop: p.inStock === false ? 4 : 0 }}>{fmt(p.price)}</div>
                     </div>
                   </div>
@@ -3872,7 +3951,7 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
       )}
       <div className="products-grid">
         {displayed.map((p, i) => (
-          <ProductCard key={p.id} product={p} delay={i % 4} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} />
+          <ProductCard key={p.id} product={p} delay={i % 4} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
         ))}
       </div>
       <Footer navigate={navigate} />
@@ -3881,7 +3960,7 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
 }
 
 // ─── Product Detail ───────────────────────────────────────────────────────────
-function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishlist }) {
+function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishlist, onRequestStock }) {
   const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
   const wishlisted = wishlist.includes(product.id);
   const inStock = product.inStock !== false;
@@ -3920,10 +3999,19 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
             ))}
           </div>
           <div className="detail-actions">
-            <button type="button" className="add-cart-btn" disabled={!inStock} onClick={() => inStock && addToCart(product, selectedSize)}>{inStock ? "Add to Bag" : "Out of Stock"}</button>
+            <button
+              type="button"
+              className="add-cart-btn"
+              onClick={() => {
+                if (inStock) addToCart(product, selectedSize);
+                else onRequestStock?.(product.name);
+              }}
+            >
+              {inStock ? "Add to Bag" : "Request for stock"}
+            </button>
             <button type="button" className={`wish-btn${wishlisted ? " active" : ""}`} onClick={() => toggleWishlist(product.id)}>{wishlisted ? "♥" : "♡"}</button>
           </div>
-          {!inStock && <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 12 }}>This piece is currently unavailable. You can still view details or save it to your wishlist.</p>}
+          {!inStock && <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 12 }}>This piece is currently unavailable. Tap “Request for stock” and we will prioritize a restock note for you, or save it to your wishlist.</p>}
           <div style={{ marginTop: 28, paddingTop: 28, borderTop: "1px solid var(--border)" }}>
             {[["🚚", "Free Express Delivery", "On orders over $200"], ["↩️", "Easy Returns", "30-day free returns"], ["✦", "Authenticity Guaranteed", "100% genuine products"]].map(([icon, title, sub]) => (
               <div key={title} style={{ display: "flex", gap: 14, marginBottom: 14, alignItems: "center" }}>
@@ -4280,11 +4368,11 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
   const handleSendEmailLink = async () => {
     setError("");
     if (!form.email?.trim()) {
-      setError("ইমেইল দিন / Please enter your email.");
+      setError("Please enter your email.");
       return;
     }
     if (mode === "register" && (!form.firstName?.trim() || !form.lastName?.trim())) {
-      setError("নামের দুই অংশ দিন / Please enter first and last name.");
+      setError("Please enter first and last name.");
       return;
     }
     setEmailLinkBusy(true);
@@ -4321,7 +4409,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
       <div className="modal-header">
         <div className="modal-title" style={{ fontWeight: 600 }}>
           {emailVerifyStep === "linkSent"
-            ? "ইমেইল চেক করুন"
+            ? "Check your email"
             : mode === "login"
               ? "Welcome Back"
               : "Create Account"}
@@ -4332,14 +4420,14 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
         {emailVerifyStep === "linkSent" ? (
           <>
             <p style={{ fontSize: "0.78rem", color: "var(--charcoal)", marginBottom: 12, lineHeight: 1.65 }}>
-              <strong>{form.email.trim()}</strong> ঠিকানায় একটি নিরাপদ সাইন-ইন লিঙ্ক পাঠানো হয়েছে। ইনবক্স (ও স্প্যাম) চেক করুন — লিঙ্কে ট্যাপ করলে এই ব্রাউজারে লগইন সম্পন্ন হবে।
+              We sent a secure sign-in link to <strong>{form.email.trim()}</strong>. Check your inbox and spam folder, then open the link in this browser to finish signing in.
             </p>
             <p style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 20, lineHeight: 1.6 }}>
-              টেকনিকালি এটি ইমেইলে পাঠানো একটাইম লিঙ্ক (Firebase Email link)। ছয় ডিজিটের OTP কোড আলাদা সার্ভার ছাড়া পাঠানো যায় না।
+              This uses Firebase email link sign-in (a one-time link in email). A separate 6-digit OTP SMS flow is not wired in this demo.
             </p>
             {error && <div className="form-error">{error}</div>}
             <button type="button" className="form-submit" onClick={handleResendLink} disabled={emailLinkBusy}>
-              {emailLinkBusy ? "পাঠাচ্ছি…" : "আবার লিঙ্ক পাঠান"}
+              {emailLinkBusy ? "Sending…" : "Resend link"}
             </button>
             <button
               type="button"
@@ -4347,7 +4435,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
               style={{ marginTop: 12, width: "100%" }}
               onClick={() => { setEmailVerifyStep("form"); setError(""); }}
             >
-              ইমেইল বদলান
+              Change email
             </button>
             <div className="auth-divider">or</div>
             <div className="social-login-grid">
@@ -4368,8 +4456,8 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
           <>
             <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 24, letterSpacing: "0.05em" }}>
               {mode === "login"
-                ? "প্রথমে ইমেইলে যাচাই লিঙ্ক পাঠান, তারপর লিঙ্কে ট্যাপ করে সাইন ইন সম্পন্ন করুন।"
-                : "অ্যাকাউন্ট তৈরির জন্য নাম ও ইমেইল দিন, তারপর ইমেইলে পাঠানো লিঙ্ক দিয়ে যাচাই করুন।"}
+                ? "Send a sign-in link to your email, then open it in this browser to complete sign in."
+                : "Enter your name and email to create an account, then verify using the link we send to your inbox."}
             </p>
             {mode === "register" && (
               <div className="form-row-two">
@@ -4396,7 +4484,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
             </div>
 
             <button type="button" className="form-submit" onClick={() => void handleSendEmailLink()} disabled={emailLinkBusy}>
-              {emailLinkBusy ? "পাঠাচ্ছি…" : "ইমেইলে যাচাই লিঙ্ক পাঠান"}
+              {emailLinkBusy ? "Sending…" : "Send verification link"}
             </button>
 
             <button
@@ -4416,7 +4504,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
                 textAlign: "center",
               }}
             >
-              {showPasswordPath ? "লিঙ্ক দিয়ে সাইন ইন (উপরের ধাপ)" : "শুধু এই ডিভাইসে পাসওয়ার্ড দিয়ে সাইন ইন (ঐচ্ছিক)"}
+              {showPasswordPath ? "Sign in with email link (step above)" : "Sign in with password on this device only (optional)"}
             </button>
 
             {showPasswordPath && (
@@ -4461,7 +4549,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
                     <div style={{ marginTop: 10, textAlign: "right" }}>
                       <button
                         type="button"
-                        onClick={() => setError("ইমেইল লিঙ্ক ব্যবহার করুন, অথবা নতুন অ্যাকাউন্ট খুলুন। / Use the email link or create an account.")}
+                        onClick={() => setError("Use the email link to sign in, or create a new account.")}
                         style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontWeight: 600, fontSize: "0.72rem", textDecoration: "underline" }}
                       >
                         Forgot password?
@@ -4507,7 +4595,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
                 : <>Already a member? <button type="button" onClick={() => resetModeSwitch("login")}>Sign in</button></>}
             </div>
             <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 20, lineHeight: 1.55 }}>
-              ইমেইল লিঙ্ক ও Google অ্যাকাউন্ট ক্লাউডে সিঙ্ক হয়। পাসওয়ার্ড শুধু এই ব্রাউজারের localStorage এ থাকে।
+              Email link and Google accounts sync to the cloud. Passwords for this path stay in this browser&apos;s localStorage only.
             </p>
           </>
         )}
@@ -4578,6 +4666,20 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [expanded]);
 
+  useEffect(() => {
+    if (!expanded) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, [expanded]);
+
   if (!open) return null;
 
   const acceptAll = () => onSave({ necessary: true, analytics: true, marketing: true });
@@ -4592,6 +4694,8 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
           className="cookie-modal-backdrop"
           aria-hidden="true"
           onClick={() => setExpanded(false)}
+          onWheel={(e) => e.preventDefault()}
+          onTouchMove={(e) => e.preventDefault()}
         />
       )}
       <div
@@ -4659,93 +4763,95 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
         </div>
       </div>
       {expanded && (
-        <div
-          className="cookie-customize-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Customize cookie categories"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="cookie-modal-title">Cookie preferences</div>
-          <p className="cookie-modal-lead">
-            Necessary cookies are always active so the store can load, keep you signed in safely, and remember this choice.
-            You can turn optional categories on or off below. See our{" "}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                onClose();
-                navigate("privacy");
-              }}
-              style={{ color: "var(--charcoal)", textDecoration: "underline", cursor: "pointer" }}
-            >
-              Privacy Policy
-            </a>
-            .
-          </p>
-          <div className="cookie-modal-section">
-            <div className="cookie-row">
-              <div>
-                <strong>Necessary</strong>
-                <div className="cookie-detail">
-                  Includes cookies needed for security (for example sign-in and session integrity), fraud prevention, network
-                  protection, load balancing, and remembering your consent banner choice. They do not track you for ads and
-                  cannot be disabled without breaking core features like checkout or your account area.
+        <div className="cookie-modal-layer">
+          <div
+            className="cookie-customize-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Customize cookie categories"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cookie-modal-title">Cookie preferences</div>
+            <p className="cookie-modal-lead">
+              Necessary cookies are always active so the store can load, keep you signed in safely, and remember this choice.
+              You can turn optional categories on or off below. See our{" "}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onClose();
+                  navigate("privacy");
+                }}
+                style={{ color: "var(--charcoal)", textDecoration: "underline", cursor: "pointer" }}
+              >
+                Privacy Policy
+              </a>
+              .
+            </p>
+            <div className="cookie-modal-section">
+              <div className="cookie-row">
+                <div>
+                  <strong>Necessary</strong>
+                  <div className="cookie-detail">
+                    Includes cookies needed for security (for example sign-in and session integrity), fraud prevention, network
+                    protection, load balancing, and remembering your consent banner choice. They do not track you for ads and
+                    cannot be disabled without breaking core features like checkout or your account area.
+                  </div>
+                </div>
+                <div className="cookie-toggle">
+                  <div className="cookie-lock">Always on</div>
                 </div>
               </div>
-              <div className="cookie-toggle">
-                <div className="cookie-lock">Always on</div>
-              </div>
             </div>
-          </div>
-          <div className="cookie-modal-section">
-            <div className="cookie-row">
-              <div>
-                <strong>Analytics</strong>
-                <div className="cookie-detail">
-                  Optional. Helps us measure how visitors use the site (for example which pages load slowly, where people drop
-                  off, and whether search or filters work as intended). Data is aggregated for this demo storefront to improve
-                  performance and content; it is not sold. If you turn this off, we still run the shop, but we get less signal
-                  for improvements.
+            <div className="cookie-modal-section">
+              <div className="cookie-row">
+                <div>
+                  <strong>Analytics</strong>
+                  <div className="cookie-detail">
+                    Optional. Helps us measure how visitors use the site (for example which pages load slowly, where people drop
+                    off, and whether search or filters work as intended). Data is aggregated for this demo storefront to improve
+                    performance and content; it is not sold. If you turn this off, we still run the shop, but we get less signal
+                    for improvements.
+                  </div>
+                </div>
+                <div className="cookie-toggle">
+                  <button
+                    type="button"
+                    className={`cookie-switch${analytics ? " on" : ""}`}
+                    onClick={() => setAnalytics((v) => !v)}
+                    role="switch"
+                    aria-checked={analytics}
+                    aria-label="Analytics cookies"
+                  />
                 </div>
               </div>
-              <div className="cookie-toggle">
-                <button
-                  type="button"
-                  className={`cookie-switch${analytics ? " on" : ""}`}
-                  onClick={() => setAnalytics((v) => !v)}
-                  role="switch"
-                  aria-checked={analytics}
-                  aria-label="Analytics cookies"
-                />
-              </div>
             </div>
-          </div>
-          <div className="cookie-modal-section">
-            <div className="cookie-row">
-              <div>
-                <strong>Marketing</strong>
-                <div className="cookie-detail">
-                  Optional. Used to remember promotions, campaign links, wishlist or cart reminders, and to test which offers
-                  resonate—so messaging can feel more relevant when we run campaigns. If you disable marketing cookies, you
-                  may still see generic content, but personalization and attribution across channels will be limited.
+            <div className="cookie-modal-section">
+              <div className="cookie-row">
+                <div>
+                  <strong>Marketing</strong>
+                  <div className="cookie-detail">
+                    Optional. Used to remember promotions, campaign links, wishlist or cart reminders, and to test which offers
+                    resonate—so messaging can feel more relevant when we run campaigns. If you disable marketing cookies, you
+                    may still see generic content, but personalization and attribution across channels will be limited.
+                  </div>
+                </div>
+                <div className="cookie-toggle">
+                  <button
+                    type="button"
+                    className={`cookie-switch${marketing ? " on" : ""}`}
+                    onClick={() => setMarketing((v) => !v)}
+                    role="switch"
+                    aria-checked={marketing}
+                    aria-label="Marketing cookies"
+                  />
                 </div>
               </div>
-              <div className="cookie-toggle">
-                <button
-                  type="button"
-                  className={`cookie-switch${marketing ? " on" : ""}`}
-                  onClick={() => setMarketing((v) => !v)}
-                  role="switch"
-                  aria-checked={marketing}
-                  aria-label="Marketing cookies"
-                />
-              </div>
             </div>
-          </div>
-          <div className="cookie-modal-footer">
-            <button type="button" className="cookie-btn ghost" onClick={() => setExpanded(false)}>Back</button>
-            <button type="button" className="cookie-btn primary" onClick={saveCustom}>Save preferences</button>
+            <div className="cookie-modal-footer">
+              <button type="button" className="cookie-btn ghost" onClick={() => setExpanded(false)}>Back</button>
+              <button type="button" className="cookie-btn primary" onClick={saveCustom}>Save preferences</button>
+            </div>
           </div>
         </div>
       )}
