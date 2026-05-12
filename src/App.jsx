@@ -510,12 +510,73 @@ const css = `
   .cookie-btn.primary { background: var(--gold); color: white; border-color: var(--gold); }
   .cookie-btn.primary:hover { background: #B8915A; border-color: #B8915A; }
   .cookie-btn.ghost { background: transparent; }
-  .cookie-drawer {
-    border-top: 1px solid rgba(232,226,217,0.9);
-    padding: 12px 18px 14px;
-    background: rgba(250,247,242,0.55);
-    display: grid;
+  .cookie-modal-backdrop {
+    position: fixed; inset: 0; z-index: 2110;
+    background: rgba(10,12,16,0.48);
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.22s ease both;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+  .cookie-customize-modal {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    z-index: 2112;
+    width: min(520px, calc(100vw - 28px));
+    max-height: min(720px, calc(100vh - 40px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: linear-gradient(180deg, #fff 0%, #faf8f5 100%);
+    border: 1px solid rgba(232,226,217,0.95);
+    border-radius: 6px;
+    box-shadow: 0 28px 90px rgba(0,0,0,0.22);
+    padding: 26px 24px 22px;
+    animation: scaleIn 0.28s ease both;
+  }
+  .cookie-modal-title {
+    font-family: var(--font-serif);
+    font-size: 1.45rem;
+    font-weight: 500;
+    color: var(--charcoal);
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+  }
+  .cookie-modal-lead {
+    font-size: 0.72rem;
+    color: var(--warm-gray);
+    line-height: 1.55;
+    margin-bottom: 8px;
+  }
+  .cookie-modal-section {
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(232,226,217,0.95);
+  }
+  .cookie-modal-section:last-of-type { border-bottom: none; }
+  .cookie-modal-section .cookie-row {
+    align-items: flex-start;
+  }
+  .cookie-detail {
+    font-size: 0.68rem;
+    color: var(--warm-gray);
+    line-height: 1.6;
+    margin-top: 8px;
+    max-width: 100%;
+  }
+  .cookie-modal-footer {
+    display: flex;
     gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(232,226,217,0.9);
+  }
+  @media (max-width: 520px) {
+    .cookie-modal-section .cookie-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .cookie-modal-section .cookie-toggle { align-self: flex-end; }
   }
   .cookie-close {
     margin-left: auto;
@@ -539,6 +600,11 @@ const css = `
     background: rgba(26,26,26,0.08);
     position: relative; cursor: pointer;
     transition: background 0.2s, border-color 0.2s;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    display: inline-block;
+    flex-shrink: 0;
   }
   .cookie-switch::after {
     content: "";
@@ -4503,6 +4569,15 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
     });
   }, [open, existing]);
 
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
   if (!open) return null;
 
   const acceptAll = () => onSave({ necessary: true, analytics: true, marketing: true });
@@ -4512,7 +4587,20 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
     <>
       {/* Lock page interaction until user picks Accept All or Customize. */}
       {locked && <div className="cookie-backdrop" />}
-      <div className="cookie-panel" role="dialog" aria-modal="true" aria-label="Cookie preferences">
+      {expanded && (
+        <div
+          className="cookie-modal-backdrop"
+          aria-hidden="true"
+          onClick={() => setExpanded(false)}
+        />
+      )}
+      <div
+        className="cookie-panel"
+        role={expanded ? undefined : "dialog"}
+        aria-modal={expanded ? undefined : "true"}
+        aria-hidden={expanded}
+        aria-label={expanded ? undefined : "Cookie preferences"}
+      >
         <div className="cookie-top">
           <div className="cookie-content">
             <div className="cookie-badge" aria-hidden="true">
@@ -4536,62 +4624,131 @@ function CookieNotice({ open, onClose, onSave, existing, navigate }) {
               </svg>
             </div>
             <div className="cookie-text">
-              We use cookies to keep the site secure, improve performance, and personalize experiences. See our{" "}
-              <a onClick={() => { onClose(); navigate("privacy"); }}>Privacy Policy</a>.
+              {expanded ? (
+                <>
+                  Optional cookies are set in the center dialog. You can still{" "}
+                  <strong style={{ color: "var(--charcoal)" }}>Accept all</strong> from here, or use Back / Save in the dialog.
+                </>
+              ) : (
+                <>
+                  We use cookies to keep the site secure, improve performance, and personalize experiences. See our{" "}
+                  <a onClick={() => { onClose(); navigate("privacy"); }}>Privacy Policy</a>.
+                </>
+              )}
             </div>
           </div>
-          {!expanded ? (
-            <div className="cookie-actions">
-              <button
-                className="cookie-btn ghost"
-                onClick={() => {
-                  setExpanded(true);
-                  setLocked(false);
-                }}
-              >
-                Customize
-              </button>
-              <button className="cookie-btn primary" onClick={acceptAll}>Accept All</button>
-            </div>
-          ) : (
-            <>
-              <div className="cookie-drawer">
-                <div className="cookie-row">
-                  <div>
-                    <strong>Necessary</strong>
-                    <div><span>Required for security and core features.</span></div>
-                  </div>
-                  <div className="cookie-toggle">
-                    <div className="cookie-lock">Always on</div>
-                  </div>
-                </div>
-                <div className="cookie-row">
-                  <div>
-                    <strong>Analytics</strong>
-                    <div><span>Helps us understand what works and what doesn’t.</span></div>
-                  </div>
-                  <div className="cookie-toggle">
-                    <div className={`cookie-switch${analytics ? " on" : ""}`} onClick={() => setAnalytics(v => !v)} role="switch" aria-checked={analytics} />
-                  </div>
-                </div>
-                <div className="cookie-row">
-                  <div>
-                    <strong>Marketing</strong>
-                    <div><span>Used to show relevant offers across channels.</span></div>
-                  </div>
-                  <div className="cookie-toggle">
-                    <div className={`cookie-switch${marketing ? " on" : ""}`} onClick={() => setMarketing(v => !v)} role="switch" aria-checked={marketing} />
-                  </div>
-                </div>
-              </div>
-              <div className="cookie-actions">
-                <button className="cookie-btn ghost" onClick={() => setExpanded(false)}>Back</button>
-                <button className="cookie-btn primary" onClick={saveCustom}>Save preferences</button>
-              </div>
-            </>
-          )}
+          <div className="cookie-actions">
+            {expanded ? (
+              <button type="button" className="cookie-btn primary" onClick={acceptAll}>Accept All</button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="cookie-btn ghost"
+                  onClick={() => {
+                    setExpanded(true);
+                    setLocked(false);
+                  }}
+                >
+                  Customize
+                </button>
+                <button type="button" className="cookie-btn primary" onClick={acceptAll}>Accept All</button>
+              </>
+            )}
+          </div>
         </div>
       </div>
+      {expanded && (
+        <div
+          className="cookie-customize-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Customize cookie categories"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="cookie-modal-title">Cookie preferences</div>
+          <p className="cookie-modal-lead">
+            Necessary cookies are always active so the store can load, keep you signed in safely, and remember this choice.
+            You can turn optional categories on or off below. See our{" "}
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                onClose();
+                navigate("privacy");
+              }}
+              style={{ color: "var(--charcoal)", textDecoration: "underline", cursor: "pointer" }}
+            >
+              Privacy Policy
+            </a>
+            .
+          </p>
+          <div className="cookie-modal-section">
+            <div className="cookie-row">
+              <div>
+                <strong>Necessary</strong>
+                <div className="cookie-detail">
+                  Includes cookies needed for security (for example sign-in and session integrity), fraud prevention, network
+                  protection, load balancing, and remembering your consent banner choice. They do not track you for ads and
+                  cannot be disabled without breaking core features like checkout or your account area.
+                </div>
+              </div>
+              <div className="cookie-toggle">
+                <div className="cookie-lock">Always on</div>
+              </div>
+            </div>
+          </div>
+          <div className="cookie-modal-section">
+            <div className="cookie-row">
+              <div>
+                <strong>Analytics</strong>
+                <div className="cookie-detail">
+                  Optional. Helps us measure how visitors use the site (for example which pages load slowly, where people drop
+                  off, and whether search or filters work as intended). Data is aggregated for this demo storefront to improve
+                  performance and content; it is not sold. If you turn this off, we still run the shop, but we get less signal
+                  for improvements.
+                </div>
+              </div>
+              <div className="cookie-toggle">
+                <button
+                  type="button"
+                  className={`cookie-switch${analytics ? " on" : ""}`}
+                  onClick={() => setAnalytics((v) => !v)}
+                  role="switch"
+                  aria-checked={analytics}
+                  aria-label="Analytics cookies"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="cookie-modal-section">
+            <div className="cookie-row">
+              <div>
+                <strong>Marketing</strong>
+                <div className="cookie-detail">
+                  Optional. Used to remember promotions, campaign links, wishlist or cart reminders, and to test which offers
+                  resonate—so messaging can feel more relevant when we run campaigns. If you disable marketing cookies, you
+                  may still see generic content, but personalization and attribution across channels will be limited.
+                </div>
+              </div>
+              <div className="cookie-toggle">
+                <button
+                  type="button"
+                  className={`cookie-switch${marketing ? " on" : ""}`}
+                  onClick={() => setMarketing((v) => !v)}
+                  role="switch"
+                  aria-checked={marketing}
+                  aria-label="Marketing cookies"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="cookie-modal-footer">
+            <button type="button" className="cookie-btn ghost" onClick={() => setExpanded(false)}>Back</button>
+            <button type="button" className="cookie-btn primary" onClick={saveCustom}>Save preferences</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
