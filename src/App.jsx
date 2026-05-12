@@ -3,7 +3,7 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signOut,
-  sendSignInLinkToEmail,
+  sendPasswordResetEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
 } from "firebase/auth";
@@ -161,6 +161,28 @@ const css = `
   .product-name { font-family: var(--font-serif); font-size: 1.05rem; color: var(--charcoal); margin-bottom: 8px; }
   .product-price { font-size: 0.92rem; font-weight: 500; color: var(--charcoal); }
   .product-badge { position: absolute; top: 12px; left: 12px; z-index: 2; background: var(--charcoal); color: white; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; padding: 4px 10px; }
+  .product-badge-stack {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    pointer-events: none;
+  }
+  .product-badge-stack .product-badge { position: static; }
+  .product-badge-oos {
+    background: #5a2d2d;
+    color: #fff8f6;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
   .wishlist-btn { position: absolute; top: 12px; right: 12px; z-index: 2; background: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; color: var(--charcoal); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.12); transition: all 0.2s; }
   .wishlist-btn:hover { transform: scale(1.12); }
   .wishlist-btn.active { background: var(--gold); color: white; }
@@ -203,6 +225,39 @@ const css = `
   .close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--warm-gray); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
   .close-btn:hover { color: var(--charcoal); }
   .modal-body { padding: 24px 32px 32px; }
+  .auth-modal-inner { position: relative; }
+  .auth-otp-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 8;
+    background: linear-gradient(165deg, #ffffff 0%, #faf7f2 55%, #f3efe8 100%);
+    padding: 32px 28px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    text-align: center;
+    box-shadow: inset 0 0 0 1px rgba(232,226,217,0.9);
+  }
+  .auth-otp-title { font-family: var(--font-serif); font-size: 1.45rem; font-weight: 500; color: var(--charcoal); margin-bottom: 10px; }
+  .auth-otp-sub { font-size: 0.72rem; color: var(--warm-gray); line-height: 1.6; margin-bottom: 22px; }
+  .auth-otp-input {
+    width: 100%;
+    letter-spacing: 0.5em;
+    text-indent: 0.25em;
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 600;
+    padding: 16px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-variant-numeric: tabular-nums lining-nums;
+    margin-bottom: 14px;
+    background: var(--cream);
+  }
+  .auth-otp-input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,169,110,0.2); }
+  .auth-otp-demo { font-size: 0.62rem; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px; }
+  .form-hint-soft { font-size: 0.66rem; color: var(--error); margin-top: 8px; }
 
   .cart-drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 420px; max-width: 100vw; background: var(--cream); z-index: 1200; overflow-y: auto; border-left: 1px solid var(--border); animation: fadeInRight 0.3s ease; overscroll-behavior: contain; touch-action: pan-y; }
   .cart-header { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--cream); z-index: 1; }
@@ -714,7 +769,7 @@ const css = `
   .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
 
   .product-detail { max-width: 1100px; margin: 0 auto; padding: 100px 40px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
-  .detail-img { aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; font-size: 9rem; }
+  .detail-img { position: relative; aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; font-size: 9rem; }
   .detail-brand { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
   .detail-name { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 400; margin-bottom: 16px; line-height: 1.2; color: var(--charcoal); }
   .product-detail .animate-fade { color: var(--charcoal); }
@@ -2120,12 +2175,6 @@ const normalizeUser = (u) => {
   return next;
 };
 
-const isStrongPassword = (pw) => {
-  const s = String(pw || "");
-  // at least 8 chars, 1 upper, 1 lower, 1 number, 1 special
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(s);
-};
-
 const getPasswordChecks = (pw) => {
   const s = String(pw || "");
   return {
@@ -2136,6 +2185,13 @@ const getPasswordChecks = (pw) => {
     symbol: /[^A-Za-z0-9]/.test(s),
   };
 };
+
+const passwordStrengthCount = (pw) => {
+  const c = getPasswordChecks(pw);
+  return [c.length, c.upper, c.lower, c.number, c.symbol].filter(Boolean).length;
+};
+
+const isPasswordAcceptable = (pw) => passwordStrengthCount(pw) >= 4;
 
 const mergeGuestBag = (baseCart, guestCart) => {
   const merged = [...(baseCart || [])];
@@ -2686,38 +2742,6 @@ export default function App() {
       }
     } finally {
       setGoogleAuthBusy(false);
-    }
-  };
-
-  const sendSignInLinkForAuth = async ({ email, firstName, lastName, mode }) => {
-    const em = String(email || "").trim().toLowerCase();
-    if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return "Please enter a valid email.";
-    if (mode === "register") {
-      const fn = String(firstName || "").trim();
-      const ln = String(lastName || "").trim();
-      if (!fn || !ln) return "Please enter your first and last name.";
-    }
-    try {
-      sessionStorage.setItem(EMAIL_LINK_EMAIL_KEY, em);
-      sessionStorage.setItem(
-        EMAIL_LINK_PROFILE_KEY,
-        JSON.stringify({
-          email: em,
-          firstName: String(firstName || "").trim(),
-          lastName: String(lastName || "").trim(),
-          mode,
-        }),
-      );
-      const actionCodeSettings = {
-        url: `${window.location.origin}${window.location.pathname}`,
-        handleCodeInApp: true,
-      };
-      await sendSignInLinkToEmail(auth, em, actionCodeSettings);
-      return null;
-    } catch (e) {
-      sessionStorage.removeItem(EMAIL_LINK_EMAIL_KEY);
-      sessionStorage.removeItem(EMAIL_LINK_PROFILE_KEY);
-      return e?.message || "Could not send verification email. Enable Email link in Firebase Console.";
     }
   };
 
@@ -3692,7 +3716,6 @@ export default function App() {
             onGoogle={loginWithGoogle}
             googleBusy={googleAuthBusy}
             addToast={addToast}
-            sendSignInLinkForAuth={sendSignInLinkForAuth}
           />
         </>
       )}
@@ -3824,11 +3847,14 @@ function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wish
   const onSale = isOnSale(product);
   return (
     <div className={`product-card animate-fade-d${Math.min(delay + 1, 4)}`}>
-      {product.badge && <div className="product-badge">{product.badge}</div>}
       <button className={`wishlist-btn${wishlisted ? " active" : ""}`} onClick={e => { e.stopPropagation(); toggleWishlist(product.id); }}>
         {wishlisted ? "♥" : "♡"}
       </button>
       <div className="product-img" style={{ background: `linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }} onClick={() => navigate("product", product)}>
+        <div className="product-badge-stack">
+          {product.badge && <div className="product-badge">{product.badge}</div>}
+          {!inStock && <div className="product-badge product-badge-oos">Out of stock</div>}
+        </div>
         <span className="product-emoji">{product.emoji}</span>
         <div className="product-actions-overlay">
           <button
@@ -3970,6 +3996,10 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
       <div className="product-detail">
         <div className="animate-scale">
           <div className="detail-img" style={{ background: `linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }}>
+            <div className="product-badge-stack">
+              {product.badge && <div className="product-badge">{product.badge}</div>}
+              {!inStock && <div className="product-badge product-badge-oos">Out of stock</div>}
+            </div>
             <span style={{ fontSize: "9rem" }}>{product.emoji}</span>
           </div>
         </div>
@@ -3977,7 +4007,6 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
           <button type="button" onClick={() => navigate("shop")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)", marginBottom: 24, display: "flex", alignItems: "center", gap: 6 }}>
             ← Back to Collection
           </button>
-          {product.badge && <div style={{ display: "inline-block", background: "var(--charcoal)", color: "white", fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", padding: "4px 10px", marginBottom: 16 }}>{product.badge}</div>}
           <div className="detail-brand">{product.brand}</div>
           <h1 className="detail-name">{product.name}</h1>
           {onSale ? (
@@ -4347,258 +4376,305 @@ function AboutPage({ navigate }) {
 }
 
 // ─── Auth Modal ───────────────────────────────────────────────────────────────
-function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, addToast, sendSignInLinkForAuth }) {
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "" });
+function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, addToast }) {
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [emailLinkBusy, setEmailLinkBusy] = useState(false);
-  const [emailVerifyStep, setEmailVerifyStep] = useState("form");
-  const [showPasswordPath, setShowPasswordPath] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const pwChecks = getPasswordChecks(form.password);
-  const pwAllOk = pwChecks.length && pwChecks.upper && pwChecks.lower && pwChecks.number && pwChecks.symbol;
+  const [registerStep, setRegisterStep] = useState("form");
+  const [otpValue, setOtpValue] = useState("");
+  const [otpDisplay, setOtpDisplay] = useState("");
+  const pendingRef = useRef(null);
+  const otpCodeRef = useRef("");
+
+  useEffect(() => {
+    setRegisterStep("form");
+    setOtpValue("");
+    setOtpDisplay("");
+    pendingRef.current = null;
+    otpCodeRef.current = "";
+    setError("");
+    setForm({ username: "", email: "", password: "" });
+  }, [mode]);
 
   const resetModeSwitch = (next) => {
     setMode(next);
-    setError("");
-    setEmailVerifyStep("form");
-    setShowPasswordPath(false);
   };
 
-  const handleSendEmailLink = async () => {
+  const passOk = isPasswordAcceptable(form.password);
+  const strengthHint = mode === "register" && form.password.length > 0 && !passOk;
+
+  const startRegisterOtp = () => {
     setError("");
-    if (!form.email?.trim()) {
-      setError("Please enter your email.");
+    const username = form.username.trim();
+    const email = form.email.trim().toLowerCase();
+    if (!username) {
+      setError("Please enter a username.");
       return;
     }
-    if (mode === "register" && (!form.firstName?.trim() || !form.lastName?.trim())) {
-      setError("Please enter first and last name.");
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email.");
       return;
     }
-    setEmailLinkBusy(true);
-    const err = await sendSignInLinkForAuth({
-      email: form.email.trim(),
-      firstName: form.firstName,
-      lastName: form.lastName,
-      mode,
-    });
-    setEmailLinkBusy(false);
-    if (err) setError(err);
-    else setEmailVerifyStep("linkSent");
+    if (!form.password) {
+      setError("Please enter a password.");
+      return;
+    }
+    if (!isPasswordAcceptable(form.password)) {
+      setError("Password is not strong enough.");
+      return;
+    }
+    if (LS.getUser(email)) {
+      setError("Email already registered.");
+      return;
+    }
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    otpCodeRef.current = code;
+    setOtpDisplay(code);
+    pendingRef.current = { firstName: username, lastName: "", email, password: form.password };
+    setOtpValue("");
+    setRegisterStep("otp");
+    addToast?.(`Verification code (demo): ${code}`, "info");
   };
 
-  const handlePasswordSubmit = () => {
-    if (!form.email || !form.password) { setError("Please fill email and password."); return; }
-    if (mode === "register" && !form.firstName) { setError("Please enter your first name."); return; }
-    if (mode === "register" && !form.lastName) { setError("Please enter your last name."); return; }
-    if (mode === "register" && !isStrongPassword(form.password)) {
-      setError("Password must be 8+ chars with uppercase, lowercase, number, and a symbol.");
+  const verifyOtpAndRegister = () => {
+    setError("");
+    const entered = otpValue.replace(/\D/g, "").slice(0, 6);
+    if (entered.length !== 6) {
+      setError("Please enter the 6-digit code.");
+      return;
+    }
+    if (entered !== otpCodeRef.current) {
+      setError("Invalid code. Try again or resend.");
+      return;
+    }
+    const p = pendingRef.current;
+    if (!p) {
+      setError("Session expired. Please start again.");
+      setRegisterStep("form");
       return;
     }
     setLoading(true);
-    setError("");
-    const err = onSubmit(form);
-    if (err) { setError(err); setLoading(false); }
-    else setLoading(false);
+    const err = onSubmit({
+      email: p.email,
+      password: p.password,
+      firstName: p.firstName,
+      lastName: p.lastName,
+    });
+    setLoading(false);
+    if (err) {
+      setError(err);
+      setRegisterStep("form");
+    }
   };
 
-  const handleResendLink = () => void handleSendEmailLink();
+  const resendOtp = () => {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    otpCodeRef.current = code;
+    setOtpDisplay(code);
+    addToast?.(`New code (demo): ${code}`, "info");
+    setError("");
+  };
+
+  const handleLoginSubmit = () => {
+    setError("");
+    const email = form.email.trim().toLowerCase();
+    if (!email) {
+      setError("Please enter your email.");
+      return;
+    }
+    if (!form.password) {
+      setError("Please enter your password.");
+      return;
+    }
+    setLoading(true);
+    const err = onSubmit({ email, password: form.password, firstName: "", lastName: "" });
+    setLoading(false);
+    if (err) setError(err);
+  };
+
+  const forgotPassword = async () => {
+    const email = form.email.trim().toLowerCase();
+    if (!email) {
+      setError("Enter your email first so we know where to send the link.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email, {
+        url: `${window.location.origin}${window.location.pathname}`,
+      });
+      addToast?.("Recovery link sent. Check your inbox to reset your password.", "info");
+      setError("");
+    } catch (e) {
+      addToast?.(e?.message || "Could not send recovery email. Try again later.", "error");
+    }
+  };
 
   return (
     <div className="modal">
-      <div className="modal-header">
-        <div className="modal-title" style={{ fontWeight: 600 }}>
-          {emailVerifyStep === "linkSent"
-            ? "Check your email"
-            : mode === "login"
-              ? "Welcome Back"
-              : "Create Account"}
-        </div>
-        <button type="button" className="close-btn" onClick={onClose}>✕</button>
-      </div>
-      <div className="modal-body">
-        {emailVerifyStep === "linkSent" ? (
-          <>
-            <p style={{ fontSize: "0.78rem", color: "var(--charcoal)", marginBottom: 12, lineHeight: 1.65 }}>
-              We sent a secure sign-in link to <strong>{form.email.trim()}</strong>. Check your inbox and spam folder, then open the link in this browser to finish signing in.
-            </p>
-            <p style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 20, lineHeight: 1.6 }}>
-              This uses Firebase email link sign-in (a one-time link in email). A separate 6-digit OTP SMS flow is not wired in this demo.
-            </p>
-            {error && <div className="form-error">{error}</div>}
-            <button type="button" className="form-submit" onClick={handleResendLink} disabled={emailLinkBusy}>
-              {emailLinkBusy ? "Sending…" : "Resend link"}
-            </button>
+      <div className="auth-modal-inner">
+        {mode === "register" && registerStep === "otp" && (
+          <div className="auth-otp-layer">
             <button
               type="button"
-              className="filter-btn"
-              style={{ marginTop: 12, width: "100%" }}
-              onClick={() => { setEmailVerifyStep("form"); setError(""); }}
+              className="close-btn"
+              style={{ position: "absolute", top: 8, right: 8 }}
+              onClick={() => {
+                setRegisterStep("form");
+                setOtpValue("");
+                setError("");
+              }}
+              aria-label="Close verification"
             >
-              Change email
+              ✕
             </button>
-            <div className="auth-divider">or</div>
-            <div className="social-login-grid">
-              <button type="button" className="btn-social" disabled={googleBusy} onClick={() => void onGoogle?.()}>
-                <span className="social-icon">
-                  <svg viewBox="0 0 24 24" width="18" height="18">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                </span>
-                {googleBusy ? "Connecting…" : "Continue with Google"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 24, letterSpacing: "0.05em" }}>
-              {mode === "login"
-                ? "Send a sign-in link to your email, then open it in this browser to complete sign in."
-                : "Enter your name and email to create an account, then verify using the link we send to your inbox."}
+            <div className="auth-otp-title">Verify your email</div>
+            <p className="auth-otp-sub">
+              Enter the 6-digit code we sent to <strong>{form.email.trim()}</strong>. In production this arrives by email; in this demo the code is also shown below and in a toast.
             </p>
-            {mode === "register" && (
-              <div className="form-row-two">
-                <div className="form-group">
-                  <label className="form-label">First Name *</label>
-                  <input className="form-input" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Last Name *</label>
-                  <input className="form-input" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
-                </div>
-              </div>
-            )}
+            <input
+              className="auth-otp-input"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="••••••"
+              value={otpValue}
+              onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            />
+            <div className="auth-otp-demo">Demo code: {otpDisplay}</div>
+            {error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}
+            <button type="button" className="form-submit" onClick={verifyOtpAndRegister} disabled={loading}>
+              {loading ? "Please wait…" : "Verify & create account"}
+            </button>
+            <button type="button" className="filter-btn" style={{ marginTop: 12, width: "100%" }} onClick={resendOtp}>
+              Resend code
+            </button>
+          </div>
+        )}
+
+        <div className="modal-header">
+          <div className="modal-title" style={{ fontWeight: 600 }}>
+            {mode === "login" ? "Welcome Back" : "Create Account"}
+          </div>
+          <button type="button" className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 22, letterSpacing: "0.04em", lineHeight: 1.55 }}>
+            {mode === "login"
+              ? "Sign in with email and password, or continue with Google or Apple."
+              : "Pick a username, email, and password. After you continue, enter the 6-digit code we send (demo shows the code on screen)."}
+          </p>
+
+          {mode === "register" && (
             <div className="form-group">
-              <label className="form-label">Email *</label>
+              <label className="form-label">Username *</label>
               <input
                 className="form-input"
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && void handleSendEmailLink()}
+                autoComplete="username"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
               />
             </div>
+          )}
 
-            <button type="button" className="form-submit" onClick={() => void handleSendEmailLink()} disabled={emailLinkBusy}>
-              {emailLinkBusy ? "Sending…" : "Send verification link"}
+          <div className="form-group">
+            <label className="form-label">Email *</label>
+            <input
+              className="form-input"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Password *</label>
+            <div style={{ position: "relative" }}>
+              <input
+                className="form-input"
+                type={showPass ? "text" : "password"}
+                autoComplete={mode === "register" ? "new-password" : "current-password"}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && (mode === "login" ? handleLoginSubmit() : startRegisterOtp())}
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--warm-gray)", fontSize: "1.1rem" }}
+              >
+                {showPass ? "🙈" : "👁"}
+              </button>
+            </div>
+            {strengthHint && <p className="form-hint-soft">Password is not strong enough.</p>}
+          </div>
+
+          {mode === "login" && (
+            <div style={{ textAlign: "right", marginTop: -8, marginBottom: 16 }}>
+              <button type="button" onClick={forgotPassword} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontWeight: 600, fontSize: "0.72rem", textDecoration: "underline" }}>
+                Forgot password?
+              </button>
+            </div>
+          )}
+
+          {error && registerStep === "form" && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}
+
+          {mode === "login" ? (
+            <button type="button" className="form-submit" onClick={handleLoginSubmit} disabled={loading}>
+              {loading ? "Please wait…" : "Sign In"}
             </button>
-
+          ) : (
             <button
               type="button"
-              onClick={() => { setShowPasswordPath((v) => !v); setError(""); }}
-              style={{
-                marginTop: 16,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--gold)",
-                fontWeight: 600,
-                fontSize: "0.72rem",
-                textDecoration: "underline",
-                display: "block",
-                width: "100%",
-                textAlign: "center",
-              }}
+              className="form-submit"
+              onClick={startRegisterOtp}
+              disabled={!passOk || !form.username.trim() || !form.email.trim() || !form.password}
             >
-              {showPasswordPath ? "Sign in with email link (step above)" : "Sign in with password on this device only (optional)"}
+              Create Account
             </button>
+          )}
 
-            {showPasswordPath && (
-              <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-                <div className="form-group">
-                  <label className="form-label">Password</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      className="form-input"
-                      type={showPass ? "text" : "password"}
-                      name="password"
-                      autoComplete={mode === "register" ? "new-password" : "current-password"}
-                      placeholder="••••••••"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      onKeyDown={(e) => e.key === "Enter" && handlePasswordSubmit()}
-                      style={{ paddingRight: 44 }}
-                    />
-                    <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--warm-gray)", fontSize: "1.1rem" }}>
-                      {showPass ? "🙈" : "👁"}
-                    </button>
-                  </div>
-                  {mode === "register" && (
-                    <div style={{ marginTop: 8 }}>
-                      <div style={{ display: "grid", gap: 6, fontSize: "0.7rem", lineHeight: 1.4 }}>
-                        {[
-                          ["8+ characters", pwChecks.length],
-                          ["Uppercase letter (A-Z)", pwChecks.upper],
-                          ["Lowercase letter (a-z)", pwChecks.lower],
-                          ["A number (0-9)", pwChecks.number],
-                          ["A symbol (!@#$...)", pwChecks.symbol],
-                        ].map(([label, ok]) => (
-                          <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, color: ok ? "var(--success)" : "var(--error)" }}>
-                            <span style={{ fontWeight: 900 }}>{ok ? "✓" : "•"}</span>
-                            <span>{label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {mode === "login" && (
-                    <div style={{ marginTop: 10, textAlign: "right" }}>
-                      <button
-                        type="button"
-                        onClick={() => setError("Use the email link to sign in, or create a new account.")}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--gold)", fontWeight: 600, fontSize: "0.72rem", textDecoration: "underline" }}
-                      >
-                        Forgot password?
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {error && <div className="form-error">{error}</div>}
-                <button type="button" className="form-submit" onClick={handlePasswordSubmit} disabled={loading || (mode === "register" && !pwAllOk)}>
-                  {loading ? "Please wait..." : mode === "login" ? "Sign In (this device)" : "Create Account (this device)"}
-                </button>
-              </div>
-            )}
+          <div className="auth-divider">or</div>
 
-            {!showPasswordPath && error && <div className="form-error" style={{ marginTop: 16 }}>{error}</div>}
-
-            <div className="auth-divider">or</div>
-
-            <div className="social-login-grid">
-              <button type="button" className="btn-social" disabled={googleBusy} onClick={() => void onGoogle?.()}>
-                <span className="social-icon">
-                  <svg viewBox="0 0 24 24" width="18" height="18">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                </span>
-                {googleBusy ? "Connecting…" : "Continue with Google"}
-              </button>
-              <button type="button" className="btn-social" onClick={() => addToast?.("Apple login is coming soon!", "info")}>
-                <span className="social-icon">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                    <path d="M17.05 20.28c-.96.95-2.04 1.9-3.32 1.9-1.25 0-1.74-.78-3.19-.78-1.47 0-1.99.76-3.21.78-1.28.02-2.48-1.04-3.44-2.02-1.97-2.01-3.48-5.69-1.46-8.79 1-1.54 2.82-2.52 4.41-2.55 1.2-.02 2.33.72 3.07.72s1.9-.76 3.32-.62c.59.03 2.26.22 3.33 1.65-.09.05-1.99 1.05-1.97 3.34.02 2.76 2.65 3.73 2.7 3.75-.02.08-.43 1.34-1.24 2.61zM12.03 7.25c-.02-2.24 1.83-4.14 4.02-4.25.02.22.04.44.04.67 0 2.12-1.89 4.19-4.06 3.58z" />
-                  </svg>
-                </span>
-                Continue with Apple
-              </button>
-            </div>
-            <div className="auth-switch">
-              {mode === "login"
-                ? <>New to sanjiiiii? <button type="button" onClick={() => resetModeSwitch("register")}>Create an account</button></>
-                : <>Already a member? <button type="button" onClick={() => resetModeSwitch("login")}>Sign in</button></>}
-            </div>
-            <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 20, lineHeight: 1.55 }}>
-              Email link and Google accounts sync to the cloud. Passwords for this path stay in this browser&apos;s localStorage only.
-            </p>
-          </>
-        )}
+          <div className="social-login-grid">
+            <button type="button" className="btn-social" disabled={googleBusy} onClick={() => void onGoogle?.()}>
+              <span className="social-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1 .67-2.28 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+              </span>
+              {googleBusy ? "Connecting…" : "Continue with Google"}
+            </button>
+            <button type="button" className="btn-social" onClick={() => addToast?.("Apple login is coming soon!", "info")}>
+              <span className="social-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M17.05 20.28c-.96.95-2.04 1.9-3.32 1.9-1.25 0-1.74-.78-3.19-.78-1.47 0-1.99.76-3.21.78-1.28.02-2.48-1.04-3.44-2.02-1.97-2.01-3.48-5.69-1.46-8.79 1-1.54 2.82-2.52 4.41-2.55 1.2-.02 2.33.72 3.07.72s1.9-.76 3.32-.62c.59.03 2.26.22 3.33 1.65-.09.05-1.99 1.05-1.97 3.34.02 2.76 2.65 3.73 2.7 3.75-.02.08-.43 1.34-1.24 2.61zM12.03 7.25c-.02-2.24 1.83-4.14 4.02-4.25.02.22.04.44.04.67 0 2.12-1.89 4.19-4.06 3.58z" />
+                </svg>
+              </span>
+              Continue with Apple
+            </button>
+          </div>
+          <div className="auth-switch">
+            {mode === "login"
+              ? <>New to sanjiiiii? <button type="button" onClick={() => resetModeSwitch("register")}>Create an account</button></>
+              : <>Already a member? <button type="button" onClick={() => resetModeSwitch("login")}>Sign in</button></>}
+          </div>
+          <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 18, lineHeight: 1.55 }}>
+            Password accounts are stored in this browser&apos;s localStorage. Google sign-in uses Firebase in the cloud.
+          </p>
+        </div>
       </div>
     </div>
   );
