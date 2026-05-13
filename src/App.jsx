@@ -188,7 +188,36 @@ const css = `
   .wishlist-btn.active { background: var(--gold); color: white; }
 
   .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); overscroll-behavior: none; touch-action: none; }
+  .overlay-center {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    pointer-events: none;
+  }
   .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: white; width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+  .overlay-center .modal {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    z-index: 1;
+    width: min(90vw, 480px);
+    max-height: min(90vh, calc(100dvh - 24px));
+    pointer-events: auto;
+    animation: cookieModalIn 0.25s ease both;
+  }
+  .overlay-center .checkout-modal {
+    width: min(1100px, 94vw);
+    max-width: 1100px;
+    max-height: min(92vh, calc(100dvh - 24px));
+    top: auto;
+    left: auto;
+    transform: none;
+  }
   .checkout-modal {
     top: 50%;
     left: 50%;
@@ -3295,7 +3324,8 @@ export default function App() {
       {checkoutOpen && (
         <>
           <div className="overlay-backdrop" onClick={closeCheckout} />
-          <div className="modal checkout-modal">
+          <div className="overlay-center">
+            <div className="modal checkout-modal">
             <div className="modal-header">
               <div className="modal-title">Checkout</div>
               <button className="close-btn" onClick={closeCheckout}>✕</button>
@@ -3663,6 +3693,7 @@ export default function App() {
                 </>
               )}
             </div>
+            </div>
           </div>
         </>
       )}
@@ -3671,7 +3702,8 @@ export default function App() {
       {payConfirmOrder && (
         <>
           <div className="overlay-backdrop" onClick={() => setPayConfirmOrder(null)} />
-          <div className="modal" style={{ maxWidth: 520 }}>
+          <div className="overlay-center">
+            <div className="modal" style={{ maxWidth: 520 }}>
             <div className="modal-header">
               <div className="modal-title">Confirm Payment</div>
               <button className="close-btn" onClick={() => setPayConfirmOrder(null)}>✕</button>
@@ -3700,6 +3732,7 @@ export default function App() {
                 </button>
               </div>
             </div>
+            </div>
           </div>
         </>
       )}
@@ -3708,15 +3741,17 @@ export default function App() {
       {authOpen && (
         <>
           <div className="overlay-backdrop" onClick={() => setAuthOpen(false)} />
-          <AuthModal
-            mode={authMode}
-            setMode={setAuthMode}
-            onClose={() => setAuthOpen(false)}
-            onSubmit={login}
-            onGoogle={loginWithGoogle}
-            googleBusy={googleAuthBusy}
-            addToast={addToast}
-          />
+          <div className="overlay-center">
+            <AuthModal
+              mode={authMode}
+              setMode={setAuthMode}
+              onClose={() => setAuthOpen(false)}
+              onSubmit={login}
+              onGoogle={loginWithGoogle}
+              googleBusy={googleAuthBusy}
+              addToast={addToast}
+            />
+          </div>
         </>
       )}
 
