@@ -4,11 +4,14 @@ import {
   signInWithPopup,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
+  reload,
   isSignInWithEmailLink,
   signInWithEmailLink,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase.js";
+import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 const fontLink = document.createElement("link");
@@ -28,6 +31,9 @@ const css = `
     --warm-gray: #4F4841;
     --border: #E8E2D9;
     --white: #FFFFFF;
+    --surface: #FFFFFF;
+    --nav-bg: rgba(250,247,242,0.96);
+    --hero-bg: #1A1A1A;
     --error: #C0392B;
     --success: #27AE60;
     --font-serif: 'Cormorant Garamond', Georgia, serif;
@@ -61,7 +67,7 @@ const css = `
   .cart-item-meta { font-size: 0.74rem; }
   .cart-total-label { font-size: 0.74rem; }
   .form-label { font-size: 0.7rem; }
-  .form-input { font-size: 0.9rem; color: #1f1b17; }
+  .form-input { font-size: 0.9rem; color: var(--charcoal); }
   .pay-method-card-sub { font-size: 0.72rem; }
   .pay-detail-hint { font-size: 0.78rem; }
   .receipt-label { font-size: 0.64rem; }
@@ -91,7 +97,7 @@ const css = `
 
   .navbar {
     position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    background: rgba(250,247,242,0.96); backdrop-filter: blur(12px);
+    background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 40px; height: 64px; transition: box-shadow 0.3s;
@@ -107,8 +113,8 @@ const css = `
   .icon-btn:hover { color: var(--gold); }
   .badge { position: absolute; top: -4px; right: -6px; background: var(--gold); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
-  .hero { height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: var(--charcoal); }
-  .hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #1A1A1A 0%, #2C2416 40%, #1A1A1A 100%); }
+  .hero { height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: var(--hero-bg); }
+  .hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, var(--hero-bg) 0%, #2C2416 40%, var(--hero-bg) 100%); }
   .hero-pattern { position: absolute; inset: 0; opacity: 0.04; background-image: repeating-linear-gradient(45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 50%); background-size: 20px 20px; }
   .hero-content { position: relative; z-index: 2; text-align: center; padding: 20px; max-width: 800px; }
   .hero-eyebrow { font-family: var(--font-sans); font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; animation: fadeIn 0.8s ease both; }
@@ -187,7 +193,7 @@ const css = `
   .wishlist-btn:hover { transform: scale(1.12); }
   .wishlist-btn.active { background: var(--gold); color: white; }
 
-  .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); overscroll-behavior: none; touch-action: none; }
+  .overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1100; animation: fadeIn 0.25s ease; backdrop-filter: blur(3px); }
   .overlay-center {
     position: fixed;
     inset: 0;
@@ -198,7 +204,7 @@ const css = `
     padding: 12px;
     pointer-events: none;
   }
-  .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: white; width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+  .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 1200; background: var(--surface); width: 90%; max-width: 480px; animation: scaleIn 0.3s ease; max-height: 90vh; overflow-y: auto; }
   .overlay-center .modal {
     position: relative;
     top: auto;
@@ -206,14 +212,14 @@ const css = `
     transform: none;
     z-index: 1;
     width: min(90vw, 480px);
-    max-height: min(90vh, calc(100dvh - 24px));
+    max-height: min(90vh, calc(100vh - 24px));
     pointer-events: auto;
     animation: cookieModalIn 0.25s ease both;
   }
   .overlay-center .checkout-modal {
     width: min(1100px, 94vw);
     max-width: 1100px;
-    max-height: min(92vh, calc(100dvh - 24px));
+    max-height: min(92vh, calc(100vh - 24px));
     top: auto;
     left: auto;
     transform: none;
@@ -228,13 +234,11 @@ const css = `
     height: auto;
     border-radius: 4px;
     animation: scaleIn 0.25s ease;
-    overscroll-behavior: contain;
-    touch-action: pan-y;
   }
   .checkout-modal .modal-header {
     padding: 20px 28px;
     border-bottom: 1px solid var(--border);
-    background: white;
+    background: var(--surface);
     position: sticky;
     top: 0;
     z-index: 2;
@@ -247,7 +251,6 @@ const css = `
     box-sizing: border-box;
     max-height: calc(92vh - 82px);
     overflow-y: auto;
-    overscroll-behavior: contain;
   }
   .modal-header { padding: 28px 32px 0; display: flex; justify-content: space-between; align-items: center; }
   .modal-title { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 400; }
@@ -259,7 +262,7 @@ const css = `
     position: absolute;
     inset: 0;
     z-index: 8;
-    background: linear-gradient(165deg, #ffffff 0%, #faf7f2 55%, #f3efe8 100%);
+    background: linear-gradient(165deg, var(--surface) 0%, var(--cream) 55%, var(--border) 100%);
     padding: 32px 28px 28px;
     display: flex;
     flex-direction: column;
@@ -288,7 +291,7 @@ const css = `
   .auth-otp-demo { font-size: 0.62rem; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px; }
   .form-hint-soft { font-size: 0.66rem; color: var(--error); margin-top: 8px; }
 
-  .cart-drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 420px; max-width: 100vw; background: var(--cream); z-index: 1200; overflow-y: auto; border-left: 1px solid var(--border); animation: fadeInRight 0.3s ease; overscroll-behavior: contain; touch-action: pan-y; }
+  .cart-drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 420px; max-width: 100vw; background: var(--cream); z-index: 1200; overflow-y: auto; border-left: 1px solid var(--border); animation: fadeInRight 0.3s ease; }
   .cart-header { padding: 24px 28px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--cream); z-index: 1; }
   .cart-title { font-family: var(--font-serif); font-size: 1.5rem; }
   .cart-items { padding: 20px 28px; }
@@ -547,7 +550,7 @@ const css = `
   .toast.success { border-left-color: var(--success); }
   .toast.removing { animation: toastOut 0.3s ease forwards; }
 
-  .cookie-backdrop { position: fixed; inset: 0; background: rgba(10,12,16,0.22); backdrop-filter: blur(3px); z-index: 2100; animation: fadeIn 0.25s ease both; overscroll-behavior: none; touch-action: none; }
+  .cookie-backdrop { position: fixed; inset: 0; background: rgba(10,12,16,0.22); backdrop-filter: blur(3px); z-index: 2100; animation: fadeIn 0.25s ease both; }
 
   /* Cookie bar (full-width + slide-up) */
   .cookie-panel {
@@ -623,8 +626,6 @@ const css = `
     background: rgba(10,12,16,0.48);
     backdrop-filter: blur(5px);
     animation: fadeIn 0.22s ease both;
-    overscroll-behavior: none;
-    touch-action: none;
   }
   @keyframes cookieModalIn {
     from { opacity: 0; transform: scale(0.96); }
@@ -638,9 +639,8 @@ const css = `
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: max(12px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+    padding: 12px 14px;
     pointer-events: none;
-    overscroll-behavior: none;
   }
   .cookie-customize-modal {
     position: relative;
@@ -649,13 +649,10 @@ const css = `
     transform: none;
     z-index: 1;
     width: min(520px, 100%);
-    max-height: min(720px, calc(100dvh - 24px));
+    max-height: min(720px, calc(100vh - 24px));
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
     background: linear-gradient(180deg, #fff 0%, #faf8f5 100%);
     border: 1px solid rgba(232,226,217,0.95);
     border-radius: 6px;
@@ -702,14 +699,6 @@ const css = `
     padding-top: 18px;
     border-top: 1px solid rgba(232,226,217,0.9);
   }
-  @media (max-width: 520px) {
-    .cookie-modal-section .cookie-row {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-    }
-    .cookie-modal-section .cookie-toggle { align-self: flex-end; }
-  }
   .cookie-close {
     margin-left: auto;
     width: 34px; height: 34px;
@@ -751,12 +740,6 @@ const css = `
   .cookie-switch.on { background: rgba(201,169,110,0.35); border-color: rgba(201,169,110,0.65); }
   .cookie-switch.on::after { left: 22px; }
   .cookie-lock { font-size: 0.65rem; color: rgba(26,26,26,0.55); letter-spacing: 0.12em; text-transform: uppercase; }
-  @media (max-width: 860px) {
-    .cookie-top { flex-wrap: wrap; align-items: flex-start; }
-    .cookie-content { width: 100%; }
-    .cookie-text { white-space: normal; }
-    .cookie-actions { width: 100%; justify-content: flex-end; }
-  }
 
   @media (min-width: 1024px) {
     .nav-link { font-size: 0.78rem; }
@@ -814,60 +797,11 @@ const css = `
   .wish-btn { padding: 16px 20px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1.2rem; color: var(--charcoal); font-weight: 700; line-height: 1; transition: all 0.2s; }
   .wish-btn:hover { background: var(--charcoal); color: white; }
   .wish-btn.active { background: var(--gold); color: white; border-color: var(--gold); }
-
-  @media (max-width: 768px) {
-    .navbar { padding: 0 20px; }
-    .nav-links { display: none; }
-    .nav-logo { font-size: 1.85rem; }
-    .hero-title { font-size: clamp(2.2rem, 10vw, 4rem); }
-    .hero-sub { font-size: 0.9rem; }
-    .section-eyebrow { font-size: 0.76rem; }
-    .product-brand { font-size: 0.72rem; }
-    .product-name { font-size: 1.12rem; }
-    .cart-item-meta { font-size: 0.78rem; }
-    .form-label { font-size: 0.74rem; }
-    .form-input { font-size: 0.96rem; }
-    .pay-method-card-sub { font-size: 0.76rem; line-height: 1.5; }
-    .pay-detail-hint { font-size: 0.82rem; }
-    .receipt-label { font-size: 0.7rem; }
-    .receipt-line { font-size: 0.86rem; }
-    .receipt-line-muted { font-size: 0.8rem; }
-    .filter-btn { font-size: 0.74rem; }
-    .categories-strip { grid-template-columns: 1fr; }
-    .category-card { aspect-ratio: 2/1; }
-    .section { padding: 60px 20px; }
-    .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
-    .cart-drawer { width: 100vw; }
-    .shop-layout { padding: 88px 20px 60px; }
-    .profile-layout { padding: 88px 20px 60px; }
-    .product-detail { grid-template-columns: 1fr; padding: 88px 20px 60px; gap: 32px; }
-    .form-row-two { grid-template-columns: 1fr; }
-  }
 `;
 
 const styleTag = document.createElement("style");
 styleTag.textContent = css;
 document.head.appendChild(styleTag);
-
-// ─── Products ─────────────────────────────────────────────────────────────────
-const PRODUCTS = [
-  { id: 1, name: "Draped Silk Blouse", brand: "Maison Élite", price: 245, category: "Women", badge: "New", emoji: "👘", bg: ["#F5EEE6", "#EDE4D8"], desc: "Luxuriously soft silk blouse with an elegant drape. Perfect for formal occasions and upscale casual wear.", sizes: ["XS", "S", "M", "L", "XL"] },
-  { id: 2, name: "Tailored Wool Blazer", brand: "L'Atelier", price: 480, category: "Men", badge: null, inStock: false, emoji: "🧥", bg: ["#E8ECF0", "#D8DDE3"], desc: "Precision-tailored blazer crafted from merino wool. A wardrobe staple for boardroom to evening.", sizes: ["S", "M", "L", "XL", "XXL"] },
-  { id: 3, name: "Sculptural Handbag", brand: "Cour Royal", price: 620, category: "Accessories", badge: "Bestseller", emoji: "👜", bg: ["#F0EAE0", "#E8DDD0"], desc: "Architectural handbag handcrafted in full-grain leather. An investment piece that defines every look.", sizes: ["One Size"] },
-  { id: 4, name: "Wide-Leg Trousers", brand: "Maison Élite", compareAt: 380, price: 310, category: "Women", badge: "Sale", emoji: "👖", bg: ["#EDEAE5", "#E0DCCF"], desc: "Fluid wide-leg trousers in sustainable tencel. Elevated comfort with an impeccable silhouette.", sizes: ["XS", "S", "M", "L", "XL"] },
-  { id: 5, name: "Oxford Leather Shoes", brand: "Brun & Co.", price: 395, category: "Men", badge: null, emoji: "👞", bg: ["#E8E0D0", "#DDD5C0"], desc: "Hand-stitched Oxford shoes in burnished calfskin leather. Classic craftsmanship for the discerning gentleman.", sizes: ["40", "41", "42", "43", "44", "45"] },
-  { id: 6, name: "Cashmere Scarf", brand: "Montagne", compareAt: 245, price: 185, category: "Accessories", badge: "Sale", emoji: "🧣", bg: ["#F0ECE4", "#E8E0D4"], desc: "Pure cashmere scarf woven in Scotland. Incredibly soft with a refined herringbone pattern.", sizes: ["One Size"] },
-  { id: 7, name: "Slip Midi Dress", brand: "Soirée", price: 295, category: "Women", badge: "New", emoji: "👗", bg: ["#EEE8F0", "#E4DDE8"], desc: "Bias-cut midi dress in liquid satin. Effortlessly elegant for any occasion.", sizes: ["XS", "S", "M", "L"] },
-  { id: 8, name: "Slim Fit Chinos", brand: "L'Atelier", compareAt: 245, price: 195, category: "Men", badge: "Sale", emoji: "🩲", bg: ["#EAE8E0", "#DDDAC8"], desc: "Slim fit chinos in stretch cotton twill. Versatile, refined, and impeccably comfortable.", sizes: ["S", "M", "L", "XL", "XXL"] },
-  { id: 9, name: "Gold Hoop Earrings", brand: "Cour Royal", price: 145, category: "Accessories", badge: null, emoji: "💍", bg: ["#F5F0E0", "#EDE8D0"], desc: "Minimalist gold-plated hoop earrings. Lightweight yet statement-making.", sizes: ["One Size"] },
-  { id: 10, name: "Linen Shirt Dress", brand: "Maison Élite", price: 265, category: "Women", badge: null, emoji: "👔", bg: ["#EEF0EA", "#E4E8DC"], desc: "Relaxed shirt dress in washed Belgian linen. Understated sophistication.", sizes: ["XS", "S", "M", "L", "XL"] },
-  { id: 11, name: "Merino Turtleneck", brand: "Montagne", price: 220, category: "Men", badge: "Bestseller", emoji: "🧶", bg: ["#E8EAF0", "#D8DDE8"], desc: "Ultra-fine merino turtleneck in a versatile palette. An essential layer for colder months.", sizes: ["S", "M", "L", "XL", "XXL"] },
-  { id: 12, name: "Leather Belt", brand: "Brun & Co.", compareAt: 175, price: 135, category: "Accessories", badge: "Sale", emoji: "👑", bg: ["#EDE8E0", "#E0D8CC"], desc: "Vegetable-tanned leather belt with a polished brass buckle. The finishing touch every outfit deserves.", sizes: ["70cm", "75cm", "80cm", "85cm", "90cm"] },
-  { id: 13, name: "Organic Cotton Hoodie", brand: "Petit Atelier", price: 68, category: "Kids", badge: "New", emoji: "🧸", bg: ["#EAF3F0", "#DDEBE5"], desc: "Soft brushed hoodie in organic cotton. Built for playground days and cozy evenings.", sizes: ["2Y", "3Y", "4Y", "5Y", "6Y", "7Y", "8Y"] },
-  { id: 14, name: "Denim Overalls Set", brand: "Petit Atelier", price: 82, category: "Kids", badge: null, emoji: "🧒", bg: ["#E9EDF5", "#D8E0EF"], desc: "Classic denim overalls with an easy-fit tee. Durable, comfortable, and timeless.", sizes: ["2Y", "3Y", "4Y", "5Y", "6Y"] },
-  { id: 15, name: "Rain Jacket", brand: "Nord Mini", price: 95, category: "Kids", badge: "Bestseller", emoji: "🌧️", bg: ["#EEF6F9", "#DCECF3"], desc: "Lightweight waterproof jacket with sealed seams. Keeps little explorers dry in style.", sizes: ["3Y", "4Y", "5Y", "6Y", "7Y", "8Y"] },
-  { id: 16, name: "Knit Beanie + Scarf", brand: "Nord Mini", compareAt: 72, price: 48, category: "Kids", badge: "Sale", emoji: "🧣", bg: ["#F2F0EA", "#E5E2D6"], desc: "Warm knit set in a soft blend. Perfect for chilly mornings and weekend walks.", sizes: ["One Size"] },
-];
 
 const COUNTRY_OPTIONS = [
   {
@@ -2044,6 +1978,7 @@ const COUNTRY_OPTIONS = [
 
 const CHECKOUT_CACHE_KEY = "velours_checkout_draft_v1";
 const COOKIE_CONSENT_KEY = "velours_cookie_consent_v1";
+const GUEST_BAG_KEY = "velours_guest_bag_v1";
 const EMAIL_LINK_EMAIL_KEY = "velours_email_link_email";
 const EMAIL_LINK_PROFILE_KEY = "velours_email_link_profile";
 const USER_PROFILE_VERSION = 2;
@@ -2243,6 +2178,82 @@ const genTxId = () =>
 
 const newOrderId = () => `ORD-${Date.now()}`;
 
+const hydrateGuestCartFromRaw = (rawCart, catalog = DEFAULT_PRODUCTS) => {
+  if (!Array.isArray(rawCart)) return [];
+  const out = [];
+  for (const item of rawCart) {
+    const id = item?.product?.id;
+    if (id == null) continue;
+    const product = catalog.find((x) => x.id === id);
+    if (!product) continue;
+    const size = item.size || product.sizes?.[0] || "M";
+    const qty = Math.max(1, Number(item.qty) || 1);
+    out.push({ product, size, qty });
+  }
+  return out;
+};
+
+const hydrateGuestWishlistFromRaw = (raw, catalog = DEFAULT_PRODUCTS) =>
+  Array.isArray(raw) ? raw.filter((id) => catalog.some((p) => p.id === id)) : [];
+
+const readGuestBagFromStorage = (catalog = DEFAULT_PRODUCTS) => {
+  try {
+    const raw = localStorage.getItem(GUEST_BAG_KEY);
+    if (!raw) return { cart: [], wishlist: [] };
+    const d = JSON.parse(raw);
+    return {
+      cart: hydrateGuestCartFromRaw(d.cart, catalog),
+      wishlist: hydrateGuestWishlistFromRaw(d.wishlist, catalog),
+    };
+  } catch {
+    return { cart: [], wishlist: [] };
+  }
+};
+
+const writeGuestBagToStorage = (cart, wishlist) => {
+  try {
+    localStorage.setItem(
+      GUEST_BAG_KEY,
+      JSON.stringify({
+        cart: cart.map((i) => ({ product: { id: i.product.id }, size: i.size, qty: i.qty })),
+        wishlist,
+      }),
+    );
+  } catch {
+    void 0;
+  }
+};
+
+const clearGuestBagStorage = () => {
+  try {
+    localStorage.removeItem(GUEST_BAG_KEY);
+  } catch {
+    void 0;
+  }
+};
+
+const buildFulfillmentSnapshot = (paymentCompleted) => ({
+  trackingRef: `VLR-${Date.now().toString(36).toUpperCase()}`,
+  note: "Demo timeline — connect a carrier or OMS API for live tracking.",
+  stages: [
+    { key: "placed", label: "Order placed", done: true },
+    { key: "payment", label: "Payment received", done: paymentCompleted },
+    { key: "processing", label: "Processing at warehouse", done: paymentCompleted },
+    { key: "shipped", label: "Shipped", done: false },
+    { key: "delivered", label: "Delivered", done: false },
+  ],
+});
+
+const bumpFulfillmentForPaidOrder = (order) => {
+  const f = order.fulfillment || buildFulfillmentSnapshot(false);
+  return {
+    ...f,
+    stages: f.stages.map((s) =>
+      s.key === "payment" || s.key === "processing" ? { ...s, done: true } : s,
+    ),
+  };
+};
+
 // ─── Toast hook ───────────────────────────────────────────────────────────────
 let toastId = 0;
 function useToast() {
@@ -2260,8 +2271,11 @@ function useToast() {
 export default function App() {
   const [page, setPage] = useState("home");
   const [user, setUser] = useState(null);
-  const [cart, setCart] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const catalogRef = useRef(DEFAULT_PRODUCTS);
+  const [cart, setCart] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).cart);
+  const [wishlist, setWishlist] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).wishlist);
+  const [, firebaseProfileBump] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [payConfirmOrder, setPayConfirmOrder] = useState(null);
@@ -2320,6 +2334,44 @@ export default function App() {
     wishlistRef.current = wishlist;
   }, [cart, wishlist]);
 
+  useEffect(() => {
+    catalogRef.current = products;
+  }, [products]);
+
+  useEffect(() => {
+    const cref = doc(db, "catalog", "store");
+    const unsub = onSnapshot(
+      cref,
+      (snap) => {
+        if (!snap.exists()) {
+          setProducts(DEFAULT_PRODUCTS);
+          return;
+        }
+        const list = snap.data()?.products;
+        if (Array.isArray(list) && list.length > 0) setProducts(list);
+        else setProducts(DEFAULT_PRODUCTS);
+      },
+      () => {
+        setProducts(DEFAULT_PRODUCTS);
+      },
+    );
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.removeAttribute("data-theme");
+    try {
+      localStorage.removeItem("velours_theme");
+    } catch {
+      void 0;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) return;
+    writeGuestBagToStorage(cart, wishlist);
+  }, [user, cart, wishlist]);
+
   const saveUserToCloud = async (updated) => {
     if (!updated?.firebaseUid) return;
     try {
@@ -2362,7 +2414,7 @@ export default function App() {
         if (s.page !== "product") productLayerCountRef.current = 0;
         setPage(s.page);
         if (s.productId) {
-          const pr = PRODUCTS.find((x) => x.id === s.productId);
+          const pr = catalogRef.current.find((x) => x.id === s.productId);
           setSelectedProduct(pr || null);
         } else {
           setSelectedProduct(null);
@@ -2425,6 +2477,7 @@ export default function App() {
           setCart(mergedCart);
           setWishlist(mergedWish);
           await setDoc(ref, toFirestoreUser(finalUser), { merge: true });
+          clearGuestBagStorage();
         } else {
           const session = LS.getSession();
           if (session?.email) {
@@ -2436,13 +2489,15 @@ export default function App() {
               setWishlist(u.wishlist || []);
             } else {
               setUser(null);
-              setCart([]);
-              setWishlist([]);
+              const g = readGuestBagFromStorage(catalogRef.current);
+              setCart(g.cart);
+              setWishlist(g.wishlist);
             }
           } else {
             setUser(null);
-            setCart([]);
-            setWishlist([]);
+            const g = readGuestBagFromStorage(catalogRef.current);
+            setCart(g.cart);
+            setWishlist(g.wishlist);
           }
         }
       } catch (e) {
@@ -2753,6 +2808,7 @@ export default function App() {
     setCart(mergedCart);
     setWishlist(mergedWish);
     setAuthOpen(false);
+    clearGuestBagStorage();
     addToast(`Welcome${authMode === "register" ? "" : " back"}, ${finalUser.name}! 👋`, "success");
     return null;
   };
@@ -2777,6 +2833,7 @@ export default function App() {
   const logout = async () => {
     LS.clearSession();
     setUser(null);
+    clearGuestBagStorage();
     setCart([]);
     setWishlist([]);
     try {
@@ -3027,6 +3084,7 @@ export default function App() {
         paidAt: checkoutDraft.markAsDue ? null : new Date().toISOString(),
         transactionId: checkoutDraft.markAsDue ? null : genTxId(),
       },
+      fulfillment: buildFulfillmentSnapshot(!checkoutDraft.markAsDue),
     };
 
     const updatedOrders = [newOrder, ...(user.orders || [])];
@@ -3078,6 +3136,7 @@ export default function App() {
           paidAt: new Date().toISOString(),
           transactionId: o.payment.transactionId || genTxId(),
         },
+        fulfillment: bumpFulfillmentForPaidOrder(o),
       };
     });
     persist(cart, wishlist, user, updatedOrders);
@@ -3190,13 +3249,14 @@ export default function App() {
           ) : (
             <button className="btn-primary" style={{ padding: "8px 20px", fontSize: "0.65rem" }} onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
           )}
+          <a href="/admin.html" className="nav-link" style={{ textDecoration: "none", marginLeft: 4 }} target="_blank" rel="noopener noreferrer" title="Admin panel (new tab)">Admin</a>
         </div>
       </nav>
 
-      {page === "home" && <HomePage navigate={navigate} products={PRODUCTS} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
+      {page === "home" && <HomePage navigate={navigate} products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
       {page === "shop" && (
         <ShopPage
-          products={PRODUCTS}
+          products={products}
           navigate={navigate}
           filter={shopFilter}
           setFilter={setShopFilter}
@@ -3213,7 +3273,27 @@ export default function App() {
         />
       )}
       {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
-      {page === "profile" && <ProfilePage user={user} cart={cart} wishlist={wishlist} products={PRODUCTS} logout={logout} tab={profileTab} setTab={setProfileTab} navigate={navigate} onMarkOrderPaid={handleOpenMarkPaid} onUpdateProfile={updateUserProfile} />}
+      {page === "profile" && (
+        <ProfilePage
+          user={user}
+          cart={cart}
+          wishlist={wishlist}
+          products={products}
+          logout={logout}
+          tab={profileTab}
+          setTab={setProfileTab}
+          navigate={navigate}
+          onMarkOrderPaid={handleOpenMarkPaid}
+          onUpdateProfile={updateUserProfile}
+          addToast={addToast}
+          onFirebaseEmailReload={async () => {
+            if (auth.currentUser) {
+              await reload(auth.currentUser);
+              firebaseProfileBump((n) => n + 1);
+            }
+          }}
+        />
+      )}
       {page === "about" && <AboutPage navigate={navigate} />}
       {page === "privacy" && <PrivacyPage navigate={navigate} />}
       {page === "terms" && <TermsPage navigate={navigate} />}
@@ -3326,373 +3406,373 @@ export default function App() {
           <div className="overlay-backdrop" onClick={closeCheckout} />
           <div className="overlay-center">
             <div className="modal checkout-modal">
-            <div className="modal-header">
-              <div className="modal-title">Checkout</div>
-              <button className="close-btn" onClick={closeCheckout}>✕</button>
-            </div>
-            <div className="modal-body">
-              {checkoutStep === 1 && (
-                <>
-                  {cart.length > 0 && (
-                    <div className="form-group">
-                      <label className="form-label">Your bag</label>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {cart.map((item, i) => (
-                          <button
-                            key={`${item.product.id}-${i}-${item.size}`}
-                            type="button"
-                            className="cart-item-open"
-                            onClick={() => openProductFromCheckoutFlow(item.product)}
-                            style={{
-                              display: "flex",
-                              gap: 14,
-                              alignItems: "center",
-                              padding: "12px 14px",
-                              border: "1px solid var(--border)",
-                              background: "var(--cream)",
-                              cursor: "pointer",
-                              textAlign: "left",
-                              width: "100%",
-                              borderRadius: 2,
-                            }}
-                          >
-                            <span style={{ fontSize: "2rem", width: 56, textAlign: "center" }}>{item.product.emoji}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", color: "var(--charcoal)" }}>{item.product.name}</div>
-                              <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginTop: 4 }}>
-                                {item.product.brand} · Size {item.size} · Qty {item.qty}
-                                {isOnSale(item.product) ? (
-                                  <> · <span style={{ textDecoration: "line-through", marginRight: 6 }}>{fmt(item.product.compareAt)}</span>{fmt(item.product.price)}</>
-                                ) : (
-                                  <> · {fmt(item.product.price)}</>
-                                )}
+              <div className="modal-header">
+                <div className="modal-title">Checkout</div>
+                <button className="close-btn" onClick={closeCheckout}>✕</button>
+              </div>
+              <div className="modal-body">
+                {checkoutStep === 1 && (
+                  <>
+                    {cart.length > 0 && (
+                      <div className="form-group">
+                        <label className="form-label">Your bag</label>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          {cart.map((item, i) => (
+                            <button
+                              key={`${item.product.id}-${i}-${item.size}`}
+                              type="button"
+                              className="cart-item-open"
+                              onClick={() => openProductFromCheckoutFlow(item.product)}
+                              style={{
+                                display: "flex",
+                                gap: 14,
+                                alignItems: "center",
+                                padding: "12px 14px",
+                                border: "1px solid var(--border)",
+                                background: "var(--cream)",
+                                cursor: "pointer",
+                                textAlign: "left",
+                                width: "100%",
+                                borderRadius: 2,
+                              }}
+                            >
+                              <span style={{ fontSize: "2rem", width: 56, textAlign: "center" }}>{item.product.emoji}</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", color: "var(--charcoal)" }}>{item.product.name}</div>
+                                <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginTop: 4 }}>
+                                  {item.product.brand} · Size {item.size} · Qty {item.qty}
+                                  {isOnSale(item.product) ? (
+                                    <> · <span style={{ textDecoration: "line-through", marginRight: 6 }}>{fmt(item.product.compareAt)}</span>{fmt(item.product.price)}</>
+                                  ) : (
+                                    <> · {fmt(item.product.price)}</>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          </button>
-                        ))}
+                            </button>
+                          ))}
+                        </div>
+                        <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 10, lineHeight: 1.5 }}>
+                          Full product details like Collection. Your device or browser back button returns you to this checkout; your fields stay filled.
+                        </p>
                       </div>
-                      <p style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 10, lineHeight: 1.5 }}>
-                        Full product details like Collection. Your device or browser back button returns you to this checkout; your fields stay filled.
-                      </p>
-                    </div>
-                  )}
-                  <div className="form-row-two">
-                    <div className="form-group">
-                      <label className="form-label">First Name *</label>
-                      <input
-                        className={`form-input${checkoutErrors.firstName ? " invalid" : ""}`}
-                        value={checkoutDraft.firstName}
-                        onChange={e => {
-                          setCheckoutDraft({ ...checkoutDraft, firstName: e.target.value });
-                          if (checkoutErrors.firstName) setCheckoutErrors({ ...checkoutErrors, firstName: false });
-                        }}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Last Name *</label>
-                      <input
-                        className={`form-input${checkoutErrors.lastName ? " invalid" : ""}`}
-                        value={checkoutDraft.lastName}
-                        onChange={e => {
-                          setCheckoutDraft({ ...checkoutDraft, lastName: e.target.value });
-                          if (checkoutErrors.lastName) setCheckoutErrors({ ...checkoutErrors, lastName: false });
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Email *</label>
-                    <input
-                      className={`form-input${checkoutErrors.email ? " invalid" : ""}`}
-                      type="email"
-                      value={checkoutDraft.email}
-                      onChange={e => {
-                        setCheckoutDraft({ ...checkoutDraft, email: e.target.value });
-                        if (checkoutErrors.email) setCheckoutErrors({ ...checkoutErrors, email: false });
-                      }}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Country / Region *</label>
-                    <select
-                      className={`form-input${checkoutErrors.country ? " invalid" : ""}${!checkoutDraft.country ? " muted-select" : ""}`}
-                      value={checkoutDraft.country}
-                      onChange={e => {
-                        const selectedCountry = COUNTRY_OPTIONS.find(c => c.code === e.target.value) || COUNTRY_OPTIONS[0];
-                        setCheckoutDraft({ ...checkoutDraft, country: selectedCountry.code, phoneCode: selectedCountry.dial });
-                        if (checkoutErrors.country) setCheckoutErrors({ ...checkoutErrors, country: false });
-                      }}
-                    >
-                      <option value="">Default</option>
-                      {COUNTRY_OPTIONS.map(c => (
-                        <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">City *</label>
-                    <input
-                      className={`form-input${checkoutErrors.city ? " invalid" : ""}`}
-                      value={checkoutDraft.city}
-                      onChange={e => {
-                        setCheckoutDraft({ ...checkoutDraft, city: e.target.value });
-                        if (checkoutErrors.city) setCheckoutErrors({ ...checkoutErrors, city: false });
-                      }}
-                    />
-                  </div>
-
-                  <div className="form-row-two">
-                    <div className="form-group">
-                      <label className="form-label">State</label>
-                      <input className="form-input" value={checkoutDraft.state} onChange={e => setCheckoutDraft({ ...checkoutDraft, state: e.target.value })} />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Postal Code *</label>
-                      <input
-                        className={`form-input${checkoutErrors.postalCode ? " invalid" : ""}`}
-                        value={checkoutDraft.postalCode}
-                        onChange={e => {
-                          setCheckoutDraft({ ...checkoutDraft, postalCode: e.target.value });
-                          if (checkoutErrors.postalCode) setCheckoutErrors({ ...checkoutErrors, postalCode: false });
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Address</label>
-                    <input className="form-input" value={checkoutDraft.address} onChange={e => setCheckoutDraft({ ...checkoutDraft, address: e.target.value })} />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Phone Number</label>
-                    <div className="phone-wrap">
-                      <span className="phone-code">{checkoutDraft.phoneCode}</span>
-                      <input
-                        className="form-input"
-                        placeholder="Phone number"
-                        value={checkoutDraft.phone}
-                        onChange={e => setCheckoutDraft({ ...checkoutDraft, phone: e.target.value.replace(/[^\d\s-]/g, "") })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Delivery Option</label>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "standard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "standard" })}>Standard ($8)</button>
-                      <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "express" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "express" })}>Express ($20)</button>
-                    </div>
-                  </div>
-
-                  <p className="form-label" style={{ marginBottom: 14, marginTop: 8 }}>Choose how you would like to pay</p>
-                  <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
-                    {PAYMENT_METHOD_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={checkoutDraft.paymentMethod === opt.id}
-                        className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
-                        onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
-                      >
-                        <span className="pay-method-check" aria-hidden />
-                        <div className="pay-method-card-icon">
-                          <PayMethodIcon name={opt.icon} />
-                        </div>
-                        <div className="pay-method-card-text">
-                          <div className="pay-method-card-title">{opt.title}</div>
-                          <div className="pay-method-card-sub">{opt.sub}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="pay-detail-hint" style={{ marginTop: 4 }}>
-                    Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
-                  </p>
-                  <button type="button" className="form-submit" onClick={handleConfirmAddress}>Continue to payment details</button>
-                </>
-              )}
-
-              {checkoutStep === 2 && (
-                <>
-                  <div style={{ border: "1px solid var(--border)", padding: 14, marginBottom: 18, background: "var(--cream)" }}>
-                    <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", marginBottom: 10 }}>Bill Summary</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Subtotal</span><span>{fmt(getPricing().subtotal)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Product Discount</span><span>- {fmt(getPricing().itemDiscount)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>After Product Discount</span><span>{fmt(getPricing().discountedSubtotal)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Promo Discount</span><span>- {fmt(getPricing().promoDiscount)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 10 }}><span>Delivery Charge</span><span>{fmt(getPricing().shippingFee)}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 10, fontWeight: 600 }}><span>Total</span><span>{fmt(getPricing().total)}</span></div>
-                    <div style={{ marginTop: 8, fontSize: "0.7rem", color: "var(--warm-gray)", lineHeight: 1.6 }}>
-                      Estimated taxes (EU VAT / US sales tax) follow your delivery address and would be calculated automatically with Stripe Tax in production.
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Promo Code (if any)</label>
-                    <input className="form-input" placeholder="Use SAVE10" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Paying with</label>
-                    <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
-                      {PAYMENT_METHOD_OPTIONS.find((o) => o.id === checkoutDraft.paymentMethod)?.title || "Payment"}
-                    </div>
-                  </div>
-
-                  {checkoutDraft.paymentMethod === "card" && (
-                    <div className="form-group">
-                      <label className="form-label">Card network</label>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "visa" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "visa" })}>Visa</button>
-                        <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "mastercard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "mastercard" })}>Mastercard</button>
+                    )}
+                    <div className="form-row-two">
+                      <div className="form-group">
+                        <label className="form-label">First Name *</label>
+                        <input
+                          className={`form-input${checkoutErrors.firstName ? " invalid" : ""}`}
+                          value={checkoutDraft.firstName}
+                          onChange={e => {
+                            setCheckoutDraft({ ...checkoutDraft, firstName: e.target.value });
+                            if (checkoutErrors.firstName) setCheckoutErrors({ ...checkoutErrors, firstName: false });
+                          }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Last Name *</label>
+                        <input
+                          className={`form-input${checkoutErrors.lastName ? " invalid" : ""}`}
+                          value={checkoutDraft.lastName}
+                          onChange={e => {
+                            setCheckoutDraft({ ...checkoutDraft, lastName: e.target.value });
+                            if (checkoutErrors.lastName) setCheckoutErrors({ ...checkoutErrors, lastName: false });
+                          }}
+                        />
                       </div>
                     </div>
-                  )}
 
-                  {checkoutDraft.paymentMethod === "paypal" && !checkoutDraft.markAsDue && (
                     <div className="form-group">
-                      <label className="form-label">PayPal email</label>
+                      <label className="form-label">Email *</label>
                       <input
-                        className="form-input"
+                        className={`form-input${checkoutErrors.email ? " invalid" : ""}`}
                         type="email"
-                        autoComplete="email"
-                        placeholder="you@example.com"
-                        value={checkoutDraft.paypalEmail}
-                        onChange={e => setCheckoutDraft({ ...checkoutDraft, paypalEmail: e.target.value })}
+                        value={checkoutDraft.email}
+                        onChange={e => {
+                          setCheckoutDraft({ ...checkoutDraft, email: e.target.value });
+                          if (checkoutErrors.email) setCheckoutErrors({ ...checkoutErrors, email: false });
+                        }}
                       />
                     </div>
-                  )}
 
-                  {(checkoutDraft.paymentMethod === "google_pay" || checkoutDraft.paymentMethod === "apple_pay") && !checkoutDraft.markAsDue && (
-                    <div className="pay-detail-hint">
-                      {checkoutDraft.paymentMethod === "google_pay"
-                        ? "On a live site, Google Pay would open here to confirm the total. No card numbers are entered on this page."
-                        : "On a live site, Apple Pay would authorize on your device. Continue when you are ready to finalize on the next step."}
+                    <div className="form-group">
+                      <label className="form-label">Country / Region *</label>
+                      <select
+                        className={`form-input${checkoutErrors.country ? " invalid" : ""}${!checkoutDraft.country ? " muted-select" : ""}`}
+                        value={checkoutDraft.country}
+                        onChange={e => {
+                          const selectedCountry = COUNTRY_OPTIONS.find(c => c.code === e.target.value) || COUNTRY_OPTIONS[0];
+                          setCheckoutDraft({ ...checkoutDraft, country: selectedCountry.code, phoneCode: selectedCountry.dial });
+                          if (checkoutErrors.country) setCheckoutErrors({ ...checkoutErrors, country: false });
+                        }}
+                      >
+                        <option value="">Default</option>
+                        {COUNTRY_OPTIONS.map(c => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.name}</option>
+                        ))}
+                      </select>
                     </div>
-                  )}
 
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ fontSize: "0.75rem", cursor: "pointer", color: "var(--warm-gray)" }}>
+                    <div className="form-group">
+                      <label className="form-label">City *</label>
                       <input
-                        type="checkbox"
-                        checked={checkoutDraft.markAsDue}
-                        onChange={e => setCheckoutDraft({ ...checkoutDraft, markAsDue: e.target.checked })}
-                        style={{ marginRight: 8 }}
+                        className={`form-input${checkoutErrors.city ? " invalid" : ""}`}
+                        value={checkoutDraft.city}
+                        onChange={e => {
+                          setCheckoutDraft({ ...checkoutDraft, city: e.target.value });
+                          if (checkoutErrors.city) setCheckoutErrors({ ...checkoutErrors, city: false });
+                        }}
                       />
-                      Save order as payment due
-                    </label>
-                  </div>
+                    </div>
 
-                  {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && (
-                    <>
-                      <div className="card-details-box">
-                        <p className="card-details-box-title">Card Details</p>
-                        <div className="form-group">
-                          <label className="form-label">Card Holder</label>
-                          <input className="form-input" value={checkoutDraft.cardHolder} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardHolder: e.target.value })} />
-                        </div>
-                        <div className="form-group">
-                          <label className="form-label">Card Number</label>
-                          <input className="form-input" placeholder="4111 1111 1111 1111" value={checkoutDraft.cardNumber} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardNumber: formatCardNumber(e.target.value) })} />
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                          <div className="form-group">
-                            <label className="form-label">Expiry</label>
-                            <input className="form-input" maxLength={5} placeholder="MM/YY" value={checkoutDraft.expiry} onChange={e => setCheckoutDraft({ ...checkoutDraft, expiry: formatExpiry(e.target.value) })} />
+                    <div className="form-row-two">
+                      <div className="form-group">
+                        <label className="form-label">State</label>
+                        <input className="form-input" value={checkoutDraft.state} onChange={e => setCheckoutDraft({ ...checkoutDraft, state: e.target.value })} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Postal Code *</label>
+                        <input
+                          className={`form-input${checkoutErrors.postalCode ? " invalid" : ""}`}
+                          value={checkoutDraft.postalCode}
+                          onChange={e => {
+                            setCheckoutDraft({ ...checkoutDraft, postalCode: e.target.value });
+                            if (checkoutErrors.postalCode) setCheckoutErrors({ ...checkoutErrors, postalCode: false });
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Address</label>
+                      <input className="form-input" value={checkoutDraft.address} onChange={e => setCheckoutDraft({ ...checkoutDraft, address: e.target.value })} />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Phone Number</label>
+                      <div className="phone-wrap">
+                        <span className="phone-code">{checkoutDraft.phoneCode}</span>
+                        <input
+                          className="form-input"
+                          placeholder="Phone number"
+                          value={checkoutDraft.phone}
+                          onChange={e => setCheckoutDraft({ ...checkoutDraft, phone: e.target.value.replace(/[^\d\s-]/g, "") })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Delivery Option</label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "standard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "standard" })}>Standard ($8)</button>
+                        <button type="button" className={`filter-btn${checkoutDraft.deliveryType === "express" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, deliveryType: "express" })}>Express ($20)</button>
+                      </div>
+                    </div>
+
+                    <p className="form-label" style={{ marginBottom: 14, marginTop: 8 }}>Choose how you would like to pay</p>
+                    <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
+                      {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={checkoutDraft.paymentMethod === opt.id}
+                          className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
+                          onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
+                        >
+                          <span className="pay-method-check" aria-hidden />
+                          <div className="pay-method-card-icon">
+                            <PayMethodIcon name={opt.icon} />
                           </div>
-                          <div className="form-group">
-                            <label className="form-label">CVV</label>
-                            <input className="form-input" maxLength={4} placeholder="123" value={checkoutDraft.cvv} onChange={e => setCheckoutDraft({ ...checkoutDraft, cvv: e.target.value.replace(/\D/g, "") })} />
+                          <div className="pay-method-card-text">
+                            <div className="pay-method-card-title">{opt.title}</div>
+                            <div className="pay-method-card-sub">{opt.sub}</div>
                           </div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="pay-detail-hint" style={{ marginTop: 4 }}>
+                      Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
+                    </p>
+                    <button type="button" className="form-submit" onClick={handleConfirmAddress}>Continue to payment details</button>
+                  </>
+                )}
+
+                {checkoutStep === 2 && (
+                  <>
+                    <div style={{ border: "1px solid var(--border)", padding: 14, marginBottom: 18, background: "var(--cream)" }}>
+                      <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", marginBottom: 10 }}>Bill Summary</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Subtotal</span><span>{fmt(getPricing().subtotal)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Product Discount</span><span>- {fmt(getPricing().itemDiscount)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>After Product Discount</span><span>{fmt(getPricing().discountedSubtotal)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Promo Discount</span><span>- {fmt(getPricing().promoDiscount)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 10 }}><span>Delivery Charge</span><span>{fmt(getPricing().shippingFee)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 10, fontWeight: 600 }}><span>Total</span><span>{fmt(getPricing().total)}</span></div>
+                      <div style={{ marginTop: 8, fontSize: "0.7rem", color: "var(--warm-gray)", lineHeight: 1.6 }}>
+                        Estimated taxes (EU VAT / US sales tax) follow your delivery address and would be calculated automatically with Stripe Tax in production.
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Promo Code (if any)</label>
+                      <input className="form-input" placeholder="Use SAVE10" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Paying with</label>
+                      <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
+                        {PAYMENT_METHOD_OPTIONS.find((o) => o.id === checkoutDraft.paymentMethod)?.title || "Payment"}
+                      </div>
+                    </div>
+
+                    {checkoutDraft.paymentMethod === "card" && (
+                      <div className="form-group">
+                        <label className="form-label">Card network</label>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "visa" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "visa" })}>Visa</button>
+                          <button type="button" className={`filter-btn${checkoutDraft.cardScheme === "mastercard" ? " active" : ""}`} onClick={() => setCheckoutDraft({ ...checkoutDraft, cardScheme: "mastercard" })}>Mastercard</button>
                         </div>
                       </div>
-                    </>
-                  )}
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
-                    <button type="button" className="form-submit" style={{ marginTop: 0 }} onClick={handleConfirmPayment}>Continue to review</button>
-                  </div>
-                </>
-              )}
+                    )}
 
-              {checkoutStep === 3 && (
-                <>
-                  <p className="form-label" style={{ marginBottom: 16 }}>Review your receipt</p>
-                  <div className="checkout-receipt">
-                    <div className="checkout-receipt-store">SANJIIIII</div>
-                    <div className="checkout-receipt-tag">Order summary · not yet placed</div>
-                    <hr className="receipt-rule" />
-                    <div className="receipt-label">Date</div>
-                    <div className="receipt-line">{new Date().toLocaleString()}</div>
-                    <div className="receipt-label">Deliver to</div>
-                    <div className="receipt-line">{checkoutDraft.firstName} {checkoutDraft.lastName}</div>
-                    <div className="receipt-line-muted">{checkoutDraft.email}</div>
-                    <div className="receipt-line-muted">{checkoutDraft.address || "—"}</div>
-                    <div className="receipt-line-muted">
-                      {checkoutDraft.city}{checkoutDraft.state ? `, ${checkoutDraft.state}` : ""} {checkoutDraft.postalCode}
-                    </div>
-                    <div className="receipt-line-muted">
-                      {(() => {
-                        const c = COUNTRY_OPTIONS.find((x) => x.code === checkoutDraft.country);
-                        return c ? `${c.flag} ${c.name}` : checkoutDraft.country || "—";
-                      })()}
-                    </div>
-                    <div className="receipt-line-muted">Tel: {checkoutDraft.phoneCode} {checkoutDraft.phone || "—"}</div>
-                    <div className="receipt-label">Delivery</div>
-                    <div className="receipt-line">{checkoutDraft.deliveryType === "express" ? "Express ($20)" : "Standard ($8)"}</div>
-                    <div className="receipt-label">Payment</div>
-                    <div className="receipt-line">{paymentMethodDisplay({ method: checkoutDraft.paymentMethod, cardScheme: checkoutDraft.cardScheme })}</div>
-                    {checkoutDraft.markAsDue && <div className="receipt-line-muted">Payment status: due</div>}
-                    {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "paypal" && checkoutDraft.paypalEmail?.trim() && (
-                      <div className="receipt-line-muted">{checkoutDraft.paypalEmail.trim()}</div>
+                    {checkoutDraft.paymentMethod === "paypal" && !checkoutDraft.markAsDue && (
+                      <div className="form-group">
+                        <label className="form-label">PayPal email</label>
+                        <input
+                          className="form-input"
+                          type="email"
+                          autoComplete="email"
+                          placeholder="you@example.com"
+                          value={checkoutDraft.paypalEmail}
+                          onChange={e => setCheckoutDraft({ ...checkoutDraft, paypalEmail: e.target.value })}
+                        />
+                      </div>
                     )}
-                    {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && checkoutDraft.cardNumber && (
-                      <div className="receipt-line-muted">{maskCard(checkoutDraft.cardNumber)}</div>
+
+                    {(checkoutDraft.paymentMethod === "google_pay" || checkoutDraft.paymentMethod === "apple_pay") && !checkoutDraft.markAsDue && (
+                      <div className="pay-detail-hint">
+                        {checkoutDraft.paymentMethod === "google_pay"
+                          ? "On a live site, Google Pay would open here to confirm the total. No card numbers are entered on this page."
+                          : "On a live site, Apple Pay would authorize on your device. Continue when you are ready to finalize on the next step."}
+                      </div>
                     )}
-                    <hr className="receipt-rule" />
-                    <div className="receipt-label">Items</div>
-                    {cart.map((item, idx) => {
-                      const lineTotal = item.product.price * item.qty;
-                      const lineDiscount = getProductDiscount(item);
-                      return (
-                        <div key={`${item.product.id}-${idx}`} className="receipt-item-block">
-                          <div className="receipt-item-name">{item.product.name} × {item.qty}</div>
-                          <div className="receipt-line-muted">{fmt(lineTotal)}</div>
-                          {lineDiscount > 0 && (
-                            <div className="receipt-line-muted" style={{ color: "var(--success)" }}>Discount: −{fmt(lineDiscount)}</div>
-                          )}
+
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ fontSize: "0.75rem", cursor: "pointer", color: "var(--warm-gray)" }}>
+                        <input
+                          type="checkbox"
+                          checked={checkoutDraft.markAsDue}
+                          onChange={e => setCheckoutDraft({ ...checkoutDraft, markAsDue: e.target.checked })}
+                          style={{ marginRight: 8 }}
+                        />
+                        Save order as payment due
+                      </label>
+                    </div>
+
+                    {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && (
+                      <>
+                        <div className="card-details-box">
+                          <p className="card-details-box-title">Card Details</p>
+                          <div className="form-group">
+                            <label className="form-label">Card Holder</label>
+                            <input className="form-input" value={checkoutDraft.cardHolder} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardHolder: e.target.value })} />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Card Number</label>
+                            <input className="form-input" placeholder="4111 1111 1111 1111" value={checkoutDraft.cardNumber} onChange={e => setCheckoutDraft({ ...checkoutDraft, cardNumber: formatCardNumber(e.target.value) })} />
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            <div className="form-group">
+                              <label className="form-label">Expiry</label>
+                              <input className="form-input" maxLength={5} placeholder="MM/YY" value={checkoutDraft.expiry} onChange={e => setCheckoutDraft({ ...checkoutDraft, expiry: formatExpiry(e.target.value) })} />
+                            </div>
+                            <div className="form-group">
+                              <label className="form-label">CVV</label>
+                              <input className="form-input" maxLength={4} placeholder="123" value={checkoutDraft.cvv} onChange={e => setCheckoutDraft({ ...checkoutDraft, cvv: e.target.value.replace(/\D/g, "") })} />
+                            </div>
+                          </div>
                         </div>
-                      );
-                    })}
-                    <div className="receipt-total-block">
-                      <div className="receipt-total-line">Subtotal — {fmt(getPricing().subtotal)}</div>
-                      <div className="receipt-total-line">Product discount — −{fmt(getPricing().itemDiscount)}</div>
-                      <div className="receipt-total-line">After discount — {fmt(getPricing().discountedSubtotal)}</div>
-                      {getPricing().promoDiscount > 0 && (
-                        <div className="receipt-total-line">Promo ({getPricing().normalizedPromo}) — −{fmt(getPricing().promoDiscount)}</div>
+                      </>
+                    )}
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
+                      <button type="button" className="form-submit" style={{ marginTop: 0 }} onClick={handleConfirmPayment}>Continue to review</button>
+                    </div>
+                  </>
+                )}
+
+                {checkoutStep === 3 && (
+                  <>
+                    <p className="form-label" style={{ marginBottom: 16 }}>Review your receipt</p>
+                    <div className="checkout-receipt">
+                      <div className="checkout-receipt-store">SANJIIIII</div>
+                      <div className="checkout-receipt-tag">Order summary · not yet placed</div>
+                      <hr className="receipt-rule" />
+                      <div className="receipt-label">Date</div>
+                      <div className="receipt-line">{new Date().toLocaleString()}</div>
+                      <div className="receipt-label">Deliver to</div>
+                      <div className="receipt-line">{checkoutDraft.firstName} {checkoutDraft.lastName}</div>
+                      <div className="receipt-line-muted">{checkoutDraft.email}</div>
+                      <div className="receipt-line-muted">{checkoutDraft.address || "—"}</div>
+                      <div className="receipt-line-muted">
+                        {checkoutDraft.city}{checkoutDraft.state ? `, ${checkoutDraft.state}` : ""} {checkoutDraft.postalCode}
+                      </div>
+                      <div className="receipt-line-muted">
+                        {(() => {
+                          const c = COUNTRY_OPTIONS.find((x) => x.code === checkoutDraft.country);
+                          return c ? `${c.flag} ${c.name}` : checkoutDraft.country || "—";
+                        })()}
+                      </div>
+                      <div className="receipt-line-muted">Tel: {checkoutDraft.phoneCode} {checkoutDraft.phone || "—"}</div>
+                      <div className="receipt-label">Delivery</div>
+                      <div className="receipt-line">{checkoutDraft.deliveryType === "express" ? "Express ($20)" : "Standard ($8)"}</div>
+                      <div className="receipt-label">Payment</div>
+                      <div className="receipt-line">{paymentMethodDisplay({ method: checkoutDraft.paymentMethod, cardScheme: checkoutDraft.cardScheme })}</div>
+                      {checkoutDraft.markAsDue && <div className="receipt-line-muted">Payment status: due</div>}
+                      {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "paypal" && checkoutDraft.paypalEmail?.trim() && (
+                        <div className="receipt-line-muted">{checkoutDraft.paypalEmail.trim()}</div>
                       )}
-                      <div className="receipt-total-line">Shipping — {fmt(getPricing().shippingFee)}</div>
-                      <div className="receipt-grand">Total due — {fmt(getPricing().total)}</div>
+                      {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && checkoutDraft.cardNumber && (
+                        <div className="receipt-line-muted">{maskCard(checkoutDraft.cardNumber)}</div>
+                      )}
+                      <hr className="receipt-rule" />
+                      <div className="receipt-label">Items</div>
+                      {cart.map((item, idx) => {
+                        const lineTotal = item.product.price * item.qty;
+                        const lineDiscount = getProductDiscount(item);
+                        return (
+                          <div key={`${item.product.id}-${idx}`} className="receipt-item-block">
+                            <div className="receipt-item-name">{item.product.name} × {item.qty}</div>
+                            <div className="receipt-line-muted">{fmt(lineTotal)}</div>
+                            {lineDiscount > 0 && (
+                              <div className="receipt-line-muted" style={{ color: "var(--success)" }}>Discount: −{fmt(lineDiscount)}</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      <div className="receipt-total-block">
+                        <div className="receipt-total-line">Subtotal — {fmt(getPricing().subtotal)}</div>
+                        <div className="receipt-total-line">Product discount — −{fmt(getPricing().itemDiscount)}</div>
+                        <div className="receipt-total-line">After discount — {fmt(getPricing().discountedSubtotal)}</div>
+                        {getPricing().promoDiscount > 0 && (
+                          <div className="receipt-total-line">Promo ({getPricing().normalizedPromo}) — −{fmt(getPricing().promoDiscount)}</div>
+                        )}
+                        <div className="receipt-total-line">Shipping — {fmt(getPricing().shippingFee)}</div>
+                        <div className="receipt-grand">Total due — {fmt(getPricing().total)}</div>
+                      </div>
+                      <div className="receipt-footer">
+                        Taxes (EU VAT / US sales tax) follow your address and would appear on the final invoice after payment.
+                        <br /><br />
+                        Thank you for shopping with SANJIIIII
+                      </div>
                     </div>
-                    <div className="receipt-footer">
-                      Taxes (EU VAT / US sales tax) follow your address and would appear on the final invoice after payment.
-                      <br /><br />
-                      Thank you for shopping with SANJIIIII
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "stretch" }}>
+                      <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
+                      <button type="button" className="receipt-download-btn" onClick={downloadCheckoutReceipt}>Download receipt</button>
+                      <button type="button" className="form-submit" style={{ marginTop: 0, flex: "2 1 180px" }} onClick={handlePlaceOrder}>Place Order</button>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "stretch" }}>
-                    <button type="button" className="filter-btn" onClick={() => history.back()}>Back</button>
-                    <button type="button" className="receipt-download-btn" onClick={downloadCheckoutReceipt}>Download receipt</button>
-                    <button type="button" className="form-submit" style={{ marginTop: 0, flex: "2 1 180px" }} onClick={handlePlaceOrder}>Place Order</button>
-                  </div>
-                </>
-              )}
-            </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </>
@@ -3704,34 +3784,34 @@ export default function App() {
           <div className="overlay-backdrop" onClick={() => setPayConfirmOrder(null)} />
           <div className="overlay-center">
             <div className="modal" style={{ maxWidth: 520 }}>
-            <div className="modal-header">
-              <div className="modal-title">Confirm Payment</div>
-              <button className="close-btn" onClick={() => setPayConfirmOrder(null)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 18, letterSpacing: "0.05em" }}>
-                Please verify this order before marking payment as completed.
-              </p>
-              <div style={{ background: "var(--cream)", border: "1px solid var(--border)", padding: 14, marginBottom: 16 }}>
-                <div style={{ fontFamily: "var(--font-serif)", fontSize: "1rem", marginBottom: 8 }}>{payConfirmOrder.id}</div>
-                <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
-                  Amount: {fmt(payConfirmOrder.total)}
+              <div className="modal-header">
+                <div className="modal-title">Confirm Payment</div>
+                <button className="close-btn" onClick={() => setPayConfirmOrder(null)}>✕</button>
+              </div>
+              <div className="modal-body">
+                <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 18, letterSpacing: "0.05em" }}>
+                  Please verify this order before marking payment as completed.
+                </p>
+                <div style={{ background: "var(--cream)", border: "1px solid var(--border)", padding: 14, marginBottom: 16 }}>
+                  <div style={{ fontFamily: "var(--font-serif)", fontSize: "1rem", marginBottom: 8 }}>{payConfirmOrder.id}</div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
+                    Amount: {fmt(payConfirmOrder.total)}
+                  </div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
+                    Method: {paymentMethodDisplay(payConfirmOrder.payment)}
+                    {payConfirmOrder.payment.cardMasked ? ` (${payConfirmOrder.payment.cardMasked})` : ""}
+                  </div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
+                    Customer: {payConfirmOrder.delivery.fullName}
+                  </div>
                 </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
-                  Method: {paymentMethodDisplay(payConfirmOrder.payment)}
-                  {payConfirmOrder.payment.cardMasked ? ` (${payConfirmOrder.payment.cardMasked})` : ""}
-                </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
-                  Customer: {payConfirmOrder.delivery.fullName}
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                  <button className="filter-btn" onClick={() => setPayConfirmOrder(null)}>Cancel</button>
+                  <button className="btn-primary" style={{ padding: "10px 18px", fontSize: "0.65rem" }} onClick={handleConfirmMarkPaid}>
+                    Confirm Paid
+                  </button>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                <button className="filter-btn" onClick={() => setPayConfirmOrder(null)}>Cancel</button>
-                <button className="btn-primary" style={{ padding: "10px 18px", fontSize: "0.65rem" }} onClick={handleConfirmMarkPaid}>
-                  Confirm Paid
-                </button>
-              </div>
-            </div>
             </div>
           </div>
         </>
@@ -3820,7 +3900,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist, onR
         </div>
       </section>
 
-      <section className="section" style={{ background: "white" }}>
+      <section className="section" style={{ background: "var(--surface)" }}>
         <div className="section-header animate-fade">
           <p className="section-eyebrow">Hand-Picked</p>
           <h2 className="section-title">Editor's <em>Picks</em></h2>
@@ -3856,7 +3936,7 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist, onR
         </div>
       </section>
 
-      <section className="section" style={{ background: "white" }}>
+      <section className="section" style={{ background: "var(--surface)" }}>
         <div className="section-header animate-fade">
           <p className="section-eyebrow">Best Value</p>
           <h2 className="section-title"><em>Sales</em></h2>
@@ -4095,9 +4175,26 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
 }
 
 // ─── Profile Page ─────────────────────────────────────────────────────────────
-function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onUpdateProfile }) {
+function fulfillmentForDisplay(order) {
+  if (order.fulfillment?.stages?.length) return order.fulfillment;
+  const paid = order.payment?.status === "completed";
+  return {
+    trackingRef: order.payment?.transactionId ? `REF-${order.id}` : "—",
+    note: "Older order — timeline inferred from payment status.",
+    stages: [
+      { key: "placed", label: "Order placed", done: true },
+      { key: "payment", label: "Payment received", done: paid },
+      { key: "processing", label: "Processing at warehouse", done: paid },
+      { key: "shipped", label: "Shipped", done: false },
+      { key: "delivered", label: "Delivered", done: false },
+    ],
+  };
+}
+
+function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onUpdateProfile, addToast, onFirebaseEmailReload }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [editingSettings, setEditingSettings] = useState(false);
+  const [verifyBusy, setVerifyBusy] = useState(false);
   const normalizedUser = normalizeUser(user);
   const [settingsDraft, setSettingsDraft] = useState(() => ({
     firstName: normalizedUser?.firstName || "",
@@ -4140,7 +4237,7 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
           <div style={{ marginTop: 8, fontSize: "0.65rem", color: "var(--gold)", letterSpacing: "0.15em", textTransform: "uppercase" }}>✦ Member</div>
         </div>
         <button onClick={logout} style={{ marginLeft: "auto", background: "none", border: "1px solid var(--border)", cursor: "pointer", padding: "8px 20px", fontSize: "0.65rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)", transition: "all 0.2s" }}
-          onMouseOver={e => { e.currentTarget.style.background = "var(--charcoal)"; e.currentTarget.style.color = "white"; }}
+          onMouseOver={e => { e.currentTarget.style.background = "var(--charcoal)"; e.currentTarget.style.color = "var(--cream)"; }}
           onMouseOut={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--warm-gray)"; }}>
           Sign Out
         </button>
@@ -4162,78 +4259,94 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
               </div>
             ) : (
               <div style={{ display: "grid", gap: 14 }}>
-                {user.orders.map((o) => (
-                  <div key={o.id} style={{ background: "white", padding: 16, border: "1px solid var(--border)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ fontFamily: "var(--font-serif)", fontSize: "1rem" }}>{o.id}</div>
-                      <span
-                        style={{
-                          fontSize: "0.65rem",
-                          letterSpacing: "0.12em",
-                          textTransform: "uppercase",
-                          padding: "4px 10px",
-                          background: o.payment.status === "completed" ? "rgba(39,174,96,.12)" : "rgba(192,57,43,.12)",
-                          color: o.payment.status === "completed" ? "var(--success)" : "var(--error)",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {o.payment.status === "completed" ? "Payment Completed" : "Payment Due"}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
-                      {new Date(o.createdAt).toLocaleString()} · {o.delivery.type === "express" ? "Express" : "Standard"} delivery
-                    </div>
-                    <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
-                      Method: {paymentMethodDisplay(o.payment)}
-                      {o.payment.cardMasked ? ` (${o.payment.cardMasked})` : ""}
-                      {o.payment.paypalEmail ? ` · ${o.payment.paypalEmail}` : ""}
-                    </div>
-                    {o.payment.transactionId && (
-                      <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginBottom: 6 }}>
-                        Transaction: {o.payment.transactionId}
+                {user.orders.map((o) => {
+                  const ff = fulfillmentForDisplay(o);
+                  return (
+                    <div key={o.id} style={{ background: "var(--surface)", padding: 16, border: "1px solid var(--border)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+                        <div style={{ fontFamily: "var(--font-serif)", fontSize: "1rem" }}>{o.id}</div>
+                        <span
+                          style={{
+                            fontSize: "0.65rem",
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                            padding: "4px 10px",
+                            background: o.payment.status === "completed" ? "rgba(39,174,96,.12)" : "rgba(192,57,43,.12)",
+                            color: o.payment.status === "completed" ? "var(--success)" : "var(--error)",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {o.payment.status === "completed" ? "Payment Completed" : "Payment Due"}
+                        </span>
                       </div>
-                    )}
-                    {o.payment.paidAt && (
-                      <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginBottom: 6 }}>
-                        Paid At: {new Date(o.payment.paidAt).toLocaleString()}
+                      <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
+                        {new Date(o.createdAt).toLocaleString()} · {o.delivery.type === "express" ? "Express" : "Standard"} delivery
                       </div>
-                    )}
-                    <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>
-                      Total: {fmt(o.total)}
-                    </div>
-                    <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginTop: 8, marginBottom: 10 }}>
-                      {o.items.length} item{o.items.length !== 1 ? "s" : ""} · {o.delivery.fullName}, {o.delivery.city}
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button className="filter-btn" onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}>
-                        {expandedOrderId === o.id ? "Hide Items" : "View Items"}
-                      </button>
-                      {o.payment.status === "due" && (
-                        <button className="btn-primary" style={{ padding: "8px 14px", fontSize: "0.62rem" }} onClick={() => onMarkOrderPaid(o)}>
-                          Mark as Paid
+                      <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 6 }}>
+                        Method: {paymentMethodDisplay(o.payment)}
+                        {o.payment.cardMasked ? ` (${o.payment.cardMasked})` : ""}
+                        {o.payment.paypalEmail ? ` · ${o.payment.paypalEmail}` : ""}
+                      </div>
+                      {o.payment.transactionId && (
+                        <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginBottom: 6 }}>
+                          Transaction: {o.payment.transactionId}
+                        </div>
+                      )}
+                      {o.payment.paidAt && (
+                        <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginBottom: 6 }}>
+                          Paid At: {new Date(o.payment.paidAt).toLocaleString()}
+                        </div>
+                      )}
+                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>
+                        Total: {fmt(o.total)}
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)", marginTop: 8, marginBottom: 10 }}>
+                        {o.items.length} item{o.items.length !== 1 ? "s" : ""} · {o.delivery.fullName}, {o.delivery.city}
+                      </div>
+                      <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 12, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
+                        <div style={{ fontWeight: 600, color: "var(--charcoal)", marginBottom: 6, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.62rem" }}>Order tracking</div>
+                        <div style={{ marginBottom: 6 }}>Reference: <strong style={{ color: "var(--charcoal)" }}>{ff.trackingRef}</strong></div>
+                        <div style={{ fontSize: "0.64rem", opacity: 0.92, marginBottom: 10, lineHeight: 1.45 }}>{ff.note}</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                          {ff.stages.map((st) => (
+                            <div key={st.key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.7rem" }}>
+                              <span style={{ color: st.done ? "var(--success)" : "var(--warm-gray)", fontWeight: 700, width: 14, textAlign: "center" }}>{st.done ? "✓" : "○"}</span>
+                              <span style={{ color: st.done ? "var(--charcoal)" : "var(--warm-gray)" }}>{st.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button className="filter-btn" onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}>
+                          {expandedOrderId === o.id ? "Hide Items" : "View Items"}
                         </button>
+                        {o.payment.status === "due" && (
+                          <button className="btn-primary" style={{ padding: "8px 14px", fontSize: "0.62rem" }} onClick={() => onMarkOrderPaid(o)}>
+                            Mark as Paid
+                          </button>
+                        )}
+                      </div>
+                      {expandedOrderId === o.id && (
+                        <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12, display: "grid", gap: 8 }}>
+                          {o.items.map((item, idx) => (
+                            <div key={`${o.id}-${idx}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: "0.74rem" }}>
+                              <span style={{ color: "var(--warm-gray)" }}>{item.product.name} · Size {item.size} · Qty {item.qty}</span>
+                              <span style={{ fontWeight: 600 }}>{fmt(item.product.price * item.qty)}</span>
+                            </div>
+                          ))}
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>
+                            <span>Subtotal</span>
+                            <span>{fmt(o.subtotal)}</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--warm-gray)" }}>
+                            <span>Shipping</span>
+                            <span>{fmt(o.shippingFee)}</span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {expandedOrderId === o.id && (
-                      <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12, display: "grid", gap: 8 }}>
-                        {o.items.map((item, idx) => (
-                          <div key={`${o.id}-${idx}`} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: "0.74rem" }}>
-                            <span style={{ color: "var(--warm-gray)" }}>{item.product.name} · Size {item.size} · Qty {item.qty}</span>
-                            <span style={{ fontWeight: 600 }}>{fmt(item.product.price * item.qty)}</span>
-                          </div>
-                        ))}
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>
-                          <span>Subtotal</span>
-                          <span>{fmt(o.subtotal)}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--warm-gray)" }}>
-                          <span>Shipping</span>
-                          <span>{fmt(o.shippingFee)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -4249,7 +4362,7 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 20 }}>
                 {cart.map((item, i) => (
-                  <div key={i} style={{ background: "white", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", item.product)}>
+                  <div key={i} style={{ background: "var(--surface)", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", item.product)}>
                     <div style={{ background: `linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})`, height: 140, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", marginBottom: 12 }}>{item.product.emoji}</div>
                     <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", marginBottom: 4 }}>{item.product.name}</div>
                     <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 4 }}>Size {item.size} · Qty {item.qty}</div>
@@ -4271,7 +4384,7 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 20 }}>
                 {wishlistProducts.map(p => (
-                  <div key={p.id} style={{ background: "white", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", p)}>
+                  <div key={p.id} style={{ background: "var(--surface)", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", p)}>
                     <div style={{ background: `linear-gradient(135deg,${p.bg[0]},${p.bg[1]})`, height: 140, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", marginBottom: 12 }}>{p.emoji}</div>
                     <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", marginBottom: 4 }}>{p.name}</div>
                     <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 4 }}>{p.brand}</div>
@@ -4284,6 +4397,61 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
         )}
         {tab === "settings" && (
           <div style={{ maxWidth: 840, width: "100%" }}>
+            <div style={{ marginBottom: 24, padding: 16, background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div style={{ fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--warm-gray)", marginBottom: 10 }}>Email verification</div>
+              {!normalizedUser.firebaseUid ? (
+                <p style={{ fontSize: "0.78rem", color: "var(--warm-gray)", lineHeight: 1.55 }}>
+                  This email/password account is stored only in this browser. Use Google or the email magic link to get a Firebase-backed account; then you can verify your email in the cloud.
+                </p>
+              ) : !auth.currentUser ? (
+                <p style={{ fontSize: "0.78rem", color: "var(--warm-gray)" }}>Loading sign-in status…</p>
+              ) : auth.currentUser.emailVerified ? (
+                <p style={{ fontSize: "0.82rem", color: "var(--success)" }}>✓ Your email is verified for this Firebase account.</p>
+              ) : (
+                <>
+                  <p style={{ fontSize: "0.78rem", color: "var(--warm-gray)", marginBottom: 12, lineHeight: 1.5 }}>
+                    Firebase has not marked this address as verified yet. Send a link from Firebase, confirm in your inbox, then tap refresh below.
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{ padding: "8px 16px", fontSize: "0.62rem" }}
+                      disabled={verifyBusy}
+                      onClick={async () => {
+                        if (!auth.currentUser) return;
+                        setVerifyBusy(true);
+                        try {
+                          await sendEmailVerification(auth.currentUser);
+                          addToast?.("Verification email sent. Check your inbox.", "info");
+                        } catch (e) {
+                          addToast?.(e?.message || "Could not send verification email.", "error");
+                        } finally {
+                          setVerifyBusy(false);
+                        }
+                      }}
+                    >
+                      {verifyBusy ? "Sending…" : "Send verification email"}
+                    </button>
+                    <button
+                      type="button"
+                      className="filter-btn"
+                      onClick={async () => {
+                        try {
+                          await onFirebaseEmailReload?.();
+                          const ok = auth.currentUser?.emailVerified;
+                          addToast?.(ok ? "Email verified!" : "Still pending — check spam or resend.", ok ? "success" : "info");
+                        } catch (e) {
+                          addToast?.(e?.message || "Could not refresh status.", "error");
+                        }
+                      }}
+                    >
+                      I verified — refresh status
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.2rem", marginBottom: 20 }}>Account Details</h3>
             <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
               <button className={`filter-btn${!editingSettings ? " active" : ""}`} onClick={() => { setEditingSettings(!editingSettings); }}>
@@ -4326,14 +4494,14 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                   ["Postal Code", normalizedUser.profile?.postalCode || "—"],
                   ["Member Since", "2026"],
                 ].map(([label, value]) => (
-                  <div key={label} style={{ padding: "14px 16px", background: "white", display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <div key={label} style={{ padding: "14px 16px", background: "var(--surface)", display: "flex", justifyContent: "space-between", gap: 10 }}>
                     <span style={{ fontSize: "0.68rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--warm-gray)" }}>{label}</span>
                     <span style={{ fontSize: "0.82rem", fontWeight: 500, textAlign: "right" }}>{value}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ display: "grid", gap: 12, background: "white", padding: 16, border: "1px solid var(--border)" }}>
+              <div style={{ display: "grid", gap: 12, background: "var(--surface)", padding: 16, border: "1px solid var(--border)" }}>
                 <div className="form-row-two">
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">First Name *</label>
