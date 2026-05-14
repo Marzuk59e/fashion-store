@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import {
   collection,
   doc,
@@ -61,6 +61,8 @@ export default function AdminApp() {
   const [jsonDraft, setJsonDraft] = useState(() => JSON.stringify(DEFAULT_PRODUCTS, null, 2));
   const [customers, setCustomers] = useState([]);
   const [customersLoaded, setCustomersLoaded] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const storefrontUrl = useMemo(() => {
     const u = new URL(window.location.href);
@@ -90,8 +92,8 @@ export default function AdminApp() {
     let cancelled = false;
     (async () => {
       try {
-        const snap = await getDoc(doc(db, "admins", user.uid));
-        const ok = snap.exists() && snap.data()?.active !== false;
+        const snap = await getDoc(doc(db, "users", user.uid));
+        const ok = snap.exists() && snap.data()?.role === "admin";
         if (!cancelled) {
           setAdminOk(ok);
           setAdminCheckDone(true);
@@ -129,16 +131,13 @@ export default function AdminApp() {
     return () => unsub();
   }, [adminOk]);
 
-  const loginGoogle = async () => {
+  const loginEmail = async () => {
     setBusy(true);
     setMsg("");
     try {
-      await signInWithPopup(auth, googleProvider);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (e) {
-      const code = e?.code;
-      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
-        setMsg(e?.message || "Sign-in failed.");
-      }
+      setMsg("Invalid email or password.");
     } finally {
       setBusy(false);
     }
@@ -229,28 +228,58 @@ export default function AdminApp() {
 
   if (!user) {
     return (
-      <div style={{ ...shell, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center", maxWidth: 440, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 12 }}>sanjiiiii Admin</h1>
-        <p style={{ opacity: 0.75, lineHeight: 1.6, marginBottom: 24 }}>Sign in with the Google account that owns admin access.</p>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={loginGoogle}
-          style={{
-            padding: "12px 28px",
-            borderRadius: 6,
-            border: "none",
-            cursor: busy ? "wait" : "pointer",
-            background: "#c9a96e",
-            color: "#111",
-            fontWeight: 600,
-          }}
-        >
-          {busy ? "Please wait…" : "Continue with Google"}
-        </button>
-        <a href={storefrontUrl} style={{ marginTop: 28, color: "#c9a96e", fontSize: 13 }}>
-          ← Back to storefront
-        </a>
+      <div style={{ ...shell, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{
+          width: "100%", maxWidth: 420, background: "#161616",
+          padding: "40px 36px", borderRadius: 14, border: "1px solid #2a2a2a"
+        }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6, textAlign: "center" }}>
+            sanjiiiii Admin
+          </h1>
+          <p style={{ opacity: 0.6, marginBottom: 28, textAlign: "center", fontSize: 13 }}>
+            Admin login
+          </p>
+          <input
+            type="email"
+            placeholder="Admin email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            style={{
+              padding: "12px 16px", borderRadius: 8, border: "1px solid #333",
+              background: "#0f0f0f", color: "#eee", width: "100%",
+              marginBottom: 12, boxSizing: "border-box", fontSize: 14
+            }}
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            style={{
+              padding: "12px 16px", borderRadius: 8, border: "1px solid #333",
+              background: "#0f0f0f", color: "#eee", width: "100%",
+              marginBottom: 20, boxSizing: "border-box", fontSize: 14
+            }}
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={loginEmail}
+            style={{
+              padding: "13px", borderRadius: 8, border: "none",
+              cursor: busy ? "wait" : "pointer", background: "#c9a96e",
+              color: "#111", fontWeight: 700, width: "100%", fontSize: 15
+            }}
+          >
+            {busy ? "Please wait…" : "Sign In"}
+          </button>
+          <a href={storefrontUrl} style={{
+            display: "block", marginTop: 20,
+            color: "#c9a96e", fontSize: 13, textAlign: "center"
+          }}>
+            ← Back to storefront
+          </a>
+        </div>
       </div>
     );
   }
