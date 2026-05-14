@@ -3249,7 +3249,6 @@ export default function App() {
           ) : (
             <button className="btn-primary" style={{ padding: "8px 20px", fontSize: "0.65rem" }} onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
           )}
-          <a href="/admin.html" className="nav-link" style={{ textDecoration: "none", marginLeft: 4 }} target="_blank" rel="noopener noreferrer" title="Admin panel (new tab)">Admin</a>
         </div>
       </nav>
 
