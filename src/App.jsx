@@ -108,10 +108,44 @@ const css = `
   .nav-links { display: flex; gap: 32px; align-items: center; }
   .nav-link { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
-  .nav-icons { display: flex; gap: 20px; align-items: center; }
+  .nav-icons { display: flex; gap: 14px; align-items: center; }
   .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 4px; transition: color 0.2s; display: flex; align-items: center; }
   .icon-btn:hover { color: var(--gold); }
   .badge { position: absolute; top: -4px; right: -6px; background: var(--gold); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .bell-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(201,169,110,0.35);
+    background: rgba(201,169,110,0.10);
+    color: #2a2621;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.22s ease;
+  }
+  .bell-btn:hover {
+    background: rgba(201,169,110,0.22);
+    border-color: rgba(201,169,110,0.55);
+    color: #171410;
+    transform: translateY(-1px);
+  }
+  .bell-dot {
+    position: absolute;
+    top: 2px;
+    right: 1px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #e33a4a;
+    box-shadow: 0 0 0 0 rgba(227,58,74,0.5);
+    animation: bellPulse 1.6s infinite;
+  }
+  @keyframes bellPulse {
+    0% { box-shadow: 0 0 0 0 rgba(227,58,74,0.5); }
+    70% { box-shadow: 0 0 0 7px rgba(227,58,74,0); }
+    100% { box-shadow: 0 0 0 0 rgba(227,58,74,0); }
+  }
 
   .hero { height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; background: var(--hero-bg); }
   .hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, var(--hero-bg) 0%, #2C2416 40%, var(--hero-bg) 100%); }
@@ -3266,9 +3300,12 @@ export default function App() {
             {cartCount > 0 && <span className="badge">{cartCount}</span>}
           </button>
           {user && (
-            <button className="icon-btn" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
-              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" /><path d="M9 17a3 3 0 0 0 6 0" /></svg>
-              {unreadNotificationCount > 0 && <span className="badge" style={{ background: "#C0392B" }} />}
+            <button className="icon-btn bell-btn" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
+              <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M7.5 9.5a4.5 4.5 0 1 1 9 0c0 3 .8 4.8 2 6H5.5c1.2-1.2 2-3 2-6" />
+                <path d="M10 18a2 2 0 0 0 4 0" />
+              </svg>
+              {unreadNotificationCount > 0 && <span className="bell-dot" />}
             </button>
           )}
           {user ? (
