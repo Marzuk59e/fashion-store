@@ -189,8 +189,13 @@ export default function AdminApp() {
     let canceled = false;
     (async () => {
       try {
-        const snap = await getDoc(doc(db, "admins", user.uid));
-        const ok = snap.exists() && snap.data()?.active === true;
+        const [adminSnap, userSnap] = await Promise.all([
+          getDoc(doc(db, "admins", user.uid)),
+          getDoc(doc(db, "users", user.uid)),
+        ]);
+        const okFromAdmins = adminSnap.exists() && adminSnap.data()?.active === true;
+        const okFromUsersRole = userSnap.exists() && userSnap.data()?.profile?.role === "admin";
+        const ok = okFromAdmins || okFromUsersRole;
         if (!canceled) {
           setAdminOk(ok);
           setAdminCheckDone(true);
