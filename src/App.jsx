@@ -9,7 +9,7 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 
@@ -2314,6 +2314,7 @@ export default function App() {
   const [shopSearchQuery, setShopSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [profileTab, setProfileTab] = useState("orders");
+  const [notifications, setNotifications] = useState([]);
   const [googleAuthBusy, setGoogleAuthBusy] = useState(false);
   const checkoutPushCountRef = useRef(0);
   const checkoutProfileSyncRef = useRef(null);
@@ -2357,6 +2358,27 @@ export default function App() {
     );
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (!user?.firebaseUid) {
+      setNotifications([]);
+      return undefined;
+    }
+    const nref = query(
+      collection(db, "users", user.firebaseUid, "notifications"),
+      orderBy("createdAt", "desc"),
+    );
+    const unsub = onSnapshot(
+      nref,
+      (snap) => {
+        setNotifications(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      () => {
+        setNotifications([]);
+      },
+    );
+    return () => unsub();
+  }, [user?.firebaseUid]);
 
   useEffect(() => {
     document.documentElement.removeAttribute("data-theme");
@@ -3277,6 +3299,7 @@ export default function App() {
           user={user}
           cart={cart}
           wishlist={wishlist}
+          notifications={notifications}
           products={products}
           logout={logout}
           tab={profileTab}
@@ -3289,6 +3312,16 @@ export default function App() {
             if (auth.currentUser) {
               await reload(auth.currentUser);
               firebaseProfileBump((n) => n + 1);
+            }
+          }}
+          onMarkNotificationRead={async (notificationId) => {
+            if (!user?.firebaseUid || !notificationId) return;
+            try {
+              await updateDoc(doc(db, "users", user.firebaseUid, "notifications", notificationId), {
+                read: true,
+              });
+            } catch {
+              void 0;
             }
           }}
         />
@@ -4190,7 +4223,7 @@ function fulfillmentForDisplay(order) {
   };
 }
 
-function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onUpdateProfile, addToast, onFirebaseEmailReload }) {
+function ProfilePage({ user, cart, wishlist, notifications, products, logout, tab, setTab, navigate, onMarkOrderPaid, onUpdateProfile, addToast, onFirebaseEmailReload, onMarkNotificationRead }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [editingSettings, setEditingSettings] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
@@ -4242,7 +4275,7 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
         </button>
       </div>
       <div className="profile-tabs">
-        {[["orders", "Orders"], ["cart", "Saved Bag"], ["wishlist", "Wishlist"], ["settings", "Settings"]].map(([id, label]) => (
+        {[["orders", "Orders"], ["notifications", `Notifications${notifications?.filter((n) => !n.read).length ? ` (${notifications.filter((n) => !n.read).length})` : ""}`], ["cart", "Saved Bag"], ["wishlist", "Wishlist"], ["settings", "Settings"]].map(([id, label]) => (
           <button key={id} className={`profile-tab${tab === id ? " active" : ""}`} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
@@ -4346,6 +4379,41 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        )}
+        {tab === "notifications" && (
+          <div>
+            {(notifications || []).length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--warm-gray)" }}>
+                <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🔔</div>
+                <p style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", marginBottom: 8, color: "var(--charcoal)" }}>No notifications yet</p>
+                <p style={{ fontSize: "0.75rem" }}>Order and account updates will appear here.</p>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 10 }}>
+                {notifications.map((n) => (
+                  <div key={n.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, opacity: n.read ? 0.72 : 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--charcoal)" }}>{n.title || "Update"}</div>
+                        <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{n.message || "You have a new update."}</div>
+                        <div style={{ fontSize: "0.62rem", color: "var(--warm-gray)", marginTop: 6 }}>
+                          {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleString() : "Just now"}
+                        </div>
+                      </div>
+                      {!n.read && (
+                        <button
+                          className="filter-btn"
+                          onClick={() => onMarkNotificationRead?.(n.id)}
+                        >
+                          Mark read
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

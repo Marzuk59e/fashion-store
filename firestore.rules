@@ -35,6 +35,11 @@ service cloud.firestore {
       allow write: if isSignedIn() && request.auth.uid == userId;
       allow read, update: if isAdmin();
     }
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isAdmin();
+    }
   }
 }
 
