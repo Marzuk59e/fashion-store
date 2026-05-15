@@ -2277,6 +2277,7 @@ export default function App() {
   const [wishlist, setWishlist] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).wishlist);
   const [, firebaseProfileBump] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [payConfirmOrder, setPayConfirmOrder] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -3168,6 +3169,7 @@ export default function App() {
 
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const unreadNotificationCount = notifications.filter((n) => !n.read).length;
 
   const closeShopSearch = () => {
     setShopSearchOpen(false);
@@ -3231,6 +3233,7 @@ export default function App() {
   const openProductFromCheckoutFlow = (product) => {
     setCheckoutOpen(false);
     setCartOpen(false);
+    setNotificationOpen(false);
     setSelectedProduct(product);
     setPage("product");
     setShopSearchOpen(false);
@@ -3262,6 +3265,12 @@ export default function App() {
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
             {cartCount > 0 && <span className="badge">{cartCount}</span>}
           </button>
+          {user && (
+            <button className="icon-btn" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" /><path d="M9 17a3 3 0 0 0 6 0" /></svg>
+              {unreadNotificationCount > 0 && <span className="badge" style={{ background: "#C0392B" }} />}
+            </button>
+          )}
           {user ? (
             <button className="icon-btn" onClick={() => navigate("profile")}>
               <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
@@ -3299,7 +3308,6 @@ export default function App() {
           user={user}
           cart={cart}
           wishlist={wishlist}
-          notifications={notifications}
           products={products}
           logout={logout}
           tab={profileTab}
@@ -3312,16 +3320,6 @@ export default function App() {
             if (auth.currentUser) {
               await reload(auth.currentUser);
               firebaseProfileBump((n) => n + 1);
-            }
-          }}
-          onMarkNotificationRead={async (notificationId) => {
-            if (!user?.firebaseUid || !notificationId) return;
-            try {
-              await updateDoc(doc(db, "users", user.firebaseUid, "notifications", notificationId), {
-                read: true,
-              });
-            } catch {
-              void 0;
             }
           }}
         />
@@ -3428,6 +3426,79 @@ export default function App() {
                 </div>
               </>
             )}
+          </div>
+        </>
+      )}
+
+      {/* Notifications Panel */}
+      {notificationOpen && (
+        <>
+          <div className="overlay-backdrop" onClick={() => setNotificationOpen(false)} />
+          <div className="cart-drawer" style={{ right: 0, width: "min(460px, 92vw)" }}>
+            <div className="cart-header">
+              <div className="cart-title">Notifications</div>
+              <button className="close-btn" onClick={() => setNotificationOpen(false)}>âœ•</button>
+            </div>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
+                {unreadNotificationCount > 0 ? `${unreadNotificationCount} unread` : "All read"}
+              </div>
+              <button
+                className="filter-btn"
+                disabled={!unreadNotificationCount}
+                onClick={async () => {
+                  if (!user?.firebaseUid || !unreadNotificationCount) return;
+                  try {
+                    await Promise.all(
+                      notifications
+                        .filter((n) => !n.read)
+                        .map((n) => updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true })),
+                    );
+                  } catch {
+                    void 0;
+                  }
+                }}
+              >
+                Mark all as read
+              </button>
+            </div>
+            <div style={{ padding: 16, display: "grid", gap: 10, overflowY: "auto" }}>
+              {notifications.length === 0 ? (
+                <div style={{ textAlign: "center", color: "var(--warm-gray)", padding: "44px 0" }}>
+                  <div style={{ fontSize: "2rem", marginBottom: 10 }}>ðŸ””</div>
+                  No notifications yet
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div key={n.id} style={{ border: "1px solid var(--border)", background: "var(--surface)", padding: 12, opacity: n.read ? 0.72 : 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>{n.title || "Update"}</div>
+                        <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{n.message || "You have a new update."}</div>
+                        <div style={{ fontSize: "0.62rem", color: "var(--warm-gray)", marginTop: 6 }}>
+                          {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleString() : "Just now"}
+                        </div>
+                      </div>
+                      {!n.read && (
+                        <button
+                          className="filter-btn"
+                          onClick={async () => {
+                            if (!user?.firebaseUid) return;
+                            try {
+                              await updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true });
+                            } catch {
+                              void 0;
+                            }
+                          }}
+                        >
+                          Mark read
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </>
       )}
@@ -4223,7 +4294,7 @@ function fulfillmentForDisplay(order) {
   };
 }
 
-function ProfilePage({ user, cart, wishlist, notifications, products, logout, tab, setTab, navigate, onMarkOrderPaid, onUpdateProfile, addToast, onFirebaseEmailReload, onMarkNotificationRead }) {
+function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onUpdateProfile, addToast, onFirebaseEmailReload }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [editingSettings, setEditingSettings] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
@@ -4275,7 +4346,7 @@ function ProfilePage({ user, cart, wishlist, notifications, products, logout, ta
         </button>
       </div>
       <div className="profile-tabs">
-        {[["orders", "Orders"], ["notifications", `Notifications${notifications?.filter((n) => !n.read).length ? ` (${notifications.filter((n) => !n.read).length})` : ""}`], ["cart", "Saved Bag"], ["wishlist", "Wishlist"], ["settings", "Settings"]].map(([id, label]) => (
+        {[["orders", "Orders"], ["cart", "Saved Bag"], ["wishlist", "Wishlist"], ["settings", "Settings"]].map(([id, label]) => (
           <button key={id} className={`profile-tab${tab === id ? " active" : ""}`} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
@@ -4379,41 +4450,6 @@ function ProfilePage({ user, cart, wishlist, notifications, products, logout, ta
                     </div>
                   );
                 })}
-              </div>
-            )}
-          </div>
-        )}
-        {tab === "notifications" && (
-          <div>
-            {(notifications || []).length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--warm-gray)" }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🔔</div>
-                <p style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", marginBottom: 8, color: "var(--charcoal)" }}>No notifications yet</p>
-                <p style={{ fontSize: "0.75rem" }}>Order and account updates will appear here.</p>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gap: 10 }}>
-                {notifications.map((n) => (
-                  <div key={n.id} style={{ background: "var(--surface)", border: "1px solid var(--border)", padding: 14, opacity: n.read ? 0.72 : 1 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--charcoal)" }}>{n.title || "Update"}</div>
-                        <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{n.message || "You have a new update."}</div>
-                        <div style={{ fontSize: "0.62rem", color: "var(--warm-gray)", marginTop: 6 }}>
-                          {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleString() : "Just now"}
-                        </div>
-                      </div>
-                      {!n.read && (
-                        <button
-                          className="filter-btn"
-                          onClick={() => onMarkNotificationRead?.(n.id)}
-                        >
-                          Mark read
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </div>
