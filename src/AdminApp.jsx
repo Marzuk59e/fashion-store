@@ -1,510 +1,1070 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿// ─── Run once if Excel upload fails: npm install xlsx ────────
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-  deleteDoc,
-  updateDoc,
-  arrayUnion,
+  collection, doc, getDoc, getDocs, limit,
+  onSnapshot, query, serverTimestamp,
+  setDoc, updateDoc, orderBy,
 } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import * as XLSX from "xlsx";
 import { auth, db, storage } from "./firebase.js";
+// ↑ Make sure firebase.js exports: auth, db, storage
+import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 
+/* ─── Design tokens ────────────────────────────────────────── */
 const C = {
-  bg: "#0f1115",
-  panel: "#171a21",
-  panel2: "#1f2330",
-  border: "#2b3245",
-  text: "#eff2f8",
-  muted: "#9ba4be",
-  brand: "#7ac5ff",
-  ok: "#4ac18e",
-  err: "#ff7f8a",
+  bg: "#0C0B09",
+  surface: "#141310",
+  surface2: "#1C1A16",
+  border: "#252219",
+  border2: "#302C22",
+  gold: "#E2BC5C",
+  goldBg: "rgba(226,188,92,0.10)",
+  text: "#F5F0E8",
+  muted: "#A89F8C",
+  success: "#4A7C59",
+  successBg: "rgba(74,124,89,0.12)",
+  error: "#8B3A3A",
+  errorBg: "rgba(139,58,58,0.12)",
+  warning: "#7A6020",
+  warningBg: "rgba(226,188,92,0.12)",
+};
+const font = {
+  serif: "'Cormorant Garamond', Georgia, serif",
+  mono: "'Fira Code', 'Courier New', monospace",
+  sans: "'DM Sans', system-ui, sans-serif",
+};
+const CATEGORIES = ["Women", "Men", "Kids", "Accessories"];
+const ORDER_STATUSES = ["pending", "processing", "shipped", "delivered", "cancelled"];
+const STATUS_COLORS = {
+  pending: { bg: "rgba(226,188,92,0.15)", color: "#E2BC5C" },
+  processing: { bg: "rgba(90,125,138,0.2)", color: "#7AAEC0" },
+  shipped: { bg: "rgba(74,124,89,0.2)", color: "#6DBF8A" },
+  delivered: { bg: "rgba(74,124,89,0.3)", color: "#4CAF7C" },
+  cancelled: { bg: "rgba(139,58,58,0.2)", color: "#CF8A8A" },
 };
 
-const baseInput = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 8,
-  border: `1px solid ${C.border}`,
-  background: C.panel2,
-  color: C.text,
-  fontSize: 13,
-};
-
-const CATEGORIES = ["Women", "Men", "Accessories", "Kids"];
-
-function inferCategory(raw) {
-  const value = String(raw || "").trim().toLowerCase();
-  if (!value) return "Accessories";
-  if (value.includes("women") || value.includes("female") || value.includes("ladies")) return "Women";
-  if (value.includes("men") || value.includes("male") || value.includes("gent")) return "Men";
-  if (value.includes("kid") || value.includes("child") || value.includes("baby")) return "Kids";
-  if (value.includes("access") || value.includes("bag") || value.includes("jewel") || value.includes("belt")) return "Accessories";
-  return "Accessories";
+/* ─── Validation ────────────────────────────────────────────── */
+function validateProductList(list) {
+  if (!Array.isArray(list) || list.length === 0) return "Catalog must be a non-empty JSON array.";
+  const seen = new Set();
+  for (let i = 0; i < list.length; i++) {
+    const p = list[i];
+    if (!p || typeof p !== "object") return `Row ${i + 1}: invalid object.`;
+    if (typeof p.id !== "number") return `Row ${i + 1}: "id" must be a number.`;
+    if (seen.has(p.id)) return `Duplicate id: ${p.id}.`;
+    seen.add(p.id);
+    for (const k of ["name", "brand", "price", "category", "emoji", "sizes", "bg", "desc"]) {
+      if (!(k in p)) return `Row ${i + 1}: missing "${k}".`;
+    }
+    if (typeof p.name !== "string" || !p.name.trim()) return `Row ${i + 1}: invalid name.`;
+    if (typeof p.brand !== "string") return `Row ${i + 1}: invalid brand.`;
+    if (typeof p.price !== "number" || p.price < 0) return `Row ${i + 1}: invalid price.`;
+    if (typeof p.category !== "string") return `Row ${i + 1}: invalid category.`;
+    if (typeof p.emoji !== "string") return `Row ${i + 1}: invalid emoji.`;
+    if (!Array.isArray(p.sizes) || p.sizes.length === 0) return `Row ${i + 1}: sizes must be a non-empty array.`;
+    if (!Array.isArray(p.bg) || p.bg.length < 2) return `Row ${i + 1}: bg must be [color, color].`;
+    if (typeof p.desc !== "string") return `Row ${i + 1}: invalid desc.`;
+  }
+  return null;
 }
 
-function parseRow(row, index, fallbackCategory = "Accessories") {
-  const id = Number(row.id ?? row.ID ?? row.product_id ?? Date.now() + index);
-  const name = String(row.name ?? row.Name ?? "").trim();
-  const brand = String(row.brand ?? row.Brand ?? "Unknown").trim();
-  const price = Number(row.price ?? row.Price ?? 0);
-  const compareAtRaw = row.compareAt ?? row.compare_at ?? row.CompareAt;
-  const compareAt = compareAtRaw == null || compareAtRaw === "" ? null : Number(compareAtRaw);
-  const category = inferCategory(row.category ?? row.Category ?? fallbackCategory);
-  const desc = String(row.desc ?? row.description ?? row.Description ?? "").trim();
-  const emoji = String(row.emoji ?? row.icon ?? "???").trim() || "???";
-  const badgeRaw = String(row.badge ?? row.Badge ?? "").trim();
-  const badge = badgeRaw || null;
-  const image = String(row.image ?? row.imageUrl ?? row.image_url ?? "").trim() || null;
-  const sizesRaw = String(row.sizes ?? row.size ?? row.Size ?? "One Size");
-  const sizes = sizesRaw.split(",").map((s) => s.trim()).filter(Boolean);
-  const bgA = String(row.bg1 ?? row.bg_start ?? "#eceff5");
-  const bgB = String(row.bg2 ?? row.bg_end ?? "#d9dfea");
+/* ─── Excel parser ──────────────────────────────────────────── */
+async function parseExcelFile(file) {
+  let XLSX;
+  try { XLSX = await import("xlsx"); }
+  catch { throw new Error("xlsx package not found. Run: npm install xlsx"); }
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+  if (!rows.length) throw new Error("Excel file is empty.");
+  return rows.map((row, i) => {
+    const bgRaw = String(row.bg || "#F5EEE6,#EDE4D8");
+    const sizesRaw = String(row.sizes || "S,M,L");
+    return {
+      id: Number(row.id) || (Date.now() + i),
+      name: String(row.name || "").trim(),
+      brand: String(row.brand || "").trim(),
+      price: Number(row.price) || 0,
+      category: String(row.category || "Women").trim(),
+      sizes: sizesRaw.split(",").map(s => s.trim()).filter(Boolean),
+      badge: row.badge ? String(row.badge).trim() : null,
+      emoji: String(row.emoji || "👗").trim(),
+      bg: bgRaw.split(",").map(s => s.trim()).filter(Boolean),
+      desc: String(row.desc || "").trim(),
+      image: String(row.image || "").trim() || undefined,
+      compareAt: row.compareAt ? Number(row.compareAt) : undefined,
+    };
+  }).filter(p => p.name);
+}
 
-  if (!name) throw new Error(`Row ${index + 2}: name missing`);
-  if (!Number.isFinite(price) || price < 0) throw new Error(`Row ${index + 2}: price invalid`);
+/* ─── Image upload helper ───────────────────────────────────── */
+async function uploadImage(file) {
+  if (!storage) throw new Error("Firebase Storage not initialized. Export 'storage' from firebase.js");
+  const { ref: sRef, uploadBytes, getDownloadURL } = await import("firebase/storage");
+  const path = `products/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+  const fileRef = sRef(storage, path);
+  await uploadBytes(fileRef, file);
+  return getDownloadURL(fileRef);
+}
 
-  return {
-    id: Number.isFinite(id) ? id : Date.now() + index,
-    name,
-    brand,
-    price,
-    compareAt: Number.isFinite(compareAt) ? compareAt : null,
-    category,
-    desc,
-    emoji,
-    badge,
-    image,
-    sizes: sizes.length ? sizes : ["One Size"],
-    bg: [bgA, bgB],
-    inStock: row.inStock == null ? true : Boolean(row.inStock),
+/* ─── Shared button/input styles ────────────────────────────── */
+const S = {
+  btnPrimary: {
+    padding: "10px 24px", background: C.gold, border: "none", borderRadius: 8,
+    color: "#0C0B09", fontSize: 13, fontWeight: 800, fontFamily: font.sans,
+    letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer",
+  },
+  btnGhost: {
+    padding: "10px 18px", background: "transparent", border: `1px solid ${C.border2}`,
+    borderRadius: 8, color: C.muted, fontSize: 12, fontWeight: 600,
+    fontFamily: font.sans, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer",
+  },
+  btnDanger: {
+    padding: "8px 14px", background: C.errorBg, border: `1px solid ${C.error}55`,
+    borderRadius: 7, color: "#CF8A8A", fontSize: 12, fontWeight: 600,
+    fontFamily: font.sans, cursor: "pointer",
+  },
+  input: {
+    width: "100%", padding: "11px 14px", background: C.bg, color: C.text,
+    border: `1px solid ${C.border2}`, borderRadius: 8, fontSize: 13,
+    fontFamily: font.sans, outline: "none", boxSizing: "border-box",
+  },
+  label: { fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5, display: "block" },
+};
+
+/* ─── Small reusable components ─────────────────────────────── */
+function LoadingScreen({ text = "Loading…" }) {
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+      <div style={{ width: 34, height: 34, border: `2px solid ${C.border2}`, borderTopColor: C.gold, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <p style={{ color: C.muted, fontSize: 13, fontFamily: font.sans, margin: 0 }}>{text}</p>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
+function MsgBanner({ msg, onClose }) {
+  if (!msg) return null;
+  const isErr = /fail|invalid|error|denied|could not|not found/i.test(msg);
+  const isWarn = /warn|reset|default/i.test(msg);
+  const bg = isErr ? C.errorBg : isWarn ? C.warningBg : C.successBg;
+  const border = isErr ? C.error : isWarn ? C.warning : C.success;
+  const color = isErr ? "#CF8A8A" : isWarn ? "#E2BC5C" : "#8BCF9A";
+  const icon = isErr ? "⚠" : isWarn ? "◌" : "✓";
+  return (
+    <div style={{ padding: "11px 16px", borderRadius: 8, marginBottom: 16, background: bg, border: `1px solid ${border}44`, color, fontSize: 13, fontFamily: font.sans, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <span>{icon} {msg}</span>
+      {onClose && <button onClick={onClose} style={{ background: "none", border: "none", color, cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>}
+    </div>
+  );
+}
+
+function NavBtn({ id, label, icon, active, onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <button type="button" onClick={() => onClick(id)}
+      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 18px",
+        background: active ? C.goldBg : hov ? "rgba(255,255,255,0.025)" : "transparent",
+        border: "none", borderLeft: `2px solid ${active ? C.gold : "transparent"}`,
+        color: active ? C.gold : hov ? C.text : C.muted,
+        fontSize: 13, fontFamily: font.sans, fontWeight: active ? 700 : 500,
+        letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", textAlign: "left", transition: "all 0.15s"
+      }}>
+      <span style={{ fontSize: 14 }}>{icon}</span>{label}
+    </button>
+  );
+}
+
+function StatCard({ label, value, sub, accent = C.gold }) {
+  return (
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent}`, borderRadius: 12, padding: "18px 22px", flex: 1, minWidth: 140 }}>
+      <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.sans }}>{label}</p>
+      <p style={{ margin: 0, fontSize: 32, fontWeight: 400, color: C.text, fontFamily: font.serif, lineHeight: 1 }}>{value}</p>
+      {sub && <p style={{ margin: "4px 0 0", fontSize: 12, color: C.muted }}>{sub}</p>}
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const s = STATUS_COLORS[status] || STATUS_COLORS.pending;
+  return (
+    <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", background: s.bg, color: s.color, fontFamily: font.sans, whiteSpace: "nowrap" }}>
+      {status}
+    </span>
+  );
+}
+
+function FormField({ label, children }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={S.label}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+/* ─── Login page ────────────────────────────────────────────── */
+function LoginPage({ storefrontUrl, busy, msg, email, password, setEmail, setPassword, onLogin }) {
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.sans }}>
+      <div style={{ width: "100%", maxWidth: 400, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "48px 40px" }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", border: `1px solid ${C.border2}`, background: C.goldBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 20, color: C.gold }}>✦</div>
+          <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 300, fontFamily: font.serif, color: C.gold, letterSpacing: "0.14em", textTransform: "uppercase" }}>Sanjiiiii</h1>
+          <p style={{ margin: 0, fontSize: 11, color: C.muted, letterSpacing: "0.12em", textTransform: "uppercase" }}>Admin Portal</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {["email", "password"].map(type => (
+            <input key={type} type={type} placeholder={type === "email" ? "Email address" : "Password"}
+              value={type === "email" ? email : password}
+              onChange={e => type === "email" ? setEmail(e.target.value) : setPassword(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && onLogin()}
+              style={{ ...S.input, transition: "border-color 0.2s" }}
+              onFocus={e => e.target.style.borderColor = C.gold}
+              onBlur={e => e.target.style.borderColor = C.border2}
+            />
+          ))}
+          {msg && <p style={{ margin: 0, padding: "10px 14px", borderRadius: 6, background: C.errorBg, color: "#CF8A8A", border: `1px solid ${C.error}44`, fontSize: 13 }}>{msg}</p>}
+          <button type="button" disabled={busy} onClick={onLogin}
+            style={{ ...S.btnPrimary, width: "100%", padding: "14px", opacity: busy ? 0.7 : 1, cursor: busy ? "wait" : "pointer", marginTop: 4, fontSize: 13 }}>
+            {busy ? "Signing in…" : "Sign In"}
+          </button>
+        </div>
+        <a href={storefrontUrl} style={{ display: "block", textAlign: "center", marginTop: 24, color: C.muted, fontSize: 12, textDecoration: "none" }}>← Back to storefront</a>
+      </div>
+    </div>
+  );
+}
+
+function AccessDenied({ user, storefrontUrl, onLogout }) {
+  return (
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.sans, padding: 24 }}>
+      <div style={{ maxWidth: 520, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "40px 36px" }}>
+        <p style={{ margin: "0 0 16px", fontSize: 26 }}>⛔</p>
+        <h2 style={{ margin: "0 0 12px", fontSize: 20, fontWeight: 500, color: C.text }}>Access Denied</h2>
+        <p style={{ margin: "0 0 20px", fontSize: 14, color: C.muted, lineHeight: 1.7 }}>
+          Your account (<span style={{ color: C.text }}>{user.email || user.uid}</span>) is not in the <code style={{ color: C.gold }}>admins</code> collection.
+        </p>
+        <div style={{ background: C.bg, border: `1px solid ${C.border2}`, borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
+          <ol style={{ margin: 0, paddingLeft: 20, color: C.text, fontSize: 13, lineHeight: 1.9 }}>
+            <li>Open Firebase Console → Firestore.</li>
+            <li>Create collection <strong style={{ color: C.gold }}>admins</strong> (if missing).</li>
+            <li>Add document ID: <code style={{ color: C.gold, fontSize: 12, background: C.goldBg, padding: "1px 6px", borderRadius: 4 }}>{user.uid}</code></li>
+            <li>Set field <code style={{ color: C.gold }}>active</code> = <strong>true</strong>.</li>
+            <li>Refresh this page.</li>
+          </ol>
+        </div>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button type="button" onClick={onLogout} style={S.btnGhost}>Sign out</button>
+          <a href={storefrontUrl} style={{ ...S.btnGhost, textDecoration: "none", display: "inline-block" }}>← Storefront</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Product Form ──────────────────────────────────────────── */
+function ProductForm({ initial, onSave, onCancel, busy }) {
+  const empty = { id: "", name: "", brand: "", price: "", category: "Women", badge: "", emoji: "👗", bg1: "#F5EEE6", bg2: "#EDE4D8", desc: "", image: "", sizes: "S,M,L" };
+  const [f, setF] = useState(() => initial ? {
+    ...empty,
+    id: initial.id,
+    name: initial.name,
+    brand: initial.brand,
+    price: initial.price,
+    category: initial.category,
+    badge: initial.badge || "",
+    emoji: initial.emoji,
+    bg1: (initial.bg?.[0] || "#F5EEE6"),
+    bg2: (initial.bg?.[1] || "#EDE4D8"),
+    desc: initial.desc,
+    image: initial.image || "",
+    sizes: Array.isArray(initial.sizes) ? initial.sizes.join(",") : initial.sizes,
+  } : empty);
+  const [imgFile, setImgFile] = useState(null);
+  const [imgUploading, setImgUploading] = useState(false);
+  const imgRef = useRef();
+
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+  const handleImgUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImgFile(file);
+    setImgUploading(true);
+    try {
+      const url = await uploadImage(file);
+      set("image", url);
+    } catch (err) {
+      set("image", URL.createObjectURL(file));
+      alert("Storage upload failed. Using local preview only.\n" + err.message);
+    } finally { setImgUploading(false); }
   };
-}
 
-function Login({ email, password, setEmail, setPassword, onLogin, msg, busy }) {
+  const handleSave = () => {
+    const product = {
+      id: Number(f.id) || Date.now(),
+      name: f.name.trim(),
+      brand: f.brand.trim(),
+      price: Number(f.price) || 0,
+      category: f.category,
+      badge: f.badge.trim() || null,
+      emoji: f.emoji.trim() || "👗",
+      bg: [f.bg1, f.bg2],
+      desc: f.desc.trim(),
+      image: f.image.trim() || undefined,
+      sizes: f.sizes.split(",").map(s => s.trim()).filter(Boolean),
+    };
+    if (!product.name) return alert("Product name is required.");
+    onSave(product);
+  };
+
+  const inputStyle = { ...S.input };
+
   return (
-    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: C.bg, padding: 16 }}>
-      <div style={{ width: "100%", maxWidth: 380, background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: 22 }}>
-        <h2 style={{ color: C.text, marginBottom: 12 }}>Admin Login</h2>
-        <input style={{ ...baseInput, marginBottom: 10 }} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input style={{ ...baseInput, marginBottom: 10 }} placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        {msg ? <p style={{ color: C.err, fontSize: 12, marginBottom: 10 }}>{msg}</p> : null}
-        <button disabled={busy} onClick={onLogin} style={{ ...baseInput, cursor: "pointer", background: C.brand, color: "#061018", fontWeight: 700 }}>
-          {busy ? "Signing in..." : "Sign in"}
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 500, color: C.text, fontFamily: font.serif }}>{initial ? "Edit Product" : "Add New Product"}</h3>
+        <button type="button" onClick={onCancel} style={{ background: "none", border: "none", color: C.muted, fontSize: 20, cursor: "pointer" }}>×</button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+        <FormField label="ID (number)">
+          <input style={inputStyle} placeholder="Auto if empty" value={f.id} onChange={e => set("id", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+        </FormField>
+        <FormField label="Category">
+          <select value={f.category} onChange={e => set("category", e.target.value)}
+            style={{ ...inputStyle, appearance: "none" }}>
+            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </FormField>
+        <FormField label="Product Name">
+          <input style={inputStyle} placeholder="Draped Silk Blouse" value={f.name} onChange={e => set("name", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+        </FormField>
+        <FormField label="Brand">
+          <input style={inputStyle} placeholder="Maison Élite" value={f.brand} onChange={e => set("brand", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+        </FormField>
+        <FormField label="Price (USD)">
+          <input style={inputStyle} type="number" placeholder="245" value={f.price} onChange={e => set("price", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+        </FormField>
+        <FormField label="Badge (optional)">
+          <input style={inputStyle} placeholder="New · Best Seller · Limited" value={f.badge} onChange={e => set("badge", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+        </FormField>
+        <FormField label="Sizes (comma-separated)">
+          <input style={inputStyle} placeholder="XS,S,M,L,XL" value={f.sizes} onChange={e => set("sizes", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+        </FormField>
+        <FormField label="Emoji">
+          <input style={inputStyle} placeholder="👗" value={f.emoji} onChange={e => set("emoji", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+        </FormField>
+        <FormField label="BG Color 1">
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="color" value={f.bg1} onChange={e => set("bg1", e.target.value)}
+              style={{ width: 40, height: 38, border: `1px solid ${C.border2}`, borderRadius: 6, cursor: "pointer", background: "none", padding: 2 }} />
+            <input style={{ ...inputStyle, flex: 1 }} value={f.bg1} onChange={e => set("bg1", e.target.value)}
+              onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+          </div>
+        </FormField>
+        <FormField label="BG Color 2">
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input type="color" value={f.bg2} onChange={e => set("bg2", e.target.value)}
+              style={{ width: 40, height: 38, border: `1px solid ${C.border2}`, borderRadius: 6, cursor: "pointer", background: "none", padding: 2 }} />
+            <input style={{ ...inputStyle, flex: 1 }} value={f.bg2} onChange={e => set("bg2", e.target.value)}
+              onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+          </div>
+        </FormField>
+      </div>
+      <FormField label="Description">
+        <textarea style={{ ...inputStyle, minHeight: 72, resize: "vertical" }} placeholder="Product description…" value={f.desc}
+          onChange={e => set("desc", e.target.value)}
+          onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+      </FormField>
+      <FormField label="Product Image">
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <input style={{ ...inputStyle, flex: 1 }} placeholder="https://... or upload below" value={f.image}
+            onChange={e => set("image", e.target.value)}
+            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
+          <input type="file" accept="image/*" ref={imgRef} style={{ display: "none" }} onChange={handleImgUpload} />
+          <button type="button" onClick={() => imgRef.current?.click()}
+            style={{ ...S.btnGhost, whiteSpace: "nowrap" }} disabled={imgUploading}>
+            {imgUploading ? "Uploading…" : "Upload Image"}
+          </button>
+        </div>
+        {f.image && (
+          <img src={f.image} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, marginTop: 10, border: `1px solid ${C.border2}` }} onError={e => e.target.style.display = "none"} />
+        )}
+      </FormField>
+      <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+        <button type="button" onClick={handleSave} disabled={busy} style={{ ...S.btnPrimary, opacity: busy ? 0.6 : 1 }}>
+          {busy ? "Saving…" : initial ? "Update Product" : "Add Product"}
         </button>
+        <button type="button" onClick={onCancel} style={S.btnGhost}>Cancel</button>
       </div>
     </div>
   );
 }
 
-function ProductForm({ draft, setDraft, onSave, busy, onUploadImage, imageUploading }) {
+/* ─── Excel Upload Panel ─────────────────────────────────────── */
+function ExcelUploadPanel({ existingProducts, onUpload, onClose, busy }) {
+  const [preview, setPreview] = useState(null);
+  const [err, setErr] = useState("");
+  const [mode, setMode] = useState("replace"); // "replace" | "merge"
+  const dropRef = useRef();
+
+  const handleFile = async (file) => {
+    setErr("");
+    setPreview(null);
+    if (!file) return;
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["xlsx", "xls", "csv"].includes(ext)) { setErr("Only .xlsx, .xls, or .csv files accepted."); return; }
+    try {
+      const products = await parseExcelFile(file);
+      if (!products.length) { setErr("No valid products found in file."); return; }
+      setPreview(products);
+    } catch (e) { setErr(e.message); }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    handleFile(e.dataTransfer.files?.[0]);
+  };
+
+  const handleConfirm = () => {
+    if (!preview) return;
+    let final;
+    if (mode === "replace") {
+      final = preview;
+    } else {
+      const map = new Map(existingProducts.map(p => [p.id, p]));
+      preview.forEach(p => map.set(p.id, p));
+      final = [...map.values()];
+    }
+    onUpload(final);
+  };
+
   return (
-    <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
-      <h3 style={{ color: C.text, marginBottom: 12 }}>Manual Product Add / Edit</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10 }}>
-        <input style={baseInput} placeholder="ID" value={draft.id} onChange={(e) => setDraft((p) => ({ ...p, id: e.target.value }))} />
-        <input style={baseInput} placeholder="Name" value={draft.name} onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))} />
-        <input style={baseInput} placeholder="Brand" value={draft.brand} onChange={(e) => setDraft((p) => ({ ...p, brand: e.target.value }))} />
-        <input style={baseInput} placeholder="Price" type="number" value={draft.price} onChange={(e) => setDraft((p) => ({ ...p, price: e.target.value }))} />
-        <select style={baseInput} value={draft.category} onChange={(e) => setDraft((p) => ({ ...p, category: e.target.value }))}>
-          {CATEGORIES.map((cat) => <option key={cat}>{cat}</option>)}
-        </select>
-        <input style={baseInput} placeholder="Badge" value={draft.badge} onChange={(e) => setDraft((p) => ({ ...p, badge: e.target.value }))} />
-        <input style={baseInput} placeholder="Emoji" value={draft.emoji} onChange={(e) => setDraft((p) => ({ ...p, emoji: e.target.value }))} />
-        <input style={baseInput} placeholder="Sizes (S,M,L)" value={draft.sizes} onChange={(e) => setDraft((p) => ({ ...p, sizes: e.target.value }))} />
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, marginBottom: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 500, color: C.text, fontFamily: font.serif }}>Bulk Upload via Excel</h3>
+        <button type="button" onClick={onClose} style={{ background: "none", border: "none", color: C.muted, fontSize: 20, cursor: "pointer" }}>×</button>
       </div>
-      <textarea style={{ ...baseInput, marginTop: 10, minHeight: 70 }} placeholder="Description" value={draft.desc} onChange={(e) => setDraft((p) => ({ ...p, desc: e.target.value }))} />
-      <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
-        <input style={{ ...baseInput, flex: 1, minWidth: 240 }} placeholder="Image URL" value={draft.image} onChange={(e) => setDraft((p) => ({ ...p, image: e.target.value }))} />
-        <label style={{ ...baseInput, width: "auto", cursor: "pointer", background: C.panel2 }}>
-          {imageUploading ? "Uploading..." : "Upload Image"}
-          <input type="file" accept="image/*" style={{ display: "none" }} onChange={onUploadImage} />
-        </label>
+
+      {/* Format guide */}
+      <div style={{ background: C.bg, border: `1px solid ${C.border2}`, borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+        <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Required columns</p>
+        <p style={{ margin: 0, fontSize: 12, color: C.muted, fontFamily: font.mono, lineHeight: 1.8 }}>
+          id · name · brand · price · category · sizes (comma-sep) · badge · emoji · bg (2 hex, comma-sep) · desc · image (url, optional)
+        </p>
       </div>
-      <button onClick={onSave} disabled={busy} style={{ ...baseInput, marginTop: 12, cursor: "pointer", background: C.brand, color: "#061018", fontWeight: 700 }}>
-        {busy ? "Saving..." : "Save Product"}
-      </button>
+
+      {/* Drop zone */}
+      {!preview && (
+        <div
+          ref={dropRef}
+          onDrop={handleDrop}
+          onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = C.gold; }}
+          onDragLeave={e => { e.currentTarget.style.borderColor = C.border2; }}
+          style={{ border: `2px dashed ${C.border2}`, borderRadius: 10, padding: "32px 20px", textAlign: "center", cursor: "pointer", transition: "border-color 0.2s" }}
+          onClick={() => { const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".xlsx,.xls,.csv"; inp.onchange = e => handleFile(e.target.files?.[0]); inp.click(); }}
+        >
+          <p style={{ margin: "0 0 6px", fontSize: 22, opacity: 0.5 }}>📊</p>
+          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 500, color: C.text }}>Drop your Excel file here</p>
+          <p style={{ margin: 0, fontSize: 12, color: C.muted }}>or click to browse · .xlsx .xls .csv</p>
+        </div>
+      )}
+
+      {err && <MsgBanner msg={err} onClose={() => setErr("")} />}
+
+      {/* Preview table */}
+      {preview && (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: C.text }}>{preview.length} products found</p>
+            <button type="button" onClick={() => setPreview(null)} style={S.btnGhost}>Clear</button>
+          </div>
+
+          {/* Merge mode */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+            {[["replace", "Replace all existing products"], ["merge", "Merge (keep existing, add/update from file)"]].map(([val, lbl]) => (
+              <label key={val} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: mode === val ? C.gold : C.muted, fontFamily: font.sans }}>
+                <input type="radio" value={val} checked={mode === val} onChange={() => setMode(val)} style={{ accentColor: C.gold }} /> {lbl}
+              </label>
+            ))}
+          </div>
+
+          <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 10, maxHeight: 220, overflowY: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead style={{ position: "sticky", top: 0 }}>
+                <tr style={{ background: C.surface2 }}>
+                  {["ID", "Name", "Brand", "Price", "Category", "Sizes", "Badge"].map(h => (
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", borderBottom: `1px solid ${C.border}` }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {preview.map((p, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <td style={{ padding: "8px 12px", color: C.muted, fontFamily: font.mono }}>{p.id}</td>
+                    <td style={{ padding: "8px 12px", color: C.text, fontWeight: 500 }}>{p.emoji} {p.name}</td>
+                    <td style={{ padding: "8px 12px", color: C.muted }}>{p.brand}</td>
+                    <td style={{ padding: "8px 12px", color: C.gold, fontFamily: font.mono }}>${p.price}</td>
+                    <td style={{ padding: "8px 12px", color: C.muted }}>{p.category}</td>
+                    <td style={{ padding: "8px 12px", color: C.muted }}>{p.sizes?.join(", ")}</td>
+                    <td style={{ padding: "8px 12px", color: C.muted }}>{p.badge || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
+            <button type="button" onClick={handleConfirm} disabled={busy} style={{ ...S.btnPrimary, opacity: busy ? 0.6 : 1 }}>
+              {busy ? "Uploading…" : `Upload ${preview.length} Products`}
+            </button>
+            <button type="button" onClick={onClose} style={S.btnGhost}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
+/* ─── Dashboard Page ─────────────────────────────────────────── */
+function DashboardPage({ products, customers, customersLoaded, orders }) {
+  const totalRevenue = orders.filter(o => o.status === "delivered").reduce((s, o) => s + (o.total || 0), 0);
+  const pendingOrders = orders.filter(o => o.status === "pending").length;
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Overview</h2>
+      <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: "0 0 24px" }}>
+        Live from Firestore · <span style={{ color: C.gold }}>catalog/store</span>
+      </p>
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 28 }}>
+        <StatCard label="Products Live" value={products.length} />
+        <StatCard label="Customers" value={customersLoaded ? customers.length : "—"} accent="#5A7D8A" />
+        <StatCard label="Total Orders" value={orders.length} accent="#7A6090" />
+        <StatCard label="Pending Orders" value={pendingOrders} accent="#8B6E2A" sub={pendingOrders > 0 ? "Need action" : "All clear"} />
+        <StatCard label="Revenue (Delivered)" value={`$${totalRevenue.toLocaleString()}`} accent="#4A7C59" />
+      </div>
+
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "22px 26px", maxWidth: 600 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.mono, margin: "0 0 16px" }}>Quick guide</p>
+        {[
+          { n: "01", t: "Edit products", d: "Go to Products tab to add, edit, or delete products. Use Excel upload for bulk." },
+          { n: "02", t: "Manage orders", d: "View and update order statuses in the Orders tab. Change from pending → shipped etc." },
+          { n: "03", t: "View customers", d: "Load up to 200 Firebase sign-in users from the Customers tab." },
+          { n: "04", t: "Grant admin access", d: "Create admins/<Firebase UID> in Firestore with active: true." },
+        ].map(({ n, t, d }) => (
+          <div key={n} style={{ display: "flex", gap: 14, marginBottom: 14 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, fontFamily: font.mono, minWidth: 18, paddingTop: 3 }}>{n}</span>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 3px" }}>{t}</p>
+              <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.65, margin: 0 }}>{d}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4CAF7C", display: "inline-block" }} />
+        <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>Store is live · Connected to Firebase</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Products Page ──────────────────────────────────────────── */
+function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
+  const [search, setSearch] = useState("");
+  const [catFilter, setCatFilter] = useState("All");
+  const [showForm, setShowForm] = useState(false);
+  const [editProduct, setEditProduct] = useState(null);
+  const [showExcel, setShowExcel] = useState(false);
+
+  const filtered = useMemo(() => products.filter(p => {
+    const q = search.toLowerCase();
+    const matchQ = !q || p.name?.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q);
+    const matchC = catFilter === "All" || p.category === catFilter;
+    return matchQ && matchC;
+  }), [products, search, catFilter]);
+
+  const handleEdit = (p) => { setEditProduct(p); setShowForm(true); setShowExcel(false); };
+  const handleAdd = () => { setEditProduct(null); setShowForm(true); setShowExcel(false); };
+  const handleExcel = () => { setShowExcel(true); setShowForm(false); };
+  const handleCancel = () => { setShowForm(false); setEditProduct(null); setShowExcel(false); };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 4px" }}>Products</h2>
+          <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: 0 }}>{products.length} products in catalog</p>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button type="button" onClick={handleExcel} style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>📊 Excel Upload</button>
+          <button type="button" onClick={handleAdd} style={S.btnPrimary}>+ Add Product</button>
+        </div>
+      </div>
+
+      <MsgBanner msg={msg} onClose={() => setMsg("")} />
+
+      {showExcel && (
+        <ExcelUploadPanel
+          existingProducts={products}
+          onUpload={async (list) => { await onSave(list, "bulk"); handleCancel(); }}
+          onClose={handleCancel}
+          busy={busy}
+        />
+      )}
+
+      {showForm && (
+        <ProductForm
+          initial={editProduct}
+          onSave={async (p) => { await onSave(p, editProduct ? "edit" : "add"); handleCancel(); }}
+          onCancel={handleCancel}
+          busy={busy}
+        />
+      )}
+
+      {/* Search + filter */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+        <input
+          style={{ ...S.input, flex: 1, minWidth: 200 }}
+          placeholder="Search name, brand, category…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onFocus={e => e.target.style.borderColor = C.gold}
+          onBlur={e => e.target.style.borderColor = C.border2}
+        />
+        <select
+          value={catFilter}
+          onChange={e => setCatFilter(e.target.value)}
+          style={{ ...S.input, width: "auto", minWidth: 140, appearance: "none" }}
+        >
+          <option value="All">All Categories</option>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <span style={{ fontSize: 12, color: C.muted, fontFamily: font.mono, alignSelf: "center" }}>{filtered.length} results</span>
+      </div>
+
+      {/* Product table */}
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+              {["Product", "Brand", "Category", "Price", "Sizes", "Badge", ""].map(h => (
+                <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono, whiteSpace: "nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr><td colSpan={7} style={{ padding: "40px", textAlign: "center", color: C.muted, fontSize: 14 }}>No products found</td></tr>
+            )}
+            {filtered.map((p, i) => (
+              <tr key={p.id} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none" }}
+                onMouseEnter={e => e.currentTarget.style.background = C.surface2}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <td style={{ padding: "13px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {p.image ? (
+                      <img src={p.image} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: `1px solid ${C.border2}`, flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
+                    ) : (
+                      <div style={{ width: 36, height: 36, borderRadius: 6, background: `linear-gradient(135deg,${p.bg?.[0] || "#eee"},${p.bg?.[1] || "#ddd"})`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{p.emoji}</div>
+                    )}
+                    <span style={{ color: C.text, fontWeight: 500 }}>{p.name}</span>
+                  </div>
+                </td>
+                <td style={{ padding: "13px 14px", color: C.muted }}>{p.brand}</td>
+                <td style={{ padding: "13px 14px", color: C.muted }}>{p.category}</td>
+                <td style={{ padding: "13px 14px", color: C.gold, fontFamily: font.mono, fontWeight: 600 }}>${p.price}</td>
+                <td style={{ padding: "13px 14px", color: C.muted, fontSize: 11 }}>{Array.isArray(p.sizes) ? p.sizes.join(", ") : p.sizes}</td>
+                <td style={{ padding: "13px 14px" }}>
+                  {p.badge && <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: C.goldBg, color: C.gold, textTransform: "uppercase", letterSpacing: "0.06em" }}>{p.badge}</span>}
+                </td>
+                <td style={{ padding: "13px 14px" }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" onClick={() => handleEdit(p)} style={{ ...S.btnGhost, padding: "5px 12px", fontSize: 11 }}>Edit</button>
+                    <button type="button" onClick={() => { if (window.confirm(`Delete "${p.name}"?`)) onDelete(p.id); }} style={{ ...S.btnDanger, padding: "5px 12px", fontSize: 11 }}>Del</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Orders Page ────────────────────────────────────────────── */
+function OrdersPage({ orders, onStatusChange, busy }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const filtered = useMemo(() => orders.filter(o => {
+    const q = search.toLowerCase();
+    const matchQ = !q || o.customerEmail?.toLowerCase().includes(q) || o.customerName?.toLowerCase().includes(q) || o.id?.toLowerCase().includes(q);
+    const matchS = statusFilter === "all" || o.status === statusFilter;
+    return matchQ && matchS;
+  }), [orders, search, statusFilter]);
+
+  if (orders.length === 0) return (
+    <div>
+      <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Orders</h2>
+      <p style={{ fontSize: 14, color: C.muted, margin: "0 0 32px" }}>Manage customer orders</p>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, gap: 12, color: C.muted }}>
+        <span style={{ fontSize: 32, opacity: 0.3 }}>📦</span>
+        <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>No orders yet</p>
+        <p style={{ fontSize: 13, margin: 0 }}>Orders will appear here once customers start purchasing.</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Orders</h2>
+      <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: "0 0 20px" }}>{orders.length} total orders</p>
+
+      <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+        <input
+          style={{ ...S.input, flex: 1, minWidth: 200 }}
+          placeholder="Search by customer, email, order ID…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onFocus={e => e.target.style.borderColor = C.gold}
+          onBlur={e => e.target.style.borderColor = C.border2}
+        />
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+          style={{ ...S.input, width: "auto", minWidth: 150, appearance: "none" }}>
+          <option value="all">All Statuses</option>
+          {ORDER_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+        </select>
+      </div>
+
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+              {["Order ID", "Customer", "Date", "Items", "Total", "Status", "Action"].map(h => (
+                <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono, whiteSpace: "nowrap" }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((o, i) => {
+              const date = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleDateString() : o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—";
+              return (
+                <tr key={o.id} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none" }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surface2}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <td style={{ padding: "13px 14px", color: C.muted, fontFamily: font.mono, fontSize: 11 }}>{o.id?.slice(0, 8)}…</td>
+                  <td style={{ padding: "13px 14px" }}>
+                    <p style={{ margin: "0 0 2px", color: C.text, fontWeight: 500 }}>{o.customerName || "—"}</p>
+                    <p style={{ margin: 0, color: C.muted, fontSize: 11 }}>{o.customerEmail || ""}</p>
+                  </td>
+                  <td style={{ padding: "13px 14px", color: C.muted, fontSize: 12 }}>{date}</td>
+                  <td style={{ padding: "13px 14px", color: C.text, fontFamily: font.mono }}>{Array.isArray(o.items) ? o.items.length : "—"}</td>
+                  <td style={{ padding: "13px 14px", color: C.gold, fontFamily: font.mono, fontWeight: 600 }}>${(o.total || 0).toFixed(2)}</td>
+                  <td style={{ padding: "13px 14px" }}><StatusBadge status={o.status || "pending"} /></td>
+                  <td style={{ padding: "13px 14px" }}>
+                    <select
+                      value={o.status || "pending"}
+                      onChange={e => onStatusChange(o.id, e.target.value)}
+                      disabled={busy}
+                      style={{ ...S.input, width: 130, padding: "6px 10px", fontSize: 12, appearance: "none" }}
+                    >
+                      {ORDER_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Customers Page ─────────────────────────────────────────── */
+function CustomersPage({ customers, customersLoaded, onLoad, busy, msg, setMsg }) {
+  return (
+    <div>
+      <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Customers</h2>
+      <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: "0 0 20px" }}>Up to 200 Firebase sign-in users. Local-only accounts are not listed.</p>
+      <MsgBanner msg={msg} onClose={() => setMsg("")} />
+      <button type="button" disabled={busy} onClick={onLoad}
+        style={{ ...S.btnGhost, marginBottom: 20, color: customersLoaded ? C.muted : C.gold, borderColor: customersLoaded ? C.border2 : C.gold }}>
+        {busy ? "Loading…" : customersLoaded ? "Reload list" : "Load customers"}
+      </button>
+      {!customersLoaded && !busy && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, gap: 12, color: C.muted }}>
+          <span style={{ fontSize: 30, opacity: 0.35 }}>◉</span>
+          <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>Customer data not loaded yet</p>
+        </div>
+      )}
+      {customersLoaded && (
+        <>
+          <p style={{ fontSize: 13, fontWeight: 600, color: C.muted, fontFamily: font.mono, margin: "0 0 12px" }}>{customers.length} customers loaded</p>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                  {["Name", "Email", "Orders", "UID"].map(h => (
+                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map((c, i) => (
+                  <tr key={c.id} style={{ borderBottom: i < customers.length - 1 ? `1px solid ${C.border}` : "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.surface2}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <td style={{ padding: "13px 14px", color: C.text, fontWeight: 500 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.goldBg, border: `1px solid ${C.border2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.gold, fontWeight: 700, flexShrink: 0 }}>
+                          {(c.name !== "—" ? c.name : c.email)?.[0]?.toUpperCase() || "?"}
+                        </div>
+                        {c.name}
+                      </div>
+                    </td>
+                    <td style={{ padding: "13px 14px", color: C.muted, fontSize: 12 }}>{c.email}</td>
+                    <td style={{ padding: "13px 14px", color: C.text, fontFamily: font.mono, fontWeight: 600 }}>{c.orders}</td>
+                    <td style={{ padding: "13px 14px", color: C.muted, fontFamily: font.mono, fontSize: 10 }}>{c.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── Main AdminApp ──────────────────────────────────────────── */
 export default function AdminApp() {
   const [user, setUser] = useState(null);
-  const [ready, setReady] = useState(false);
-  const [admin, setAdmin] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [adminOk, setAdminOk] = useState(false);
+  const [adminCheckDone, setAdminCheckDone] = useState(false);
   const [tab, setTab] = useState("dashboard");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [customers, setCustomers] = useState([]);
+  const [customersLoaded, setCustomersLoaded] = useState(false);
+  const [orders, setOrders] = useState([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [products, setProducts] = useState([]);
-  const [productSearch, setProductSearch] = useState("");
-  const [productCategory, setProductCategory] = useState("all");
-  const [orders, setOrders] = useState([]);
-  const [orderSearch, setOrderSearch] = useState("");
-  const [excelCategory, setExcelCategory] = useState("Accessories");
-  const [imageUploading, setImageUploading] = useState(false);
-  const [draft, setDraft] = useState({ id: "", name: "", brand: "", price: "", category: "Women", badge: "", emoji: "???", sizes: "S,M,L", desc: "", image: "" });
+
+  const storefrontUrl = useMemo(() => {
+    const u = new URL(window.location.href);
+    u.pathname = u.pathname.replace(/\/admin\.html$/i, "/");
+    u.hash = "";
+    return u.origin + "/";
+  }, []);
+
+  useEffect(() => { document.title = "Admin · sanjiiiii"; }, []);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (!u) {
-        setAdmin(false);
-        setReady(true);
-        return;
-      }
-      try {
-        const [userSnap, adminSnap] = await Promise.all([
-          getDoc(doc(db, "users", u.uid)),
-          getDoc(doc(db, "admins", u.uid)),
-        ]);
-        const userData = userSnap.exists() ? userSnap.data() : {};
-        const isAdmin =
-          userData?.role === "admin" ||
-          userData?.profile?.role === "admin" ||
-          (adminSnap.exists() && adminSnap.data()?.active === true);
-        setAdmin(Boolean(isAdmin));
-      } catch {
-        setAdmin(false);
-      }
-      setReady(true);
-    });
+    if (document.getElementById("adm-fonts")) return;
+    const l = document.createElement("link"); l.id = "adm-fonts"; l.rel = "stylesheet";
+    l.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500;600;800&family=Fira+Code:wght@400&display=swap";
+    document.head.appendChild(l);
+  }, []);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, u => { setUser(u); setAuthReady(true); });
     return () => unsub();
   }, []);
 
   useEffect(() => {
-    if (!admin) return undefined;
-    const unsubs = [];
-    unsubs.push(
-      onSnapshot(doc(db, "catalog", "store"), (snap) => {
-        const list = snap.data()?.products;
-        setProducts(Array.isArray(list) ? list : []);
-      }),
-    );
-    unsubs.push(
-      onSnapshot(query(collection(db, "orders"), orderBy("createdAt", "desc")), (snap) => {
-        setOrders(snap.docs.map((d) => ({ oid: d.id, ...d.data() })));
-      }),
-    );
-    return () => unsubs.forEach((u) => u());
-  }, [admin]);
+    if (!user) { setAdminOk(false); setAdminCheckDone(true); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const adminSnap = await getDoc(doc(db, "admins", user.uid));
+        let ok = adminSnap.exists();
+        if (!ok) {
+          const userSnap = await getDoc(doc(db, "users", user.uid));
+          ok = userSnap.exists() && (userSnap.data()?.role === "admin" || userSnap.data()?.profile?.role === "admin");
+        }
+        if (!cancelled) { setAdminOk(ok); setAdminCheckDone(true); }
+      } catch { if (!cancelled) { setAdminOk(false); setAdminCheckDone(true); } }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      const textOk = !productSearch || [p.name, p.brand, p.category].join(" ").toLowerCase().includes(productSearch.toLowerCase());
-      const catOk = productCategory === "all" || p.category === productCategory;
-      return textOk && catOk;
+  /* Live products */
+  useEffect(() => {
+    if (!adminOk) return;
+    const unsub = onSnapshot(doc(db, "catalog", "store"), snap => {
+      const list = snap.exists() ? snap.data()?.products : null;
+      setProducts(Array.isArray(list) && list.length ? list : DEFAULT_PRODUCTS);
     });
-  }, [products, productSearch, productCategory]);
+    return () => unsub();
+  }, [adminOk]);
 
-  const filteredOrders = useMemo(() => {
-    return orders.filter((o) => {
-      if (!orderSearch) return true;
-      const hay = [o.oid, o.customerName, o.customerEmail, o.status].join(" ").toLowerCase();
-      return hay.includes(orderSearch.toLowerCase());
-    });
-  }, [orders, orderSearch]);
-
-  const login = async () => {
-    setBusy(true);
-    setMsg("");
+  /* Live orders */
+  useEffect(() => {
+    if (!adminOk) return;
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch {
-      setMsg("Invalid email or password.");
-    }
-    setBusy(false);
-  };
-
-  const saveProducts = async (nextList, okMsg = "Products updated") => {
-    setBusy(true);
-    setMsg("");
-    try {
-      await setDoc(doc(db, "catalog", "store"), { products: nextList, updatedAt: serverTimestamp(), updatedBy: user?.email || user?.uid || null }, { merge: true });
-      setMsg(okMsg);
-    } catch (e) {
-      setMsg(e?.message || "Save failed");
-    }
-    setBusy(false);
-  };
-
-  const saveProduct = async () => {
-    const id = Number(draft.id || Date.now());
-    const price = Number(draft.price);
-    if (!draft.name.trim() || !Number.isFinite(price)) {
-      setMsg("Product name and valid price required.");
-      return;
-    }
-    const product = {
-      id,
-      name: draft.name.trim(),
-      brand: draft.brand.trim() || "Unknown",
-      price,
-      category: inferCategory(draft.category),
-      badge: draft.badge.trim() || null,
-      emoji: draft.emoji.trim() || "???",
-      sizes: draft.sizes.split(",").map((s) => s.trim()).filter(Boolean),
-      bg: ["#eceff5", "#d9dfea"],
-      desc: draft.desc.trim() || "",
-      image: draft.image.trim() || null,
-      inStock: true,
-    };
-    const next = [...products];
-    const index = next.findIndex((x) => Number(x.id) === id);
-    if (index >= 0) next[index] = { ...next[index], ...product };
-    else next.unshift(product);
-    await saveProducts(next, "Product saved");
-  };
-
-  const editProduct = (p) => {
-    setDraft({
-      id: String(p.id ?? ""),
-      name: p.name ?? "",
-      brand: p.brand ?? "",
-      price: String(p.price ?? ""),
-      category: p.category ?? "Women",
-      badge: p.badge ?? "",
-      emoji: p.emoji ?? "???",
-      sizes: Array.isArray(p.sizes) ? p.sizes.join(",") : "One Size",
-      desc: p.desc ?? "",
-      image: p.image ?? "",
-    });
-    setTab("products");
-    setMsg("Editing product in form.");
-  };
-
-  const removeProduct = async (id) => {
-    await saveProducts(products.filter((p) => Number(p.id) !== Number(id)), "Product deleted");
-  };
-
-  const uploadImage = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setImageUploading(true);
-    try {
-      const fileRef = ref(storage, `admin-products/${Date.now()}-${file.name}`);
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      setDraft((prev) => ({ ...prev, image: url }));
-      setMsg("Image uploaded.");
-    } catch (e) {
-      setMsg(e?.message || "Image upload failed");
-    }
-    setImageUploading(false);
-    event.target.value = "";
-  };
-
-  const importExcel = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setBusy(true);
-    setMsg("");
-    try {
-      const ab = await file.arrayBuffer();
-      const wb = XLSX.read(ab, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
-      if (!rows.length) throw new Error("Excel file is empty");
-      const parsed = rows.map((r, i) => parseRow(r, i, excelCategory));
-      const mergedMap = new Map(products.map((p) => [Number(p.id), p]));
-      for (const p of parsed) mergedMap.set(Number(p.id), p);
-      await saveProducts(Array.from(mergedMap.values()), `Excel imported: ${parsed.length} products`);
-    } catch (e) {
-      setMsg(e?.message || "Excel import failed");
-      setBusy(false);
-    }
-    event.target.value = "";
-  };
-
-  const updateOrderStatus = async (oid, status) => {
-    setBusy(true);
-    try {
-      const selectedOrder = orders.find((o) => o.oid === oid);
-      const changedBy = user?.email || user?.uid || "admin";
-      await setDoc(
-        doc(db, "orders", oid),
-        { status, updatedAt: serverTimestamp(), updatedBy: changedBy },
-        { merge: true },
-      );
-      await updateDoc(doc(db, "orders", oid), {
-        statusHistory: arrayUnion({
-          status,
-          changedBy,
-          changedAt: new Date().toISOString(),
-        }),
+      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(200));
+      const unsub = onSnapshot(q, snap => {
+        setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       });
+      return () => unsub();
+    } catch { return undefined; }
+  }, [adminOk]);
 
-      if (selectedOrder?.customerUid) {
-        const noteId = `${oid}-${Date.now()}`;
-        await setDoc(doc(db, "users", selectedOrder.customerUid, "notifications", noteId), {
-          type: "order_status",
-          orderId: oid,
-          status,
-          title: "Order status updated",
-          message: `Your order ${oid} is now ${status}.`,
-          read: false,
-          createdAt: serverTimestamp(),
-        });
-      }
-      setMsg("Order status updated and notification sent");
-    } catch (e) {
-      setMsg(e?.message || "Order update failed");
-    }
-    setBusy(false);
+  const loginEmail = async () => {
+    setBusy(true); setMsg("");
+    try { await signInWithEmailAndPassword(auth, email, password); }
+    catch { setMsg("Invalid email or password."); }
+    finally { setBusy(false); }
   };
 
-  const deleteOrder = async (oid) => {
+  const logout = async () => {
+    try { await signOut(auth); } catch { void 0; }
+    setCustomers([]); setCustomersLoaded(false); setOrders([]);
+  };
+
+  const loadCustomers = useCallback(async () => {
+    if (!adminOk) return;
+    setBusy(true); setMsg("");
+    try {
+      const snap = await getDocs(query(collection(db, "users"), limit(200)));
+      const rows = snap.docs.map(d => {
+        const x = d.data() || {};
+        return { id: d.id, email: x.email || "—", name: x.name || "—", orders: Array.isArray(x.orders) ? x.orders.length : 0 };
+      }).sort((a, b) => b.orders - a.orders);
+      setCustomers(rows); setCustomersLoaded(true);
+    } catch (e) { setMsg(e?.message || "Could not load customers."); }
+    finally { setBusy(false); }
+  }, [adminOk]);
+
+  /* Save catalog to Firestore */
+  const saveProducts = useCallback(async (updatedProducts, operation) => {
+    setMsg("");
+    const err = validateProductList(updatedProducts);
+    if (err) { setMsg(err); return; }
     setBusy(true);
     try {
-      await deleteDoc(doc(db, "orders", oid));
-      setMsg("Order deleted");
-    } catch (e) {
-      setMsg(e?.message || "Delete failed");
-    }
-    setBusy(false);
-  };
+      // Strip undefined values — Firestore rejects them
+      const clean = JSON.parse(JSON.stringify(updatedProducts));
+      await setDoc(doc(db, "catalog", "store"),
+        { products: clean, updatedAt: serverTimestamp(), updatedBy: user?.email || user?.uid || null },
+        { merge: true });
+      const opMap = { add: "Product added", edit: "Product updated", bulk: "Bulk upload complete", delete: "Product deleted" };
+      setMsg(opMap[operation] || "Catalog saved. Storefront updates automatically.");
+    } catch (e) { setMsg(e?.message || "Save failed. Check Firestore rules."); }
+    finally { setBusy(false); }
+  }, [user]);
 
-  if (!ready) {
-    return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: C.bg, color: C.text }}>Loading...</div>;
-  }
-  if (!user) {
-    return <Login email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={login} msg={msg} busy={busy} />;
-  }
-  if (!admin) {
-    return (
-      <div style={{ minHeight: "100vh", background: C.bg, display: "grid", placeItems: "center", padding: 20 }}>
-        <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, color: C.text, maxWidth: 620 }}>
-          <h3>Access denied</h3>
-          <p style={{ marginTop: 8, color: C.muted }}>Need `users/{`{uid}`}` role=admin or `admins/{`{uid}`}` active=true.</p>
-          <button onClick={() => signOut(auth)} style={{ ...baseInput, marginTop: 10, cursor: "pointer" }}>Sign out</button>
-        </div>
-      </div>
-    );
-  }
+  const handleProductSave = useCallback(async (product, operation) => {
+    let updated;
+    if (operation === "bulk") {
+      updated = product; // already an array
+    } else if (operation === "add") {
+      if (products.some(p => p.id === product.id)) {
+        product.id = Date.now();
+      }
+      updated = [...products, product];
+    } else if (operation === "edit") {
+      updated = products.map(p => p.id === product.id ? product : p);
+    }
+    await saveProducts(updated, operation);
+  }, [products, saveProducts]);
+
+  const handleProductDelete = useCallback(async (id) => {
+    const updated = products.filter(p => p.id !== id);
+    await saveProducts(updated, "delete");
+  }, [products, saveProducts]);
+
+  const handleOrderStatusChange = useCallback(async (orderId, newStatus) => {
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, "orders", orderId), { status: newStatus, updatedAt: serverTimestamp() });
+    } catch (e) { setMsg(e?.message || "Could not update order status."); }
+    finally { setBusy(false); }
+  }, []);
+
+  /* Guards */
+  if (!authReady) return <LoadingScreen text="Loading…" />;
+  if (!adminCheckDone) return <LoadingScreen text="Checking admin access…" />;
+  if (!user) return <LoginPage storefrontUrl={storefrontUrl} busy={busy} msg={msg} email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={loginEmail} />;
+  if (!adminOk) return <AccessDenied user={user} storefrontUrl={storefrontUrl} onLogout={logout} />;
+
+  const navItems = [
+    { id: "dashboard", label: "Overview", icon: "◈" },
+    { id: "products", label: "Products", icon: "⟨⟩" },
+    { id: "orders", label: "Orders", icon: "◻" },
+    { id: "customers", label: "Customers", icon: "◉" },
+  ];
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, padding: 14 }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: font.sans, display: "flex", flexDirection: "column" }}>
       <style>{`
-        .grid-2{display:grid;grid-template-columns:260px 1fr;gap:12px}
-        @media (max-width: 920px){.grid-2{grid-template-columns:1fr}}
-        .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+        *{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:5px;height:5px}
+        ::-webkit-scrollbar-track{background:${C.bg}}
+        ::-webkit-scrollbar-thumb{background:${C.border2};border-radius:3px}
+        textarea:focus,input:focus,select:focus{outline:none!important}
+        input::placeholder,textarea::placeholder{color:${C.muted}}
+        select option{background:${C.surface};color:${C.text}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:640px){.adm-sidebar{display:none!important}.adm-main-pad{padding:20px 16px!important}}
       `}</style>
 
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-        <h2 style={{ fontSize: 22 }}>Admin Dashboard</h2>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {[
-            ["dashboard", "Dashboard"],
-            ["products", "Products CRUD"],
-            ["orders", "Orders"],
-          ].map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)} style={{ ...baseInput, width: "auto", cursor: "pointer", background: tab === key ? C.brand : C.panel2, color: tab === key ? "#061018" : C.text }}>
-              {label}
-            </button>
-          ))}
-          <button onClick={() => signOut(auth)} style={{ ...baseInput, width: "auto", cursor: "pointer" }}>Logout</button>
+      {/* Top bar */}
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 54, background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0, zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ color: C.gold, fontSize: 15 }}>✦</span>
+          <span style={{ fontSize: 15, fontWeight: 400, fontFamily: font.serif, letterSpacing: "0.18em", textTransform: "uppercase", color: C.gold }}>Sanjiiiii</span>
+          <span style={{ color: C.border2, margin: "0 4px" }}>/</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>Admin</span>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <span style={{ fontSize: 12, color: C.muted, display: "none" }} className="user-email-header">{user.email}</span>
+          <a href={storefrontUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: C.gold, textDecoration: "none" }}>View store ↗</a>
+          <button type="button" onClick={logout} style={{ ...S.btnGhost, padding: "6px 14px", fontSize: 11 }}>Sign out</button>
+        </div>
+      </header>
+
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        {/* Sidebar */}
+        <aside className="adm-sidebar" style={{ width: 210, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          <nav style={{ padding: "20px 0", flex: 1 }}>
+            {navItems.map(n => <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />)}
+          </nav>
+          <div style={{ padding: "14px 18px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.goldBg, border: `1px solid ${C.border2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.gold, fontWeight: 700, flexShrink: 0 }}>
+              {(user.email?.[0] || "A").toUpperCase()}
+            </div>
+            <div style={{ overflow: "hidden" }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</p>
+              <p style={{ fontSize: 10, fontWeight: 500, color: C.muted, marginTop: 2 }}>Admin</p>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main */}
+        <main className="adm-main-pad" style={{ flex: 1, overflowY: "auto", padding: "32px 40px" }}>
+          {tab === "dashboard" && <DashboardPage products={products} customers={customers} customersLoaded={customersLoaded} orders={orders} />}
+          {tab === "products" && <ProductsPage products={products} onSave={handleProductSave} onDelete={handleProductDelete} busy={busy} msg={msg} setMsg={setMsg} />}
+          {tab === "orders" && <OrdersPage orders={orders} onStatusChange={handleOrderStatusChange} busy={busy} />}
+          {tab === "customers" && <CustomersPage customers={customers} customersLoaded={customersLoaded} onLoad={loadCustomers} busy={busy} msg={msg} setMsg={setMsg} />}
+        </main>
       </div>
-
-      {msg ? <p style={{ color: /fail|invalid|denied/i.test(msg) ? C.err : C.ok, marginBottom: 10 }}>{msg}</p> : null}
-
-      {tab === "dashboard" && (
-        <div className="stats">
-          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}><p style={{ color: C.muted }}>Products</p><h3>{products.length}</h3></div>
-          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}><p style={{ color: C.muted }}>Orders</p><h3>{orders.length}</h3></div>
-          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}><p style={{ color: C.muted }}>Admin</p><h3>{user.email}</h3></div>
-        </div>
-      )}
-
-      {tab === "products" && (
-        <div className="grid-2">
-          <div>
-            <ProductForm draft={draft} setDraft={setDraft} onSave={saveProduct} busy={busy} onUploadImage={uploadImage} imageUploading={imageUploading} />
-            <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, marginTop: 12 }}>
-              <h3 style={{ marginBottom: 10 }}>Excel Bulk Upload</h3>
-              <p style={{ color: C.muted, fontSize: 12, marginBottom: 10 }}>Upload `.xlsx/.xls/.csv`. Column names can be: `id,name,brand,price,category,desc,sizes,image,badge,emoji`.</p>
-              <a
-                href="/product-upload-template.csv"
-                download
-                style={{ color: C.brand, fontSize: 12, textDecoration: "none", display: "inline-block", marginBottom: 10 }}
-              >
-                Download ready template CSV
-              </a>
-              <select style={{ ...baseInput, marginBottom: 10 }} value={excelCategory} onChange={(e) => setExcelCategory(e.target.value)}>
-                {CATEGORIES.map((cat) => <option key={cat}>{cat}</option>)}
-              </select>
-              <label style={{ ...baseInput, cursor: "pointer", display: "block" }}>
-                {busy ? "Processing..." : "Upload Excel File"}
-                <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={importExcel} />
-              </label>
-            </div>
-          </div>
-
-          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
-            <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-              <input style={{ ...baseInput, flex: 1, minWidth: 180 }} placeholder="Search name/brand/category" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} />
-              <select style={{ ...baseInput, width: 150 }} value={productCategory} onChange={(e) => setProductCategory(e.target.value)}>
-                <option value="all">All Categories</option>
-                {CATEGORIES.map((cat) => <option key={cat}>{cat}</option>)}
-              </select>
-            </div>
-            <div style={{ maxHeight: "70vh", overflow: "auto" }}>
-              {filteredProducts.map((p) => (
-                <div key={p.id} style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 10, marginBottom: 8, display: "flex", justifyContent: "space-between", gap: 8 }}>
-                  <div>
-                    <p style={{ fontWeight: 700 }}>{p.name} <span style={{ color: C.muted, fontWeight: 400 }}>#{p.id}</span></p>
-                    <p style={{ color: C.muted, fontSize: 12 }}>{p.brand} · {p.category} · ${p.price}</p>
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => editProduct(p)} style={{ ...baseInput, width: "auto", cursor: "pointer" }}>Edit</button>
-                    <button onClick={() => removeProduct(p.id)} style={{ ...baseInput, width: "auto", cursor: "pointer", borderColor: "#633", color: C.err }}>Delete</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {tab === "orders" && (
-        <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <input style={{ ...baseInput, maxWidth: 320 }} placeholder="Search order/customer/status" value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} />
-          </div>
-          <div style={{ maxHeight: "74vh", overflow: "auto" }}>
-            {filteredOrders.map((o) => (
-              <div key={o.oid} style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 10, marginBottom: 8, display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                <div>
-                  <p style={{ fontWeight: 700 }}>Order {o.oid}</p>
-                  <p style={{ color: C.muted, fontSize: 12 }}>{o.customerName || "Unknown"} · {o.customerEmail || "No email"}</p>
-                  <p style={{ color: C.muted, fontSize: 12 }}>Total: ${o.total ?? 0} · Items: {Array.isArray(o.items) ? o.items.length : 0}</p>
-                </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                  <select style={{ ...baseInput, width: 150 }} value={o.status || "pending"} onChange={(e) => updateOrderStatus(o.oid, e.target.value)}>
-                    <option value="pending">pending</option>
-                    <option value="processing">processing</option>
-                    <option value="shipped">shipped</option>
-                    <option value="delivered">delivered</option>
-                    <option value="cancelled">cancelled</option>
-                  </select>
-                  <button onClick={() => deleteOrder(o.oid)} style={{ ...baseInput, width: "auto", color: C.err, borderColor: "#633" }}>Delete</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
