@@ -1,5 +1,5 @@
-﻿id,name,brand,price,category,desc,sizes,image,badge,emoji,compareAt,bg1,bg2,inStock
-1001,Draped Satin Top,Maison Elite,149,Women,Soft satin top for evening wear,"XS,S,M,L",,New,👚,189,#f3efe8,#e6dece,TRUE
-1002,Classic Oxford Shirt,L Atelier,129,Men,Premium cotton oxford shirt,"S,M,L,XL",,Bestseller,👔,,#e8eef5,#d8e0ea,TRUE
-1003,Leather Mini Bag,Cour Royal,220,Accessories,Compact leather crossbody bag,"One Size",,New,👜,,#efe7dd,#e0d3c4,TRUE
-1004,Kids Rain Jacket,Nord Mini,89,Kids,Lightweight waterproof jacket,"3Y,4Y,5Y,6Y",,Sale,🧥,109,#e6f1f7,#d7e9f4,TRUE
+﻿id,name,brand,price,category,desc,sizes,image,badge,compareAt,bg1,bg2,inStock
+1001,Draped Satin Top,Maison Elite,149,Women,Soft satin top for evening wear,"XS,S,M,L",https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=900&q=85,New,189,#f3efe8,#e6dece,TRUE
+1002,Classic Oxford Shirt,L Atelier,129,Men,Premium cotton oxford shirt,"S,M,L,XL",https://images.unsplash.com/photo-1596755094514-f87e3407b2c1?w=900&q=85,Bestseller,,#e8eef5,#d8e0ea,TRUE
+1003,Leather Mini Bag,Cour Royal,220,Accessories,Compact leather crossbody bag,"One Size",https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=900&q=85,New,,#efe7dd,#e0d3c4,TRUE
+1004,Kids Rain Jacket,Nord Mini,89,Kids,Lightweight waterproof jacket,"3Y,4Y,5Y,6Y",https://images.unsplash.com/photo-1522771930-783f89d76985?w=900&q=85,Sale,109,#e6f1f7,#d7e9f4,TRUE

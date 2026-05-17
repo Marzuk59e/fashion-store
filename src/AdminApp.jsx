@@ -9,6 +9,7 @@ import {
 import { auth, db, storage } from "./firebase.js";
 // ↑ Make sure firebase.js exports: auth, db, storage
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
+import { getProductImage, normalizeProduct, normalizeProductList } from "./data/productImages.js";
 
 /* ─── Design tokens ────────────────────────────────────────── */
 const C = {
@@ -53,14 +54,14 @@ function validateProductList(list) {
     if (typeof p.id !== "number") return `Row ${i + 1}: "id" must be a number.`;
     if (seen.has(p.id)) return `Duplicate id: ${p.id}.`;
     seen.add(p.id);
-    for (const k of ["name", "brand", "price", "category", "emoji", "sizes", "bg", "desc"]) {
+    for (const k of ["name", "brand", "price", "category", "sizes", "bg", "desc", "image"]) {
       if (!(k in p)) return `Row ${i + 1}: missing "${k}".`;
     }
     if (typeof p.name !== "string" || !p.name.trim()) return `Row ${i + 1}: invalid name.`;
     if (typeof p.brand !== "string") return `Row ${i + 1}: invalid brand.`;
     if (typeof p.price !== "number" || p.price < 0) return `Row ${i + 1}: invalid price.`;
     if (typeof p.category !== "string") return `Row ${i + 1}: invalid category.`;
-    if (typeof p.emoji !== "string") return `Row ${i + 1}: invalid emoji.`;
+    if (typeof p.image !== "string" || !p.image.trim()) return `Row ${i + 1}: product photo (image URL) is required.`;
     if (!Array.isArray(p.sizes) || p.sizes.length === 0) return `Row ${i + 1}: sizes must be a non-empty array.`;
     if (!Array.isArray(p.bg) || p.bg.length < 2) return `Row ${i + 1}: bg must be [color, color].`;
     if (typeof p.desc !== "string") return `Row ${i + 1}: invalid desc.`;
@@ -89,20 +90,19 @@ async function parseExcelFile(file) {
       category: String(row.category || "Women").trim(),
       sizes: sizesRaw.split(",").map(s => s.trim()).filter(Boolean),
       badge: row.badge ? String(row.badge).trim() : null,
-      emoji: String(row.emoji || "👗").trim(),
       bg: bgRaw.split(",").map(s => s.trim()).filter(Boolean),
       desc: String(row.desc || "").trim(),
-      image: String(row.image || "").trim() || undefined,
-      compareAt: row.compareAt ? Number(row.compareAt) : undefined,
+      ...(String(row.image || "").trim() ? { image: String(row.image || "").trim() } : {}),
+      ...(row.compareAt ? { compareAt: Number(row.compareAt) } : {}),
     };
-  }).filter(p => p.name);
+  }).map(normalizeProduct).filter(p => p.name);
 }
 
 /* ─── Image upload helper ───────────────────────────────────── */
 async function uploadImage(file) {
   if (!storage) throw new Error("Firebase Storage not initialized. Export 'storage' from firebase.js");
   const { ref: sRef, uploadBytes, getDownloadURL } = await import("firebase/storage");
-  const path = `products/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+  const path = `admin-products/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
   const fileRef = sRef(storage, path);
   await uploadBytes(fileRef, file);
   return getDownloadURL(fileRef);
@@ -182,7 +182,16 @@ function StatCard({ label, value, sub, accent = C.gold }) {
   return (
     <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent}`, borderRadius: 12, padding: "18px 22px", flex: 1, minWidth: 140 }}>
       <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.sans }}>{label}</p>
-      <p style={{ margin: 0, fontSize: 32, fontWeight: 400, color: C.text, fontFamily: font.serif, lineHeight: 1 }}>{value}</p>
+      <p style={{
+        margin: 0,
+        fontSize: 32,
+        fontWeight: 600,
+        color: C.text,
+        fontFamily: "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+        fontVariantNumeric: "tabular-nums lining-nums",
+        letterSpacing: "0.01em",
+        lineHeight: 1,
+      }}>{value}</p>
       {sub && <p style={{ margin: "4px 0 0", fontSize: 12, color: C.muted }}>{sub}</p>}
     </div>
   );
@@ -240,20 +249,30 @@ function LoginPage({ storefrontUrl, busy, msg, email, password, setEmail, setPas
 }
 
 function AccessDenied({ user, storefrontUrl, onLogout }) {
+  const codeTagStyle = {
+    color: "#16120A",
+    fontSize: 12,
+    fontWeight: 700,
+    background: "#F0E3C4",
+    padding: "2px 7px",
+    borderRadius: 4,
+    letterSpacing: "0.01em",
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.sans, padding: 24 }}>
       <div style={{ maxWidth: 520, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "40px 36px" }}>
         <p style={{ margin: "0 0 16px", fontSize: 26 }}>⛔</p>
         <h2 style={{ margin: "0 0 12px", fontSize: 20, fontWeight: 500, color: C.text }}>Access Denied</h2>
         <p style={{ margin: "0 0 20px", fontSize: 14, color: C.muted, lineHeight: 1.7 }}>
-          Your account (<span style={{ color: C.text }}>{user.email || user.uid}</span>) is not in the <code style={{ color: C.gold }}>admins</code> collection.
+          Your account (<span style={{ color: C.text }}>{user.email || user.uid}</span>) is not in the <code style={codeTagStyle}>admins</code> collection.
         </p>
         <div style={{ background: C.bg, border: `1px solid ${C.border2}`, borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
           <ol style={{ margin: 0, paddingLeft: 20, color: C.text, fontSize: 13, lineHeight: 1.9 }}>
             <li>Open Firebase Console → Firestore.</li>
             <li>Create collection <strong style={{ color: C.gold }}>admins</strong> (if missing).</li>
-            <li>Add document ID: <code style={{ color: C.gold, fontSize: 12, background: C.goldBg, padding: "1px 6px", borderRadius: 4 }}>{user.uid}</code></li>
-            <li>Set field <code style={{ color: C.gold }}>active</code> = <strong>true</strong>.</li>
+            <li>Add document ID: <code style={codeTagStyle}>{user.uid}</code></li>
+            <li>Set field <code style={codeTagStyle}>active</code> = <strong>true</strong>.</li>
             <li>Refresh this page.</li>
           </ol>
         </div>
@@ -268,7 +287,7 @@ function AccessDenied({ user, storefrontUrl, onLogout }) {
 
 /* ─── Product Form ──────────────────────────────────────────── */
 function ProductForm({ initial, onSave, onCancel, busy }) {
-  const empty = { id: "", name: "", brand: "", price: "", category: "Women", badge: "", emoji: "👗", bg1: "#F5EEE6", bg2: "#EDE4D8", desc: "", image: "", sizes: "S,M,L" };
+  const empty = { id: "", name: "", brand: "", price: "", category: "Women", badge: "", bg1: "#F5EEE6", bg2: "#EDE4D8", desc: "", image: "", sizes: "S,M,L" };
   const [f, setF] = useState(() => initial ? {
     ...empty,
     id: initial.id,
@@ -277,11 +296,10 @@ function ProductForm({ initial, onSave, onCancel, busy }) {
     price: initial.price,
     category: initial.category,
     badge: initial.badge || "",
-    emoji: initial.emoji,
     bg1: (initial.bg?.[0] || "#F5EEE6"),
     bg2: (initial.bg?.[1] || "#EDE4D8"),
     desc: initial.desc,
-    image: initial.image || "",
+    image: getProductImage(initial),
     sizes: Array.isArray(initial.sizes) ? initial.sizes.join(",") : initial.sizes,
   } : empty);
   const [imgFile, setImgFile] = useState(null);
@@ -312,14 +330,16 @@ function ProductForm({ initial, onSave, onCancel, busy }) {
       price: Number(f.price) || 0,
       category: f.category,
       badge: f.badge.trim() || null,
-      emoji: f.emoji.trim() || "👗",
       bg: [f.bg1, f.bg2],
       desc: f.desc.trim(),
-      image: f.image.trim() || undefined,
+      image: f.image.trim(),
       sizes: f.sizes.split(",").map(s => s.trim()).filter(Boolean),
     };
     if (!product.name) return alert("Product name is required.");
-    onSave(product);
+    if (!product.image) return alert("Product photo is required. Upload an image or paste an image URL.");
+    if (initial?.compareAt != null) product.compareAt = initial.compareAt;
+    if (initial?.inStock != null) product.inStock = initial.inStock;
+    onSave(normalizeProduct(product));
   };
 
   const inputStyle = { ...S.input };
@@ -361,10 +381,6 @@ function ProductForm({ initial, onSave, onCancel, busy }) {
           <input style={inputStyle} placeholder="XS,S,M,L,XL" value={f.sizes} onChange={e => set("sizes", e.target.value)}
             onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
         </FormField>
-        <FormField label="Emoji">
-          <input style={inputStyle} placeholder="👗" value={f.emoji} onChange={e => set("emoji", e.target.value)}
-            onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
-        </FormField>
         <FormField label="BG Color 1">
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input type="color" value={f.bg1} onChange={e => set("bg1", e.target.value)}
@@ -387,7 +403,7 @@ function ProductForm({ initial, onSave, onCancel, busy }) {
           onChange={e => set("desc", e.target.value)}
           onFocus={e => e.target.style.borderColor = C.gold} onBlur={e => e.target.style.borderColor = C.border2} />
       </FormField>
-      <FormField label="Product Image">
+      <FormField label="Product Photo (required)">
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <input style={{ ...inputStyle, flex: 1 }} placeholder="https://... or upload below" value={f.image}
             onChange={e => set("image", e.target.value)}
@@ -461,7 +477,7 @@ function ExcelUploadPanel({ existingProducts, onUpload, onClose, busy }) {
       <div style={{ background: C.bg, border: `1px solid ${C.border2}`, borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
         <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Required columns</p>
         <p style={{ margin: 0, fontSize: 12, color: C.muted, fontFamily: font.mono, lineHeight: 1.8 }}>
-          id · name · brand · price · category · sizes (comma-sep) · badge · emoji · bg (2 hex, comma-sep) · desc · image (url, optional)
+          id · name · brand · price · category · sizes (comma-sep) · badge · bg (2 hex, comma-sep) · desc · image (url, required)
         </p>
       </div>
 
@@ -513,7 +529,7 @@ function ExcelUploadPanel({ existingProducts, onUpload, onClose, busy }) {
                 {preview.map((p, i) => (
                   <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
                     <td style={{ padding: "8px 12px", color: C.muted, fontFamily: font.mono }}>{p.id}</td>
-                    <td style={{ padding: "8px 12px", color: C.text, fontWeight: 500 }}>{p.emoji} {p.name}</td>
+                    <td style={{ padding: "8px 12px", color: C.text, fontWeight: 500 }}>{p.name}</td>
                     <td style={{ padding: "8px 12px", color: C.muted }}>{p.brand}</td>
                     <td style={{ padding: "8px 12px", color: C.gold, fontFamily: font.mono }}>${p.price}</td>
                     <td style={{ padding: "8px 12px", color: C.muted }}>{p.category}</td>
@@ -656,11 +672,36 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
 
       {/* Product table */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: "24%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "19%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "12%" }} />
+          </colgroup>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-              {["Product", "Brand", "Category", "Price", "Sizes", "Badge", ""].map(h => (
-                <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono, whiteSpace: "nowrap" }}>{h}</th>
+              {["Product", "Brand", "Category", "Price", "Sizes", "Badge", "Actions"].map((h, idx) => (
+                <th
+                  key={h}
+                  style={{
+                    padding: "14px 14px",
+                    textAlign: idx === 0 ? "left" : "center",
+                    color: C.muted,
+                    fontWeight: 700,
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.09em",
+                    fontFamily: font.mono,
+                    whiteSpace: "nowrap",
+                    borderLeft: idx > 0 ? `1px solid ${C.border}` : "none",
+                  }}
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -672,25 +713,25 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
               <tr key={p.id} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none" }}
                 onMouseEnter={e => e.currentTarget.style.background = C.surface2}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                <td style={{ padding: "13px 14px" }}>
+                <td style={{ padding: "14px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {p.image ? (
-                      <img src={p.image} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: `1px solid ${C.border2}`, flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
-                    ) : (
-                      <div style={{ width: 36, height: 36, borderRadius: 6, background: `linear-gradient(135deg,${p.bg?.[0] || "#eee"},${p.bg?.[1] || "#ddd"})`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{p.emoji}</div>
-                    )}
-                    <span style={{ color: C.text, fontWeight: 500 }}>{p.name}</span>
+                    <img src={getProductImage(p)} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: `1px solid ${C.border2}`, flexShrink: 0 }} />
+                    <span style={{ color: C.text, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{p.name}</span>
                   </div>
                 </td>
-                <td style={{ padding: "13px 14px", color: C.muted }}>{p.brand}</td>
-                <td style={{ padding: "13px 14px", color: C.muted }}>{p.category}</td>
-                <td style={{ padding: "13px 14px", color: C.gold, fontFamily: font.mono, fontWeight: 600 }}>${p.price}</td>
-                <td style={{ padding: "13px 14px", color: C.muted, fontSize: 11 }}>{Array.isArray(p.sizes) ? p.sizes.join(", ") : p.sizes}</td>
-                <td style={{ padding: "13px 14px" }}>
+                <td style={{ padding: "14px 14px", color: C.muted, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>{p.brand}</td>
+                <td style={{ padding: "14px 14px", color: C.muted, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>{p.category}</td>
+                <td style={{ padding: "14px 14px", color: C.gold, fontFamily: font.mono, fontWeight: 600, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>${p.price}</td>
+                <td style={{ padding: "14px 14px", color: C.muted, fontSize: 11, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
+                  <span style={{ display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {Array.isArray(p.sizes) ? p.sizes.join(", ") : p.sizes}
+                  </span>
+                </td>
+                <td style={{ padding: "14px 14px", textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
                   {p.badge && <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: C.goldBg, color: C.gold, textTransform: "uppercase", letterSpacing: "0.06em" }}>{p.badge}</span>}
                 </td>
-                <td style={{ padding: "13px 14px" }}>
-                  <div style={{ display: "flex", gap: 8 }}>
+                <td style={{ padding: "14px 14px", borderLeft: `1px solid ${C.border}` }}>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                     <button type="button" onClick={() => handleEdit(p)} style={{ ...S.btnGhost, padding: "5px 12px", fontSize: 11 }}>Edit</button>
                     <button type="button" onClick={() => { if (window.confirm(`Delete "${p.name}"?`)) onDelete(p.id); }} style={{ ...S.btnDanger, padding: "5px 12px", fontSize: 11 }}>Del</button>
                   </div>
@@ -859,7 +900,7 @@ export default function AdminApp() {
   const [tab, setTab] = useState("dashboard");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [products, setProducts] = useState(() => normalizeProductList(DEFAULT_PRODUCTS));
   const [customers, setCustomers] = useState([]);
   const [customersLoaded, setCustomersLoaded] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -889,11 +930,12 @@ export default function AdminApp() {
 
   useEffect(() => {
     if (!user) { setAdminOk(false); setAdminCheckDone(true); return; }
+    setAdminCheckDone(false);
     let cancelled = false;
     (async () => {
       try {
         const adminSnap = await getDoc(doc(db, "admins", user.uid));
-        let ok = adminSnap.exists();
+        let ok = adminSnap.exists() && adminSnap.data()?.active === true;
         if (!ok) {
           const userSnap = await getDoc(doc(db, "users", user.uid));
           ok = userSnap.exists() && (userSnap.data()?.role === "admin" || userSnap.data()?.profile?.role === "admin");
@@ -909,7 +951,8 @@ export default function AdminApp() {
     if (!adminOk) return;
     const unsub = onSnapshot(doc(db, "catalog", "store"), snap => {
       const list = snap.exists() ? snap.data()?.products : null;
-      setProducts(Array.isArray(list) && list.length ? list : DEFAULT_PRODUCTS);
+      const raw = Array.isArray(list) && list.length ? list : DEFAULT_PRODUCTS;
+      setProducts(normalizeProductList(raw));
     });
     return () => unsub();
   }, [adminOk]);
@@ -959,8 +1002,7 @@ export default function AdminApp() {
     if (err) { setMsg(err); return; }
     setBusy(true);
     try {
-      // Strip undefined values — Firestore rejects them
-      const clean = JSON.parse(JSON.stringify(updatedProducts));
+      const clean = JSON.parse(JSON.stringify(normalizeProductList(updatedProducts)));
       await setDoc(doc(db, "catalog", "store"),
         { products: clean, updatedAt: serverTimestamp(), updatedBy: user?.email || user?.uid || null },
         { merge: true });

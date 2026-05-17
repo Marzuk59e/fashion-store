@@ -12,6 +12,8 @@ import {
 import { collection, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
+import { CATEGORY_FALLBACK_IMAGES, normalizeProductList } from "./data/productImages.js";
+import ProductPhoto from "./components/ProductPhoto.jsx";
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 const fontLink = document.createElement("link");
@@ -176,7 +178,7 @@ const css = `
   .cat-men { background: linear-gradient(160deg, #DEE8F6 0%, #C9D8EC 100%); }
   .cat-access { background: linear-gradient(160deg, #F2E5D9 0%, #E8D4C2 100%); }
   .cat-children { background: linear-gradient(160deg, #E9F2EC 0%, #D3E6DA 100%); }
-  .cat-icon { font-size: 5rem; opacity: 0.34; position: absolute; color: rgba(24,24,24,0.35); }
+  .cat-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.92; }
   .category-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,12,16,0.5) 0%, rgba(10,12,16,0.1) 58%, rgba(10,12,16,0) 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 32px; transition: background 0.3s; }
   .category-card:hover .category-overlay { background: linear-gradient(to top, rgba(10,12,16,0.58) 0%, rgba(10,12,16,0.16) 58%, rgba(10,12,16,0) 100%); }
   .cat-label { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 400; color: white; margin-bottom: 4px; }
@@ -185,9 +187,9 @@ const css = `
   .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 32px; max-width: 1200px; margin: 0 auto; }
   .product-card { background: white; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
   .product-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.1); }
-  .product-img { aspect-ratio: 3/4; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
-  .product-img .product-emoji { font-size: 5rem; opacity: 0.5; transition: transform 0.4s; position: relative; z-index: 1; }
-  .product-card:hover .product-emoji { transform: scale(1.12); }
+  .product-img { aspect-ratio: 3/4; overflow: hidden; position: relative; background: var(--surface); }
+  .product-img .product-photo { transition: transform 0.45s ease; }
+  .product-card:hover .product-photo { transform: scale(1.05); }
   .product-img-gradient { position: absolute; inset: 0; }
   .product-actions-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(26,26,26,0.9); padding: 12px 16px; transform: translateY(100%); transition: transform 0.3s ease; display: flex; gap: 8px; z-index: 2; }
   .product-card:hover .product-actions-overlay { transform: translateY(0); }
@@ -339,7 +341,7 @@ const css = `
     margin-bottom: 10px;
     text-decoration: line-through;
   }
-  .cart-item-img { width: 72px; height: 90px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
+  .cart-item-img { width: 72px; height: 90px; flex-shrink: 0; overflow: hidden; background: var(--surface); }
   .cart-item-info { flex: 1; }
   .cart-item-name { font-family: var(--font-serif); font-size: 0.95rem; margin-bottom: 4px; }
   .cart-item-open { cursor: pointer; transition: opacity 0.2s; }
@@ -563,7 +565,7 @@ const css = `
   .shop-search-suggestion { display: flex; align-items: center; gap: 14px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s; }
   .shop-search-suggestion:last-child { border-bottom: none; }
   .shop-search-suggestion:hover { background: rgba(201,169,110,0.08); }
-  .shop-search-sug-emoji { font-size: 1.75rem; width: 44px; text-align: center; flex-shrink: 0; }
+  .shop-search-sug-thumb { width: 44px; height: 56px; flex-shrink: 0; overflow: hidden; border-radius: 2px; background: var(--surface); }
   .shop-search-sug-text { flex: 1; min-width: 0; }
   .shop-search-sug-name { font-family: var(--font-serif); font-size: 1rem; color: var(--charcoal); }
   .shop-search-sug-meta { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-gray); margin-top: 2px; }
@@ -815,7 +817,7 @@ const css = `
   .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
 
   .product-detail { max-width: 1100px; margin: 0 auto; padding: 100px 40px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
-  .detail-img { position: relative; aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; font-size: 9rem; }
+  .detail-img { position: relative; aspect-ratio: 3/4; overflow: hidden; background: var(--surface); }
   .detail-brand { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
   .detail-name { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 400; margin-bottom: 16px; line-height: 1.2; color: var(--charcoal); }
   .product-detail .animate-fade { color: var(--charcoal); }
@@ -2384,11 +2386,11 @@ export default function App() {
           return;
         }
         const list = snap.data()?.products;
-        if (Array.isArray(list) && list.length > 0) setProducts(list);
-        else setProducts(DEFAULT_PRODUCTS);
+        if (Array.isArray(list) && list.length > 0) setProducts(normalizeProductList(list));
+        else setProducts(normalizeProductList(DEFAULT_PRODUCTS));
       },
       () => {
-        setProducts(DEFAULT_PRODUCTS);
+        setProducts(normalizeProductList(DEFAULT_PRODUCTS));
       },
     );
     return () => unsub();
@@ -3395,8 +3397,9 @@ export default function App() {
                             className="cart-item-img cart-item-open"
                             onClick={() => openProductFromCart(item.product)}
                             onKeyDown={(e) => e.key === "Enter" && openProductFromCart(item.product)}
-                            style={{ background: `linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})` }}
-                          >{item.product.emoji}</div>
+                          >
+                            <ProductPhoto product={item.product} />
+                          </div>
                           <div className="cart-item-info">
                             <div
                               role="button"
@@ -3576,7 +3579,9 @@ export default function App() {
                                 borderRadius: 2,
                               }}
                             >
-                              <span style={{ fontSize: "2rem", width: 56, textAlign: "center" }}>{item.product.emoji}</span>
+                              <div style={{ width: 56, height: 70, flexShrink: 0, overflow: "hidden", background: "var(--surface)" }}>
+                                <ProductPhoto product={item.product} />
+                              </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", color: "var(--charcoal)" }}>{item.product.name}</div>
                                 <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginTop: 4 }}>
@@ -4024,13 +4029,15 @@ function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist, onR
       <section style={{ padding: 0 }}>
         <div className="categories-strip">
           {[
-            { label: "Women", count: "48 pieces", cls: "cat-women", icon: "👗" },
-            { label: "Men", count: "36 pieces", cls: "cat-men", icon: "🧥" },
-            { label: "Kids", count: "18 pieces", cls: "cat-children", icon: "🧸" },
-            { label: "Accessories", count: "24 pieces", cls: "cat-access", icon: "👜" },
+            { label: "Women", count: "48 pieces", cls: "cat-women", image: CATEGORY_FALLBACK_IMAGES.Women },
+            { label: "Men", count: "36 pieces", cls: "cat-men", image: CATEGORY_FALLBACK_IMAGES.Men },
+            { label: "Kids", count: "18 pieces", cls: "cat-children", image: CATEGORY_FALLBACK_IMAGES.Kids },
+            { label: "Accessories", count: "24 pieces", cls: "cat-access", image: CATEGORY_FALLBACK_IMAGES.Accessories },
           ].map(cat => (
             <div key={cat.label} className="category-card" onClick={() => navigate("shop")}>
-              <div className={`category-bg ${cat.cls}`}><span className="cat-icon">{cat.icon}</span></div>
+              <div className={`category-bg ${cat.cls}`}>
+                <img src={cat.image} alt={cat.label} className="cat-photo" loading="lazy" />
+              </div>
               <div className="category-overlay">
                 <div className="cat-label">{cat.label}</div>
                 <div className="cat-count">{cat.count}</div>
@@ -4105,12 +4112,12 @@ function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wish
       <button className={`wishlist-btn${wishlisted ? " active" : ""}`} onClick={e => { e.stopPropagation(); toggleWishlist(product.id); }}>
         {wishlisted ? "♥" : "♡"}
       </button>
-      <div className="product-img" style={{ background: `linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }} onClick={() => navigate("product", product)}>
+      <div className="product-img" onClick={() => navigate("product", product)}>
         <div className="product-badge-stack">
           {product.badge && <div className="product-badge">{product.badge}</div>}
           {!inStock && <div className="product-badge product-badge-oos">Out of stock</div>}
         </div>
-        <span className="product-emoji">{product.emoji}</span>
+        <ProductPhoto product={product} className="product-photo" />
         <div className="product-actions-overlay">
           <button
             type="button"
@@ -4214,7 +4221,9 @@ function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToC
                     className="shop-search-suggestion"
                     onClick={() => navigate("product", p)}
                   >
-                    <span className="shop-search-sug-emoji">{p.emoji}</span>
+                    <div className="shop-search-sug-thumb">
+                      <ProductPhoto product={p} />
+                    </div>
                     <div className="shop-search-sug-text">
                       <div className="shop-search-sug-name">{p.name}</div>
                       <div className="shop-search-sug-meta">{p.brand} · {p.category}</div>
@@ -4250,12 +4259,12 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
     <div>
       <div className="product-detail">
         <div className="animate-scale">
-          <div className="detail-img" style={{ background: `linear-gradient(135deg,${product.bg[0]},${product.bg[1]})` }}>
+          <div className="detail-img">
             <div className="product-badge-stack">
               {product.badge && <div className="product-badge">{product.badge}</div>}
               {!inStock && <div className="product-badge product-badge-oos">Out of stock</div>}
             </div>
-            <span style={{ fontSize: "9rem" }}>{product.emoji}</span>
+            <ProductPhoto product={product} />
           </div>
         </div>
         <div className="animate-fade">
@@ -4503,7 +4512,9 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 20 }}>
                 {cart.map((item, i) => (
                   <div key={i} style={{ background: "var(--surface)", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", item.product)}>
-                    <div style={{ background: `linear-gradient(135deg,${item.product.bg[0]},${item.product.bg[1]})`, height: 140, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", marginBottom: 12 }}>{item.product.emoji}</div>
+                    <div style={{ height: 140, marginBottom: 12, overflow: "hidden", background: "var(--surface)" }}>
+                      <ProductPhoto product={item.product} />
+                    </div>
                     <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", marginBottom: 4 }}>{item.product.name}</div>
                     <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 4 }}>Size {item.size} · Qty {item.qty}</div>
                     <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--gold)" }}>{fmt(item.product.price * item.qty)}</div>
@@ -4525,7 +4536,9 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 20 }}>
                 {wishlistProducts.map(p => (
                   <div key={p.id} style={{ background: "var(--surface)", padding: 16, cursor: "pointer" }} onClick={() => navigate("product", p)}>
-                    <div style={{ background: `linear-gradient(135deg,${p.bg[0]},${p.bg[1]})`, height: 140, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3.5rem", marginBottom: 12 }}>{p.emoji}</div>
+                    <div style={{ height: 140, marginBottom: 12, overflow: "hidden", background: "var(--surface)" }}>
+                      <ProductPhoto product={p} />
+                    </div>
                     <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", marginBottom: 4 }}>{p.name}</div>
                     <div style={{ fontSize: "0.68rem", color: "var(--warm-gray)", marginBottom: 4 }}>{p.brand}</div>
                     <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--gold)" }}>{fmt(p.price)}</div>
