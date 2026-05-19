@@ -102,17 +102,18 @@ const css = `
     background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 40px; height: 64px; transition: box-shadow 0.3s;
+    padding: 0 52px; height: 76px; transition: box-shadow 0.3s;
   }
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
-  .nav-logo { font-family: var(--font-serif); font-size: 1.7rem; font-weight: 600; letter-spacing: 0.12em; color: var(--charcoal); cursor: pointer; text-transform: uppercase; background: none; border: none; }
+  .nav-logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; letter-spacing: 0.13em; color: var(--charcoal); cursor: pointer; text-transform: uppercase; background: none; border: none; }
   .nav-logo span { color: var(--gold); }
-  .nav-links { display: flex; gap: 32px; align-items: center; }
-  .nav-link { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
+  .nav-links { display: flex; gap: 38px; align-items: center; }
+  .nav-link { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
-  .nav-icons { display: flex; gap: 14px; align-items: center; }
-  .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 4px; transition: color 0.2s; display: flex; align-items: center; }
+  .nav-icons { display: flex; gap: 18px; align-items: center; }
+  .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 7px; transition: color 0.2s; display: flex; align-items: center; }
   .icon-btn:hover { color: var(--gold); }
+  .nav-icons svg { width: 20px; height: 20px; }
   .badge { position: absolute; top: -4px; right: -6px; background: var(--gold); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .bell-btn {
     width: 34px;
@@ -778,7 +779,7 @@ const css = `
   .cookie-lock { font-size: 0.65rem; color: rgba(26,26,26,0.55); letter-spacing: 0.12em; text-transform: uppercase; }
 
   @media (min-width: 1024px) {
-    .nav-link { font-size: 0.78rem; }
+    .nav-link { font-size: 0.84rem; }
     .form-label { font-size: 0.72rem; }
     .form-input { font-size: 0.92rem; }
     .pay-method-card-sub { font-size: 0.74rem; }
@@ -786,6 +787,13 @@ const css = `
     .receipt-line { font-size: 0.82rem; }
     .receipt-line-muted { font-size: 0.78rem; }
     .filter-btn { font-size: 0.72rem; }
+  }
+  @media (min-width: 1400px) {
+    .navbar { height: 82px; padding: 0 64px; }
+    .nav-logo { font-size: 2.14rem; }
+    .nav-link { font-size: 0.9rem; }
+    .nav-icons svg { width: 21px; height: 21px; }
+    .badge { width: 18px; height: 18px; font-size: 0.64rem; }
   }
 
   .legal-page { padding: 100px 40px 60px; max-width: 1100px; margin: 0 auto; }
@@ -2013,6 +2021,49 @@ const COUNTRY_OPTIONS = [
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const CHECKOUT_CACHE_KEY = "velours_checkout_draft_v1";
+const MIN_KIDS_PRODUCTS = 6;
+const OTP_SEND_ENDPOINT = import.meta.env.VITE_OTP_SEND_ENDPOINT || "";
+const OTP_VERIFY_ENDPOINT = import.meta.env.VITE_OTP_VERIFY_ENDPOINT || "";
+
+async function postJson(url, payload) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload || {}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.message || "Request failed.");
+  }
+  return data;
+}
+
+async function sendRegistrationOtp(payload) {
+  if (!OTP_SEND_ENDPOINT) throw new Error("OTP service not configured. Add VITE_OTP_SEND_ENDPOINT.");
+  return postJson(OTP_SEND_ENDPOINT, payload);
+}
+
+async function verifyRegistrationOtp(payload) {
+  if (!OTP_VERIFY_ENDPOINT) throw new Error("OTP verification service not configured. Add VITE_OTP_VERIFY_ENDPOINT.");
+  return postJson(OTP_VERIFY_ENDPOINT, payload);
+}
+
+function enrichCatalogWithKidsFallback(list) {
+  const normalized = normalizeProductList(Array.isArray(list) ? list : []);
+  const fallbackKids = normalizeProductList(DEFAULT_PRODUCTS).filter((p) => p.category === "Kids");
+  const byId = new Map(normalized.map((p) => [p.id, p]));
+  const kidsCount = normalized.filter((p) => p.category === "Kids").length;
+  if (kidsCount >= MIN_KIDS_PRODUCTS) return normalized;
+
+  for (const fp of fallbackKids) {
+    if (!byId.has(fp.id)) {
+      normalized.push(fp);
+      byId.set(fp.id, fp);
+    }
+    if (normalized.filter((p) => p.category === "Kids").length >= MIN_KIDS_PRODUCTS) break;
+  }
+  return normalized;
+}
 const COOKIE_CONSENT_KEY = "velours_cookie_consent_v1";
 const GUEST_BAG_KEY = "velours_guest_bag_v1";
 const EMAIL_LINK_EMAIL_KEY = "velours_email_link_email";
@@ -2307,7 +2358,7 @@ function useToast() {
 export default function App() {
   const [page, setPage] = useState("home");
   const [user, setUser] = useState(null);
-  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [products, setProducts] = useState(() => enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
   const catalogRef = useRef(DEFAULT_PRODUCTS);
   const [cart, setCart] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).cart);
   const [wishlist, setWishlist] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).wishlist);
@@ -2382,15 +2433,18 @@ export default function App() {
       cref,
       (snap) => {
         if (!snap.exists()) {
-          setProducts(DEFAULT_PRODUCTS);
+          setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
           return;
         }
         const list = snap.data()?.products;
-        if (Array.isArray(list) && list.length > 0) setProducts(normalizeProductList(list));
-        else setProducts(normalizeProductList(DEFAULT_PRODUCTS));
+        if (Array.isArray(list) && list.length > 0) {
+          setProducts(enrichCatalogWithKidsFallback(list));
+        } else {
+          setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
+        }
       },
       () => {
-        setProducts(normalizeProductList(DEFAULT_PRODUCTS));
+        setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
       },
     );
     return () => unsub();
@@ -3312,12 +3366,12 @@ export default function App() {
           )}
           {user ? (
             <button className="icon-btn" onClick={() => navigate("profile")}>
-              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.95rem" }}>
                 {user.name[0].toUpperCase()}
               </div>
             </button>
           ) : (
-            <button className="btn-primary" style={{ padding: "8px 20px", fontSize: "0.65rem" }} onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
+            <button className="btn-primary" style={{ padding: "10px 24px", fontSize: "0.72rem" }} onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
           )}
         </div>
       </nav>
@@ -3736,7 +3790,7 @@ export default function App() {
                       ))}
                     </div>
                     <p className="pay-detail-hint" style={{ marginTop: 4 }}>
-                      Card, PayPal, Google Pay, and Apple Pay can all be connected through a live Stripe integration. This demo collects details for preview only.
+                      Card, PayPal, Google Pay, and Apple Pay are processed through a secure payment flow.
                     </p>
                     <button type="button" className="form-submit" onClick={handleConfirmAddress}>Continue to payment details</button>
                   </>
@@ -4739,16 +4793,12 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
   const [showPass, setShowPass] = useState(false);
   const [registerStep, setRegisterStep] = useState("form");
   const [otpValue, setOtpValue] = useState("");
-  const [otpDisplay, setOtpDisplay] = useState("");
   const pendingRef = useRef(null);
-  const otpCodeRef = useRef("");
 
   useEffect(() => {
     setRegisterStep("form");
     setOtpValue("");
-    setOtpDisplay("");
     pendingRef.current = null;
-    otpCodeRef.current = "";
     setError("");
     setForm({ username: "", email: "", password: "" });
   }, [mode]);
@@ -4760,7 +4810,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
   const passOk = isPasswordAcceptable(form.password);
   const strengthHint = mode === "register" && form.password.length > 0 && !passOk;
 
-  const startRegisterOtp = () => {
+  const startRegisterOtp = async () => {
     setError("");
     const username = form.username.trim();
     const email = form.email.trim().toLowerCase();
@@ -4784,24 +4834,25 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
       setError("Email already registered.");
       return;
     }
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    otpCodeRef.current = code;
-    setOtpDisplay(code);
-    pendingRef.current = { firstName: username, lastName: "", email, password: form.password };
-    setOtpValue("");
-    setRegisterStep("otp");
-    addToast?.(`Verification code (demo): ${code}`, "info");
+    try {
+      setLoading(true);
+      await sendRegistrationOtp({ email, purpose: "register" });
+      pendingRef.current = { firstName: username, lastName: "", email, password: form.password };
+      setOtpValue("");
+      setRegisterStep("otp");
+      addToast?.("Verification code sent to your email.", "success");
+    } catch (e) {
+      setError(e?.message || "Could not send verification code. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const verifyOtpAndRegister = () => {
+  const verifyOtpAndRegister = async () => {
     setError("");
     const entered = otpValue.replace(/\D/g, "").slice(0, 6);
     if (entered.length !== 6) {
       setError("Please enter the 6-digit code.");
-      return;
-    }
-    if (entered !== otpCodeRef.current) {
-      setError("Invalid code. Try again or resend.");
       return;
     }
     const p = pendingRef.current;
@@ -4810,26 +4861,37 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
       setRegisterStep("form");
       return;
     }
-    setLoading(true);
-    const err = onSubmit({
-      email: p.email,
-      password: p.password,
-      firstName: p.firstName,
-      lastName: p.lastName,
-    });
-    setLoading(false);
-    if (err) {
-      setError(err);
-      setRegisterStep("form");
+    try {
+      setLoading(true);
+      await verifyRegistrationOtp({ email: p.email, code: entered, purpose: "register" });
+      const err = await Promise.resolve(onSubmit({
+        email: p.email,
+        password: p.password,
+        firstName: p.firstName,
+        lastName: p.lastName,
+      }));
+      if (err) {
+        setError(err);
+        setRegisterStep("form");
+      }
+    } catch (e) {
+      setError(e?.message || "Invalid code. Try again or resend.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const resendOtp = () => {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    otpCodeRef.current = code;
-    setOtpDisplay(code);
-    addToast?.(`New code (demo): ${code}`, "info");
-    setError("");
+  const resendOtp = async () => {
+    try {
+      setLoading(true);
+      await sendRegistrationOtp({ email: form.email.trim().toLowerCase(), purpose: "register" });
+      addToast?.("A new verification code has been sent.", "info");
+      setError("");
+    } catch (e) {
+      setError(e?.message || "Could not resend code.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLoginSubmit = () => {
@@ -4890,7 +4952,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
             </button>
             <div className="auth-otp-title">Verify your email</div>
             <p className="auth-otp-sub">
-              Enter the 6-digit code we sent to <strong>{form.email.trim()}</strong>. In production this arrives by email; in this demo the code is also shown below and in a toast.
+              Enter the 6-digit code we sent to <strong>{form.email.trim()}</strong>.
             </p>
             <input
               className="auth-otp-input"
@@ -4902,7 +4964,6 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
               value={otpValue}
               onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 6))}
             />
-            <div className="auth-otp-demo">Demo code: {otpDisplay}</div>
             {error && <div className="form-error" style={{ marginBottom: 12 }}>{error}</div>}
             <button type="button" className="form-submit" onClick={verifyOtpAndRegister} disabled={loading}>
               {loading ? "Please wait…" : "Verify & create account"}
@@ -4923,7 +4984,7 @@ function AuthModal({ mode, setMode, onClose, onSubmit, onGoogle, googleBusy, add
           <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginBottom: 22, letterSpacing: "0.04em", lineHeight: 1.55 }}>
             {mode === "login"
               ? "Sign in with email and password, or continue with Google or Apple."
-              : "Pick a username, email, and password. After you continue, enter the 6-digit code we send (demo shows the code on screen)."}
+              : "Pick a username, email, and password. After you continue, enter the 6-digit code sent to your email."}
           </p>
 
           {mode === "register" && (

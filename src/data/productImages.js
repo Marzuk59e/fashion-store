@@ -16,6 +16,10 @@ export const PRODUCT_IMAGES_BY_ID = {
   14: "https://images.unsplash.com/photo-1503919545889-aef32e66f22c?w=900&q=85&auto=format&fit=crop",
   15: "https://images.unsplash.com/photo-1522771930-783f89d76985?w=900&q=85&auto=format&fit=crop",
   16: "https://images.unsplash.com/photo-1514098040524-4e456c594813?w=900&q=85&auto=format&fit=crop",
+  17: "https://images.unsplash.com/photo-1519340241574-2cec6aef0c01?w=900&q=85&auto=format&fit=crop",
+  18: "https://images.unsplash.com/photo-1516726817505-f5ed825624d8?w=900&q=85&auto=format&fit=crop",
+  19: "https://images.unsplash.com/photo-1503919005314-30d93d07d823?w=900&q=85&auto=format&fit=crop",
+  20: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=900&q=85&auto=format&fit=crop",
 };
 
 export const CATEGORY_FALLBACK_IMAGES = {
