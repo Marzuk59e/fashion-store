@@ -14,6 +14,7 @@ import { auth, googleProvider, db } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 import { CATEGORY_FALLBACK_IMAGES, normalizeProductList } from "./data/productImages.js";
 import ProductPhoto from "./components/ProductPhoto.jsx";
+import { sendOtp as sendRegistrationOtp, verifyOtp as verifyRegistrationOtp } from "./lib/authOtp.js";
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 const fontLink = document.createElement("link");
@@ -2022,31 +2023,6 @@ const COUNTRY_OPTIONS = [
 
 const CHECKOUT_CACHE_KEY = "velours_checkout_draft_v1";
 const MIN_KIDS_PRODUCTS = 6;
-const OTP_SEND_ENDPOINT = import.meta.env.VITE_OTP_SEND_ENDPOINT || "";
-const OTP_VERIFY_ENDPOINT = import.meta.env.VITE_OTP_VERIFY_ENDPOINT || "";
-
-async function postJson(url, payload) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload || {}),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data?.message || "Request failed.");
-  }
-  return data;
-}
-
-async function sendRegistrationOtp(payload) {
-  if (!OTP_SEND_ENDPOINT) throw new Error("OTP service not configured. Add VITE_OTP_SEND_ENDPOINT.");
-  return postJson(OTP_SEND_ENDPOINT, payload);
-}
-
-async function verifyRegistrationOtp(payload) {
-  if (!OTP_VERIFY_ENDPOINT) throw new Error("OTP verification service not configured. Add VITE_OTP_VERIFY_ENDPOINT.");
-  return postJson(OTP_VERIFY_ENDPOINT, payload);
-}
 
 function enrichCatalogWithKidsFallback(list) {
   const normalized = normalizeProductList(Array.isArray(list) ? list : []);
@@ -2401,6 +2377,7 @@ export default function App() {
   const [shopSearchOpen, setShopSearchOpen] = useState(false);
   const [shopSearchQuery, setShopSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const [profileTab, setProfileTab] = useState("orders");
   const [notifications, setNotifications] = useState([]);
   const [googleAuthBusy, setGoogleAuthBusy] = useState(false);
@@ -3290,6 +3267,7 @@ export default function App() {
   };
 
   const navigate = (p, product = null) => {
+    setNavOpen(false);
     const unwind = checkoutPushCountRef.current + productLayerCountRef.current;
     checkoutPushCountRef.current = 0;
     productLayerCountRef.current = 0;
@@ -3320,6 +3298,18 @@ export default function App() {
     navigate("product", product);
   };
 
+  useEffect(() => {
+    if (!navOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => { if (e.key === "Escape") setNavOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [navOpen]);
+
   const openProductFromCheckoutFlow = (product) => {
     setCheckoutOpen(false);
     setCartOpen(false);
@@ -3337,10 +3327,13 @@ export default function App() {
     <div style={{ minHeight: "100vh" }}>
       {/* Navbar */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
-        <button className="nav-logo" onClick={() => navigate("home")}>sanj<span>iiiii</span></button>
-        <div className="nav-links">
+        <button type="button" className="nav-menu-btn icon-btn" aria-label="Open menu" aria-expanded={navOpen} onClick={() => setNavOpen(true)}>
+          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+        <button type="button" className="nav-logo" onClick={() => navigate("home")}>sanj<span>iiiii</span></button>
+        <div className="nav-links nav-links--desktop">
           {[["home", "Home"], ["shop", "Collection"], ["about", "About"]].map(([p, l]) => (
-            <button key={p} className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
+            <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
           ))}
         </div>
         <div className="nav-icons">
@@ -3375,6 +3368,27 @@ export default function App() {
           )}
         </div>
       </nav>
+
+      {navOpen && (
+        <>
+          <div className="nav-mobile-backdrop" onClick={() => setNavOpen(false)} aria-hidden />
+          <div className="nav-mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu">
+            <button type="button" className="close-btn nav-mobile-close" onClick={() => setNavOpen(false)} aria-label="Close menu">✕</button>
+            {[["home", "Home"], ["shop", "Collection"], ["about", "About"]].map(([p, l]) => (
+              <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
+            ))}
+            {!user && (
+              <button
+                type="button"
+                className="btn-primary nav-mobile-auth"
+                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
+              >
+                Sign In
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       {page === "home" && <HomePage navigate={navigate} products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
       {page === "shop" && (

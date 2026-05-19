@@ -10,29 +10,33 @@ import { auth, db, storage } from "./firebase.js";
 // ↑ Make sure firebase.js exports: auth, db, storage
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 import { getProductImage, normalizeProduct, normalizeProductList } from "./data/productImages.js";
+import AdminLogin from "./AdminLogin.jsx";
 
 /* ─── Design tokens ────────────────────────────────────────── */
 const C = {
-  bg: "#0C0B09",
-  surface: "#141310",
-  surface2: "#1C1A16",
-  border: "#252219",
-  border2: "#302C22",
-  gold: "#E2BC5C",
-  goldBg: "rgba(226,188,92,0.10)",
-  text: "#F5F0E8",
-  muted: "#A89F8C",
-  success: "#4A7C59",
-  successBg: "rgba(74,124,89,0.12)",
-  error: "#8B3A3A",
-  errorBg: "rgba(139,58,58,0.12)",
-  warning: "#7A6020",
-  warningBg: "rgba(226,188,92,0.12)",
+  cream: "#FAF7F2",
+  charcoal: "#1A1A1A",
+  bg: "#FAF7F2",
+  surface: "#FFFFFF",
+  surface2: "#F5F0E8",
+  border: "#E8E2D9",
+  border2: "#D9D0C4",
+  gold: "#C9A96E",
+  goldBg: "rgba(201,169,110,0.14)",
+  text: "#1A1A1A",
+  warmGray: "#4F4841",
+  muted: "#8E867C",
+  success: "#27AE60",
+  successBg: "rgba(39,174,96,0.10)",
+  error: "#C0392B",
+  errorBg: "rgba(192,57,43,0.08)",
+  warning: "#9A7B2E",
+  warningBg: "rgba(201,169,110,0.15)",
 };
 const font = {
   serif: "'Cormorant Garamond', Georgia, serif",
   mono: "'Fira Code', 'Courier New', monospace",
-  sans: "'DM Sans', system-ui, sans-serif",
+  sans: "'Montserrat', 'DM Sans', system-ui, sans-serif",
 };
 const CATEGORIES = ["Women", "Men", "Kids", "Accessories"];
 const ORDER_STATUSES = ["pending", "processing", "shipped", "delivered", "cancelled"];
@@ -111,8 +115,8 @@ async function uploadImage(file) {
 /* ─── Shared button/input styles ────────────────────────────── */
 const S = {
   btnPrimary: {
-    padding: "10px 24px", background: C.gold, border: "none", borderRadius: 8,
-    color: "#0C0B09", fontSize: 13, fontWeight: 800, fontFamily: font.sans,
+    padding: "14px 24px", background: C.gold, border: "none", borderRadius: 4,
+    color: "#FFFFFF", fontSize: 13, fontWeight: 700, fontFamily: font.sans,
     letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer",
   },
   btnGhost: {
@@ -126,8 +130,8 @@ const S = {
     fontFamily: font.sans, cursor: "pointer",
   },
   input: {
-    width: "100%", padding: "11px 14px", background: C.bg, color: C.text,
-    border: `1px solid ${C.border2}`, borderRadius: 8, fontSize: 13,
+    width: "100%", padding: "14px 16px", background: C.cream, color: C.charcoal,
+    border: `1px solid ${C.border}`, borderRadius: 4, fontSize: 16,
     fontFamily: font.sans, outline: "none", boxSizing: "border-box",
   },
   label: { fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5, display: "block" },
@@ -211,39 +215,6 @@ function FormField({ label, children }) {
     <div style={{ marginBottom: 14 }}>
       <label style={S.label}>{label}</label>
       {children}
-    </div>
-  );
-}
-
-/* ─── Login page ────────────────────────────────────────────── */
-function LoginPage({ storefrontUrl, busy, msg, email, password, setEmail, setPassword, onLogin }) {
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.sans }}>
-      <div style={{ width: "100%", maxWidth: 400, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "48px 40px" }}>
-        <div style={{ textAlign: "center", marginBottom: 36 }}>
-          <div style={{ width: 52, height: 52, borderRadius: "50%", border: `1px solid ${C.border2}`, background: C.goldBg, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 20, color: C.gold }}>✦</div>
-          <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 300, fontFamily: font.serif, color: C.gold, letterSpacing: "0.14em", textTransform: "uppercase" }}>Sanjiiiii</h1>
-          <p style={{ margin: 0, fontSize: 11, color: C.muted, letterSpacing: "0.12em", textTransform: "uppercase" }}>Admin Portal</p>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {["email", "password"].map(type => (
-            <input key={type} type={type} placeholder={type === "email" ? "Email address" : "Password"}
-              value={type === "email" ? email : password}
-              onChange={e => type === "email" ? setEmail(e.target.value) : setPassword(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && onLogin()}
-              style={{ ...S.input, transition: "border-color 0.2s" }}
-              onFocus={e => e.target.style.borderColor = C.gold}
-              onBlur={e => e.target.style.borderColor = C.border2}
-            />
-          ))}
-          {msg && <p style={{ margin: 0, padding: "10px 14px", borderRadius: 6, background: C.errorBg, color: "#CF8A8A", border: `1px solid ${C.error}44`, fontSize: 13 }}>{msg}</p>}
-          <button type="button" disabled={busy} onClick={onLogin}
-            style={{ ...S.btnPrimary, width: "100%", padding: "14px", opacity: busy ? 0.7 : 1, cursor: busy ? "wait" : "pointer", marginTop: 4, fontSize: 13 }}>
-            {busy ? "Signing in…" : "Sign In"}
-          </button>
-        </div>
-        <a href={storefrontUrl} style={{ display: "block", textAlign: "center", marginTop: 24, color: C.muted, fontSize: 12, textDecoration: "none" }}>← Back to storefront</a>
-      </div>
     </div>
   );
 }
@@ -919,7 +890,7 @@ export default function AdminApp() {
   useEffect(() => {
     if (document.getElementById("adm-fonts")) return;
     const l = document.createElement("link"); l.id = "adm-fonts"; l.rel = "stylesheet";
-    l.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500;600;800&family=Fira+Code:wght@400&display=swap";
+    l.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Montserrat:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;800&family=Fira+Code:wght@400&display=swap";
     document.head.appendChild(l);
   }, []);
 
@@ -1043,7 +1014,7 @@ export default function AdminApp() {
   /* Guards */
   if (!authReady) return <LoadingScreen text="Loading…" />;
   if (!adminCheckDone) return <LoadingScreen text="Checking admin access…" />;
-  if (!user) return <LoginPage storefrontUrl={storefrontUrl} busy={busy} msg={msg} email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={loginEmail} />;
+  if (!user) return <AdminLogin storefrontUrl={storefrontUrl} busy={busy} msg={msg} setMsg={setMsg} email={email} password={password} setEmail={setEmail} setPassword={setPassword} onLogin={loginEmail} />;
   if (!adminOk) return <AccessDenied user={user} storefrontUrl={storefrontUrl} onLogout={logout} />;
 
   const navItems = [
@@ -1068,10 +1039,10 @@ export default function AdminApp() {
       `}</style>
 
       {/* Top bar */}
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 54, background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0, zIndex: 10 }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 64, background: "rgba(250,247,242,0.96)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, zIndex: 10, boxShadow: "0 1px 0 rgba(26,26,26,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: C.gold, fontSize: 15 }}>✦</span>
-          <span style={{ fontSize: 15, fontWeight: 400, fontFamily: font.serif, letterSpacing: "0.18em", textTransform: "uppercase", color: C.gold }}>Sanjiiiii</span>
+          <span style={{ fontSize: 16, fontWeight: 400, fontFamily: font.serif, letterSpacing: "0.14em", textTransform: "uppercase", color: C.charcoal }}>Sanj<span style={{ color: C.gold }}>iiiii</span></span>
           <span style={{ color: C.border2, margin: "0 4px" }}>/</span>
           <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>Admin</span>
         </div>
@@ -1107,6 +1078,15 @@ export default function AdminApp() {
           {tab === "customers" && <CustomersPage customers={customers} customersLoaded={customersLoaded} onLoad={loadCustomers} busy={busy} msg={msg} setMsg={setMsg} />}
         </main>
       </div>
+
+      <nav className="adm-mobile-nav" aria-label="Admin sections">
+        {navItems.map(n => (
+          <button key={n.id} type="button" className={tab === n.id ? "active" : ""} onClick={() => { setTab(n.id); setMsg(""); }}>
+            <span aria-hidden>{n.icon}</span>
+            {n.label}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
