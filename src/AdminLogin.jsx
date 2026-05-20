@@ -109,16 +109,46 @@ function PasswordToggle({ show, onToggle }) {
   );
 }
 
-export default function AdminLogin({ storefrontUrl, busy, msg, setMsg, email, password, setEmail, setPassword, onLogin }) {
+export default function AdminLogin({ storefrontUrl, busy, msg, setMsg, email, password, setEmail, setPassword, onLogin, onCreateAccount }) {
   const [showPass, setShowPass] = useState(false);
+  const [showRegPass, setShowRegPass] = useState(false);
   const [view, setView] = useState("login");
   const [otp, setOtp] = useState("");
   const [localBusy, setLocalBusy] = useState(false);
   const [info, setInfo] = useState("");
 
+  // Register form state
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirm, setRegConfirm] = useState("");
+  const [regKey, setRegKey] = useState("");
+
   const clearMsgs = () => {
     setMsg("");
     setInfo("");
+  };
+
+  const handleRegister = async () => {
+    clearMsgs();
+    const name = regName.trim();
+    const em = regEmail.trim().toLowerCase();
+    if (!name) { setMsg("Full name is required."); return; }
+    if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setMsg("Enter a valid email address."); return; }
+    if (regPassword.length < 8) { setMsg("Password must be at least 8 characters."); return; }
+    if (regPassword !== regConfirm) { setMsg("Passwords do not match."); return; }
+    if (!regKey.trim()) { setMsg("Admin secret key is required."); return; }
+    setLocalBusy(true);
+    try {
+      await onCreateAccount({ name, email: em, password: regPassword, secretKey: regKey.trim() });
+      setRegName(""); setRegEmail(""); setRegPassword(""); setRegConfirm(""); setRegKey("");
+      setView("login");
+      setInfo("Admin account created! You can now sign in.");
+    } catch (e) {
+      setMsg(e?.message || "Could not create account. Try again.");
+    } finally {
+      setLocalBusy(false);
+    }
   };
 
   const normalizedEmail = () => email.trim().toLowerCase();
@@ -221,9 +251,40 @@ export default function AdminLogin({ storefrontUrl, busy, msg, setMsg, email, pa
               Sanj<span style={{ color: C.gold }}>iiiii</span>
             </h1>
             <p style={{ margin: 0, fontSize: 12, color: C.muted, letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600 }}>
-              {view === "login" ? "Admin Portal" : view === "forgot-done" ? "Check your email" : "Reset password"}
+              {view === "register" ? "Create Admin Account" : view === "forgot-done" ? "Check your email" : view.startsWith("forgot") ? "Reset password" : "Admin Portal"}
             </p>
           </div>
+
+          {/* Tab switcher */}
+          {(view === "login" || view === "register") && (
+            <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, marginBottom: 24 }}>
+              {["login", "register"].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => { clearMsgs(); setView(v); }}
+                  style={{
+                    flex: 1,
+                    background: "none",
+                    border: "none",
+                    borderBottom: view === v ? `2px solid ${C.gold}` : "2px solid transparent",
+                    padding: "10px 0",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    fontFamily: font.sans,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: view === v ? C.gold : C.muted,
+                    cursor: "pointer",
+                    transition: "color 0.2s, border-color 0.2s",
+                    marginBottom: -1,
+                  }}
+                >
+                  {v === "login" ? "Sign In" : "Create Account"}
+                </button>
+              ))}
+            </div>
+          )}
 
           {view === "login" && (
             <>
