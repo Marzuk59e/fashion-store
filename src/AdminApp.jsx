@@ -15,7 +15,7 @@ import AdminLogin from "./AdminLogin.jsx";
 /* ─── Design tokens ────────────────────────────────────────── */
 const C = {
   cream: "#FAF7F2",
-  charcoal: "#1A1A1A",
+  charcoal: "#000000",
   bg: "#FAF7F2",
   surface: "#FFFFFF",
   surface2: "#F5F0E8",
@@ -23,9 +23,9 @@ const C = {
   border2: "#D9D0C4",
   gold: "#C9A96E",
   goldBg: "rgba(201,169,110,0.14)",
-  text: "#1A1A1A",
-  warmGray: "#4F4841",
-  muted: "#8E867C",
+  text: "#000000",
+  warmGray: "#2E2923",
+  muted: "#3A342E",
   success: "#27AE60",
   successBg: "rgba(39,174,96,0.10)",
   error: "#C0392B",
@@ -184,11 +184,11 @@ function NavBtn({ id, label, icon, active, onClick }) {
 
 function StatCard({ label, value, sub, accent = C.gold }) {
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent}`, borderRadius: 12, padding: "18px 22px", flex: 1, minWidth: 140 }}>
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent}`, borderRadius: 12, padding: "22px 26px", flex: 1, minWidth: 180 }}>
       <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.sans }}>{label}</p>
       <p style={{
         margin: 0,
-        fontSize: 32,
+        fontSize: 36,
         fontWeight: 600,
         color: C.text,
         fontFamily: "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
@@ -530,11 +530,11 @@ function DashboardPage({ products, customers, customersLoaded, orders }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Overview</h2>
-      <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: "0 0 24px" }}>
+      <h2 style={{ fontSize: 30, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: "0 0 6px" }}>Overview</h2>
+      <p style={{ fontSize: 16, fontWeight: 500, color: C.muted, margin: "0 0 28px" }}>
         Live from Firestore · <span style={{ color: C.gold }}>catalog/store</span>
       </p>
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 28 }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 34 }}>
         <StatCard label="Products Live" value={products.length} />
         <StatCard label="Customers" value={customersLoaded ? customers.length : "—"} accent="#5A7D8A" />
         <StatCard label="Total Orders" value={orders.length} accent="#7A6090" />
@@ -643,7 +643,7 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
 
       {/* Product table */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 15, tableLayout: "fixed" }}>
           <colgroup>
             <col style={{ width: "24%" }} />
             <col style={{ width: "13%" }} />
@@ -663,7 +663,7 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
                     textAlign: idx === 0 ? "left" : "center",
                     color: C.muted,
                     fontWeight: 700,
-                    fontSize: 12,
+                    fontSize: 13,
                     textTransform: "uppercase",
                     letterSpacing: "0.09em",
                     fontFamily: font.mono,
@@ -693,7 +693,7 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
                 <td style={{ padding: "14px 14px", color: C.muted, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>{p.brand}</td>
                 <td style={{ padding: "14px 14px", color: C.muted, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>{p.category}</td>
                 <td style={{ padding: "14px 14px", color: C.gold, fontFamily: font.mono, fontWeight: 600, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>${p.price}</td>
-                <td style={{ padding: "14px 14px", color: C.muted, fontSize: 12, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
+                <td style={{ padding: "14px 14px", color: C.muted, fontSize: 13, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
                   <span style={{ display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {Array.isArray(p.sizes) ? p.sizes.join(", ") : p.sizes}
                   </span>
@@ -762,11 +762,11 @@ function OrdersPage({ orders, onStatusChange, busy }) {
       </div>
 
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {["Order ID", "Customer", "Date", "Items", "Total", "Status", "Action"].map(h => (
-                <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono, whiteSpace: "nowrap" }}>{h}</th>
+                <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono, whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -827,11 +827,11 @@ function CustomersPage({ customers, customersLoaded, onLoad, busy, msg, setMsg }
         <>
           <p style={{ fontSize: 13, fontWeight: 600, color: C.muted, fontFamily: font.mono, margin: "0 0 12px" }}>{customers.length} customers loaded</p>
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}` }}>
                   {["Name", "Email", "Orders", "UID"].map(h => (
-                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono }}>{h}</th>
+                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1039,10 +1039,10 @@ export default function AdminApp() {
       `}</style>
 
       {/* Top bar */}
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 64, background: "rgba(250,247,242,0.96)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, zIndex: 10, boxShadow: "0 1px 0 rgba(26,26,26,0.04)" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 34px", height: 72, background: "rgba(250,247,242,0.96)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, zIndex: 10, boxShadow: "0 1px 0 rgba(26,26,26,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ color: C.gold, fontSize: 15 }}>✦</span>
-          <span style={{ fontSize: 16, fontWeight: 400, fontFamily: font.serif, letterSpacing: "0.14em", textTransform: "uppercase", color: C.charcoal }}>Sanj<span style={{ color: C.gold }}>iiiii</span></span>
+          <span style={{ color: C.gold, fontSize: 17 }}>✦</span>
+          <span style={{ fontSize: 18, fontWeight: 500, fontFamily: font.serif, letterSpacing: "0.14em", textTransform: "uppercase", color: C.charcoal }}>Sanj<span style={{ color: C.gold }}>iiiii</span></span>
           <span style={{ color: C.border2, margin: "0 4px" }}>/</span>
           <span style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>Admin</span>
         </div>
@@ -1055,11 +1055,11 @@ export default function AdminApp() {
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Sidebar */}
-        <aside className="adm-sidebar" style={{ width: 240, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
-          <nav style={{ padding: "20px 0", flex: 1 }}>
+        <aside className="adm-sidebar" style={{ width: 280, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+          <nav style={{ padding: "24px 0", flex: 1 }}>
             {navItems.map(n => <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />)}
           </nav>
-          <div style={{ padding: "14px 18px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ padding: "16px 20px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.goldBg, border: `1px solid ${C.border2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.gold, fontWeight: 700, flexShrink: 0 }}>
               {(user.email?.[0] || "A").toUpperCase()}
             </div>
@@ -1071,7 +1071,7 @@ export default function AdminApp() {
         </aside>
 
         {/* Main */}
-        <main className="adm-main-pad" style={{ flex: 1, overflowY: "auto", padding: "32px 40px" }}>
+        <main className="adm-main-pad" style={{ flex: 1, overflowY: "auto", padding: "40px 50px" }}>
           {tab === "dashboard" && <DashboardPage products={products} customers={customers} customersLoaded={customersLoaded} orders={orders} />}
           {tab === "products" && <ProductsPage products={products} onSave={handleProductSave} onDelete={handleProductDelete} busy={busy} msg={msg} setMsg={setMsg} />}
           {tab === "orders" && <OrdersPage orders={orders} onStatusChange={handleOrderStatusChange} busy={busy} />}
