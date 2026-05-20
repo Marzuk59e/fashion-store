@@ -945,6 +945,39 @@ export default function AdminApp() {
     } catch { return undefined; }
   }, [adminOk]);
 
+  const createAdminAccount = async ({ name, email: em, password: pw, secretKey }) => {
+    if (secretKey !== ADMIN_SECRET_KEY) {
+      throw new Error("Invalid admin secret key. Contact the site owner.");
+    }
+    setBusy(true); setMsg("");
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, em, pw);
+      await updateProfile(cred.user, { displayName: name });
+      await setDoc(doc(db, "admins", cred.user.uid), {
+        active: true,
+        email: em,
+        name: name,
+        createdAt: serverTimestamp(),
+      });
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email: em,
+        name: name,
+        role: "admin",
+        createdAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (e) {
+      setBusy(false);
+      const errMap = {
+        "auth/email-already-in-use": "This email is already registered.",
+        "auth/weak-password": "Password must be at least 6 characters.",
+        "auth/invalid-email": "Invalid email address.",
+      };
+      throw new Error(errMap[e.code] || e.message || "Account creation failed.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const loginEmail = async () => {
     setBusy(true); setMsg("");
     try { await signInWithEmailAndPassword(auth, email, password); }
