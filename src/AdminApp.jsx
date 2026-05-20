@@ -121,12 +121,12 @@ const S = {
   },
   btnGhost: {
     padding: "10px 18px", background: "transparent", border: `1px solid ${C.border2}`,
-    borderRadius: 8, color: C.muted, fontSize: 12, fontWeight: 600,
+    borderRadius: 8, color: C.muted, fontSize: 13, fontWeight: 600,
     fontFamily: font.sans, letterSpacing: "0.06em", textTransform: "uppercase", cursor: "pointer",
   },
   btnDanger: {
     padding: "8px 14px", background: C.errorBg, border: `1px solid ${C.error}55`,
-    borderRadius: 7, color: "#CF8A8A", fontSize: 12, fontWeight: 600,
+    borderRadius: 7, color: "#CF8A8A", fontSize: 13, fontWeight: 600,
     fontFamily: font.sans, cursor: "pointer",
   },
   input: {
@@ -134,7 +134,7 @@ const S = {
     border: `1px solid ${C.border}`, borderRadius: 4, fontSize: 16,
     fontFamily: font.sans, outline: "none", boxSizing: "border-box",
   },
-  label: { fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5, display: "block" },
+  label: { fontSize: 13, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5, display: "block" },
 };
 
 /* ─── Small reusable components ─────────────────────────────── */
@@ -170,14 +170,14 @@ function NavBtn({ id, label, icon, active, onClick }) {
     <button type="button" onClick={() => onClick(id)}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 18px",
+        display: "flex", alignItems: "center", gap: 12, width: "100%", padding: "12px 20px",
         background: active ? C.goldBg : hov ? "rgba(255,255,255,0.025)" : "transparent",
         border: "none", borderLeft: `2px solid ${active ? C.gold : "transparent"}`,
         color: active ? C.gold : hov ? C.text : C.muted,
-        fontSize: 13, fontFamily: font.sans, fontWeight: active ? 700 : 500,
+        fontSize: 14, fontFamily: font.sans, fontWeight: active ? 700 : 500,
         letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", textAlign: "left", transition: "all 0.15s"
       }}>
-      <span style={{ fontSize: 14 }}>{icon}</span>{label}
+      <span style={{ fontSize: 15 }}>{icon}</span>{label}
     </button>
   );
 }
@@ -185,7 +185,7 @@ function NavBtn({ id, label, icon, active, onClick }) {
 function StatCard({ label, value, sub, accent = C.gold }) {
   return (
     <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent}`, borderRadius: 12, padding: "18px 22px", flex: 1, minWidth: 140 }}>
-      <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.sans }}>{label}</p>
+      <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.sans }}>{label}</p>
       <p style={{
         margin: 0,
         fontSize: 32,
@@ -196,7 +196,7 @@ function StatCard({ label, value, sub, accent = C.gold }) {
         letterSpacing: "0.01em",
         lineHeight: 1,
       }}>{value}</p>
-      {sub && <p style={{ margin: "4px 0 0", fontSize: 12, color: C.muted }}>{sub}</p>}
+      {sub && <p style={{ margin: "4px 0 0", fontSize: 13, color: C.muted }}>{sub}</p>}
     </div>
   );
 }
@@ -204,7 +204,7 @@ function StatCard({ label, value, sub, accent = C.gold }) {
 function StatusBadge({ status }) {
   const s = STATUS_COLORS[status] || STATUS_COLORS.pending;
   return (
-    <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", background: s.bg, color: s.color, fontFamily: font.sans, whiteSpace: "nowrap" }}>
+    <span style={{ padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", background: s.bg, color: s.color, fontFamily: font.sans, whiteSpace: "nowrap" }}>
       {status}
     </span>
   );
@@ -542,8 +542,8 @@ function DashboardPage({ products, customers, customersLoaded, orders }) {
         <StatCard label="Revenue (Delivered)" value={`$${totalRevenue.toLocaleString()}`} accent="#4A7C59" />
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "22px 26px", maxWidth: 600 }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.mono, margin: "0 0 16px" }}>Quick guide</p>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "24px 28px", maxWidth: 680 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.mono, margin: "0 0 16px" }}>Quick guide</p>
         {[
           { n: "01", t: "Edit products", d: "Go to Products tab to add, edit, or delete products. Use Excel upload for bulk." },
           { n: "02", t: "Manage orders", d: "View and update order statuses in the Orders tab. Change from pending → shipped etc." },
@@ -551,17 +551,17 @@ function DashboardPage({ products, customers, customersLoaded, orders }) {
           { n: "04", t: "Grant admin access", d: "Create admins/<Firebase UID> in Firestore with active: true." },
         ].map(({ n, t, d }) => (
           <div key={n} style={{ display: "flex", gap: 14, marginBottom: 14 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, fontFamily: font.mono, minWidth: 18, paddingTop: 3 }}>{n}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.gold, fontFamily: font.mono, minWidth: 20, paddingTop: 2 }}>{n}</span>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 3px" }}>{t}</p>
-              <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.65, margin: 0 }}>{d}</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: C.text, margin: "0 0 3px" }}>{t}</p>
+              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.65, margin: 0 }}>{d}</p>
             </div>
           </div>
         ))}
       </div>
       <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4CAF7C", display: "inline-block" }} />
-        <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>Store is live · Connected to Firebase</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>Store is live · Connected to Firebase</span>
       </div>
     </div>
   );
@@ -638,12 +638,12 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
           <option value="All">All Categories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <span style={{ fontSize: 12, color: C.muted, fontFamily: font.mono, alignSelf: "center" }}>{filtered.length} results</span>
+        <span style={{ fontSize: 13, color: C.muted, fontFamily: font.mono, alignSelf: "center" }}>{filtered.length} results</span>
       </div>
 
       {/* Product table */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
           <colgroup>
             <col style={{ width: "24%" }} />
             <col style={{ width: "13%" }} />
@@ -663,7 +663,7 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
                     textAlign: idx === 0 ? "left" : "center",
                     color: C.muted,
                     fontWeight: 700,
-                    fontSize: 11,
+                    fontSize: 12,
                     textTransform: "uppercase",
                     letterSpacing: "0.09em",
                     fontFamily: font.mono,
@@ -693,18 +693,18 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
                 <td style={{ padding: "14px 14px", color: C.muted, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>{p.brand}</td>
                 <td style={{ padding: "14px 14px", color: C.muted, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>{p.category}</td>
                 <td style={{ padding: "14px 14px", color: C.gold, fontFamily: font.mono, fontWeight: 600, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>${p.price}</td>
-                <td style={{ padding: "14px 14px", color: C.muted, fontSize: 11, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
+                <td style={{ padding: "14px 14px", color: C.muted, fontSize: 12, textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
                   <span style={{ display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {Array.isArray(p.sizes) ? p.sizes.join(", ") : p.sizes}
                   </span>
                 </td>
                 <td style={{ padding: "14px 14px", textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
-                  {p.badge && <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: C.goldBg, color: C.gold, textTransform: "uppercase", letterSpacing: "0.06em" }}>{p.badge}</span>}
+                  {p.badge && <span style={{ padding: "3px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: C.goldBg, color: C.gold, textTransform: "uppercase", letterSpacing: "0.06em" }}>{p.badge}</span>}
                 </td>
                 <td style={{ padding: "14px 14px", borderLeft: `1px solid ${C.border}` }}>
                   <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                    <button type="button" onClick={() => handleEdit(p)} style={{ ...S.btnGhost, padding: "5px 12px", fontSize: 11 }}>Edit</button>
-                    <button type="button" onClick={() => { if (window.confirm(`Delete "${p.name}"?`)) onDelete(p.id); }} style={{ ...S.btnDanger, padding: "5px 12px", fontSize: 11 }}>Del</button>
+                    <button type="button" onClick={() => handleEdit(p)} style={{ ...S.btnGhost, padding: "6px 12px", fontSize: 12 }}>Edit</button>
+                    <button type="button" onClick={() => { if (window.confirm(`Delete "${p.name}"?`)) onDelete(p.id); }} style={{ ...S.btnDanger, padding: "6px 12px", fontSize: 12 }}>Del</button>
                   </div>
                 </td>
               </tr>
@@ -762,11 +762,11 @@ function OrdersPage({ orders, onStatusChange, busy }) {
       </div>
 
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${C.border}` }}>
               {["Order ID", "Customer", "Date", "Items", "Total", "Status", "Action"].map(h => (
-                <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono, whiteSpace: "nowrap" }}>{h}</th>
+                <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono, whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -777,12 +777,12 @@ function OrdersPage({ orders, onStatusChange, busy }) {
                 <tr key={o.id} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none" }}
                   onMouseEnter={e => e.currentTarget.style.background = C.surface2}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <td style={{ padding: "13px 14px", color: C.muted, fontFamily: font.mono, fontSize: 11 }}>{o.id?.slice(0, 8)}…</td>
+                  <td style={{ padding: "13px 14px", color: C.muted, fontFamily: font.mono, fontSize: 12 }}>{o.id?.slice(0, 8)}…</td>
                   <td style={{ padding: "13px 14px" }}>
                     <p style={{ margin: "0 0 2px", color: C.text, fontWeight: 500 }}>{o.customerName || "—"}</p>
-                    <p style={{ margin: 0, color: C.muted, fontSize: 11 }}>{o.customerEmail || ""}</p>
+                    <p style={{ margin: 0, color: C.muted, fontSize: 12 }}>{o.customerEmail || ""}</p>
                   </td>
-                  <td style={{ padding: "13px 14px", color: C.muted, fontSize: 12 }}>{date}</td>
+                  <td style={{ padding: "13px 14px", color: C.muted, fontSize: 13 }}>{date}</td>
                   <td style={{ padding: "13px 14px", color: C.text, fontFamily: font.mono }}>{Array.isArray(o.items) ? o.items.length : "—"}</td>
                   <td style={{ padding: "13px 14px", color: C.gold, fontFamily: font.mono, fontWeight: 600 }}>${(o.total || 0).toFixed(2)}</td>
                   <td style={{ padding: "13px 14px" }}><StatusBadge status={o.status || "pending"} /></td>
@@ -791,7 +791,7 @@ function OrdersPage({ orders, onStatusChange, busy }) {
                       value={o.status || "pending"}
                       onChange={e => onStatusChange(o.id, e.target.value)}
                       disabled={busy}
-                      style={{ ...S.input, width: 130, padding: "6px 10px", fontSize: 12, appearance: "none" }}
+                      style={{ ...S.input, width: 138, padding: "7px 10px", fontSize: 13, appearance: "none" }}
                     >
                       {ORDER_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                     </select>
@@ -827,11 +827,11 @@ function CustomersPage({ customers, customersLoaded, onLoad, busy, msg, setMsg }
         <>
           <p style={{ fontSize: 13, fontWeight: 600, color: C.muted, fontFamily: font.mono, margin: "0 0 12px" }}>{customers.length} customers loaded</p>
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}` }}>
                   {["Name", "Email", "Orders", "UID"].map(h => (
-                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono }}>{h}</th>
+                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -848,9 +848,9 @@ function CustomersPage({ customers, customersLoaded, onLoad, busy, msg, setMsg }
                         {c.name}
                       </div>
                     </td>
-                    <td style={{ padding: "13px 14px", color: C.muted, fontSize: 12 }}>{c.email}</td>
+                    <td style={{ padding: "13px 14px", color: C.muted, fontSize: 13 }}>{c.email}</td>
                     <td style={{ padding: "13px 14px", color: C.text, fontFamily: font.mono, fontWeight: 600 }}>{c.orders}</td>
-                    <td style={{ padding: "13px 14px", color: C.muted, fontFamily: font.mono, fontSize: 10 }}>{c.id}</td>
+                    <td style={{ padding: "13px 14px", color: C.muted, fontFamily: font.mono, fontSize: 11 }}>{c.id}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1044,18 +1044,18 @@ export default function AdminApp() {
           <span style={{ color: C.gold, fontSize: 15 }}>✦</span>
           <span style={{ fontSize: 16, fontWeight: 400, fontFamily: font.serif, letterSpacing: "0.14em", textTransform: "uppercase", color: C.charcoal }}>Sanj<span style={{ color: C.gold }}>iiiii</span></span>
           <span style={{ color: C.border2, margin: "0 4px" }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>Admin</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>Admin</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <span style={{ fontSize: 12, color: C.muted, display: "none" }} className="user-email-header">{user.email}</span>
-          <a href={storefrontUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, color: C.gold, textDecoration: "none" }}>View store ↗</a>
-          <button type="button" onClick={logout} style={{ ...S.btnGhost, padding: "6px 14px", fontSize: 11 }}>Sign out</button>
+          <a href={storefrontUrl} target="_blank" rel="noreferrer" style={{ fontSize: 14, fontWeight: 600, color: C.gold, textDecoration: "none" }}>View store ↗</a>
+          <button type="button" onClick={logout} style={{ ...S.btnGhost, padding: "7px 14px", fontSize: 12 }}>Sign out</button>
         </div>
       </header>
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Sidebar */}
-        <aside className="adm-sidebar" style={{ width: 210, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <aside className="adm-sidebar" style={{ width: 240, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <nav style={{ padding: "20px 0", flex: 1 }}>
             {navItems.map(n => <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />)}
           </nav>
@@ -1064,8 +1064,8 @@ export default function AdminApp() {
               {(user.email?.[0] || "A").toUpperCase()}
             </div>
             <div style={{ overflow: "hidden" }}>
-              <p style={{ fontSize: 12, fontWeight: 500, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</p>
-              <p style={{ fontSize: 10, fontWeight: 500, color: C.muted, marginTop: 2 }}>Admin</p>
+              <p style={{ fontSize: 13, fontWeight: 500, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</p>
+              <p style={{ fontSize: 11, fontWeight: 500, color: C.muted, marginTop: 2 }}>Admin</p>
             </div>
           </div>
         </aside>
