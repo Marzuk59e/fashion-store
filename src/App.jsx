@@ -103,12 +103,14 @@ const css = `
     background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 52px; height: 76px; transition: box-shadow 0.3s;
+    padding: 0 18px; height: 76px; transition: box-shadow 0.3s;
   }
+  .nav-menu-btn { display: none !important; }
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
   .nav-logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; letter-spacing: 0.13em; color: var(--charcoal); cursor: pointer; text-transform: uppercase; background: none; border: none; }
   .nav-logo span { color: var(--gold); }
   .nav-links { display: flex; gap: 38px; align-items: center; }
+  .nav-links--desktop { position: absolute; left: 50%; transform: translateX(-50%); }
   .nav-link { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
   .nav-icons { display: flex; gap: 18px; align-items: center; }
