@@ -162,7 +162,7 @@ function MsgBanner({ msg, onClose }) {
   const color = isErr ? "#CF8A8A" : isWarn ? "#E2BC5C" : "#8BCF9A";
   const icon = isErr ? "⚠" : isWarn ? "◌" : "✓";
   return (
-    <div style={{ padding: "11px 16px", borderRadius: 8, marginBottom: 16, background: bg, border: `1px solid ${border}44`, color, fontSize: 13, fontFamily: font.sans, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ padding: "11px 16px", borderRadius: 8, marginBottom: 16, background: bg, border: `1px solid ${border}44`, color, fontSize: 14, fontFamily: font.sans, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <span>{icon} {msg}</span>
       {onClose && <button onClick={onClose} style={{ background: "none", border: "none", color, cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>}
     </div>
@@ -175,11 +175,11 @@ function NavBtn({ id, label, icon, active, onClick }) {
     <button type="button" onClick={() => onClick(id)}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 18px",
+        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "12px 20px",
         background: active ? C.goldBg : hov ? "rgba(255,255,255,0.025)" : "transparent",
         border: "none", borderLeft: `2px solid ${active ? C.gold : "transparent"}`,
         color: active ? C.gold : hov ? C.text : C.muted,
-        fontSize: 13, fontFamily: font.sans, fontWeight: active ? 700 : 500,
+        fontSize: 14, fontFamily: font.sans, fontWeight: active ? 700 : 500,
         letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", textAlign: "left", transition: "all 0.15s"
       }}>
       <span style={{ fontSize: 14 }}>{icon}</span>{label}
@@ -189,11 +189,11 @@ function NavBtn({ id, label, icon, active, onClick }) {
 
 function StatCard({ label, value, sub, accent = C.gold }) {
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent}`, borderRadius: 12, padding: "18px 22px", flex: 1, minWidth: 140 }}>
-      <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.sans }}>{label}</p>
+    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderTop: `2px solid ${accent}`, borderRadius: 12, padding: "24px 28px", flex: 1, minWidth: 160 }}>
+      <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.sans }}>{label}</p>
       <p style={{
         margin: 0,
-        fontSize: 32,
+        fontSize: 38,
         fontWeight: 600,
         color: C.text,
         fontFamily: "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
@@ -535,11 +535,11 @@ function DashboardPage({ products, customers, customersLoaded, orders }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Overview</h2>
-      <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: "0 0 24px" }}>
+      <h2 style={{ fontSize: 30, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 6px" }}>Overview</h2>
+      <p style={{ fontSize: 15, fontWeight: 500, color: C.muted, margin: "0 0 28px" }}>
         Live from Firestore · <span style={{ color: C.gold }}>catalog/store</span>
       </p>
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 28 }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 32 }}>
         <StatCard label="Products Live" value={products.length} />
         <StatCard label="Customers" value={customersLoaded ? customers.length : "—"} accent="#5A7D8A" />
         <StatCard label="Total Orders" value={orders.length} accent="#7A6090" />
@@ -547,7 +547,7 @@ function DashboardPage({ products, customers, customersLoaded, orders }) {
         <StatCard label="Revenue (Delivered)" value={`$${totalRevenue.toLocaleString()}`} accent="#4A7C59" />
       </div>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "22px 26px", maxWidth: 600 }}>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "26px 32px", maxWidth: 640 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.12em", fontFamily: font.mono, margin: "0 0 16px" }}>Quick guide</p>
         {[
           { n: "01", t: "Edit products", d: "Go to Products tab to add, edit, or delete products. Use Excel upload for bulk." },
@@ -558,15 +558,15 @@ function DashboardPage({ products, customers, customersLoaded, orders }) {
           <div key={n} style={{ display: "flex", gap: 14, marginBottom: 14 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, fontFamily: font.mono, minWidth: 18, paddingTop: 3 }}>{n}</span>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: C.text, margin: "0 0 3px" }}>{t}</p>
-              <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.65, margin: 0 }}>{d}</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: C.text, margin: "0 0 4px" }}>{t}</p>
+              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.7, margin: 0 }}>{d}</p>
             </div>
           </div>
         ))}
       </div>
       <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4CAF7C", display: "inline-block" }} />
-        <span style={{ fontSize: 13, fontWeight: 500, color: C.muted }}>Store is live · Connected to Firebase</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: C.muted }}>Store is live · Connected to Firebase</span>
       </div>
     </div>
   );
@@ -596,8 +596,8 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 4px" }}>Products</h2>
-          <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: 0 }}>{products.length} products in catalog</p>
+          <h2 style={{ fontSize: 30, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 6px" }}>Products</h2>
+          <p style={{ fontSize: 15, fontWeight: 500, color: C.muted, margin: 0 }}>{products.length} products in catalog</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button type="button" onClick={handleExcel} style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>📊 Excel Upload</button>
@@ -648,7 +648,7 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
 
       {/* Product table */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
           <colgroup>
             <col style={{ width: "24%" }} />
             <col style={{ width: "13%" }} />
@@ -668,7 +668,7 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
                     textAlign: idx === 0 ? "left" : "center",
                     color: C.muted,
                     fontWeight: 700,
-                    fontSize: 11,
+                    fontSize: 12,
                     textTransform: "uppercase",
                     letterSpacing: "0.09em",
                     fontFamily: font.mono,
@@ -748,7 +748,7 @@ function OrdersPage({ orders, onStatusChange, busy }) {
   return (
     <div>
       <h2 style={{ fontSize: 26, fontWeight: 400, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Orders</h2>
-      <p style={{ fontSize: 14, fontWeight: 500, color: C.muted, margin: "0 0 20px" }}>{orders.length} total orders</p>
+      <p style={{ fontSize: 15, fontWeight: 500, color: C.muted, margin: "0 0 24px" }}>{orders.length} total orders</p>
 
       <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
         <input
@@ -1077,7 +1077,7 @@ export default function AdminApp() {
       `}</style>
 
       {/* Top bar */}
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 64, background: "rgba(250,247,242,0.96)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, zIndex: 10, boxShadow: "0 1px 0 rgba(26,26,26,0.04)" }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: 68, background: "rgba(250,247,242,0.96)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, zIndex: 10, boxShadow: "0 1px 0 rgba(26,26,26,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ color: C.gold, fontSize: 15 }}>✦</span>
           <span style={{ fontSize: 16, fontWeight: 400, fontFamily: font.serif, letterSpacing: "0.14em", textTransform: "uppercase", color: C.charcoal }}>Sanj<span style={{ color: C.gold }}>iiiii</span></span>
@@ -1093,7 +1093,7 @@ export default function AdminApp() {
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {/* Sidebar */}
-        <aside className="adm-sidebar" style={{ width: 210, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <aside className="adm-sidebar" style={{ width: 240, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <nav style={{ padding: "20px 0", flex: 1 }}>
             {navItems.map(n => <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />)}
           </nav>
@@ -1102,14 +1102,14 @@ export default function AdminApp() {
               {(user.email?.[0] || "A").toUpperCase()}
             </div>
             <div style={{ overflow: "hidden" }}>
-              <p style={{ fontSize: 12, fontWeight: 500, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</p>
-              <p style={{ fontSize: 10, fontWeight: 500, color: C.muted, marginTop: 2 }}>Admin</p>
+              <p style={{ fontSize: 13, fontWeight: 500, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user.email}</p>
+              <p style={{ fontSize: 11, fontWeight: 500, color: C.muted, marginTop: 2 }}>Admin</p>
             </div>
           </div>
         </aside>
 
         {/* Main */}
-        <main className="adm-main-pad" style={{ flex: 1, overflowY: "auto", padding: "32px 40px" }}>
+        <main className="adm-main-pad" style={{ flex: 1, overflowY: "auto", padding: "40px 52px" }}>
           {tab === "dashboard" && <DashboardPage products={products} customers={customers} customersLoaded={customersLoaded} orders={orders} />}
           {tab === "products" && <ProductsPage products={products} onSave={handleProductSave} onDelete={handleProductDelete} busy={busy} msg={msg} setMsg={setMsg} />}
           {tab === "orders" && <OrdersPage orders={orders} onStatusChange={handleOrderStatusChange} busy={busy} />}
