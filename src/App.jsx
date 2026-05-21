@@ -113,7 +113,7 @@ const css = `
   .nav-links--desktop { position: absolute; left: 50%; transform: translateX(-50%); }
   .nav-link { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
-  .nav-icons { display: flex; gap: 18px; align-items: center; }
+  .nav-icons { display: flex; gap: 12px; align-items: center; padding-right: 6px; }
   .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 7px; transition: color 0.2s; display: flex; align-items: center; }
   .icon-btn:hover { color: var(--gold); }
   .nav-icons svg { width: 20px; height: 20px; }
