@@ -118,24 +118,6 @@ const css = `
   .icon-btn:hover { color: var(--gold); }
   .nav-icons svg { width: 20px; height: 20px; }
   .badge { position: absolute; top: -4px; right: -6px; background: var(--gold); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-  .bell-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    border: 1px solid rgba(201,169,110,0.35);
-    background: rgba(201,169,110,0.10);
-    color: #2a2621;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.22s ease;
-  }
-  .bell-btn:hover {
-    background: rgba(201,169,110,0.22);
-    border-color: rgba(201,169,110,0.55);
-    color: #171410;
-    transform: translateY(-1px);
-  }
   .bell-dot {
     position: absolute;
     top: 2px;
@@ -3351,7 +3333,7 @@ export default function App() {
             {cartCount > 0 && <span className="badge">{cartCount}</span>}
           </button>
           {user && (
-            <button className="icon-btn bell-btn" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
+            <button className="icon-btn" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
               <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M7.5 9.5a4.5 4.5 0 1 1 9 0c0 3 .8 4.8 2 6H5.5c1.2-1.2 2-3 2-6" />
                 <path d="M10 18a2 2 0 0 0 4 0" />
