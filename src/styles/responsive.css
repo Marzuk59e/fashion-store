@@ -131,9 +131,11 @@ button,
   }
 
   .navbar {
-    --nav-height: 56px;
-    --nav-edge-space: 14px;
+    --nav-height: 60px;
+    --nav-edge-space: 16px;
+    display: grid;
     grid-template-columns: auto 1fr auto;
+    align-items: center;
     column-gap: 8px;
   }
 
@@ -144,19 +146,24 @@ button,
   }
 
   .nav-logo {
-    font-size: 1.28rem;
+    font-size: 1.35rem;
     grid-column: 2;
     justify-self: center;
     margin: 0;
+    position: static;
+    transform: none;
   }
 
   .nav-links--desktop {
     display: none !important;
+    position: static;
+    transform: none;
   }
 
   .nav-icons {
     grid-column: 3;
     justify-self: end;
+    margin-left: 0;
   }
 
   .nav-icons {

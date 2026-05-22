@@ -36,8 +36,8 @@ const css = `
     --white: #FFFFFF;
     --surface: #FFFFFF;
     --nav-bg: rgba(250,247,242,0.96);
-    --nav-height: 64px;
-    --nav-edge-space: clamp(16px, 3vw, 32px);
+    --nav-height: 68px;
+    --nav-edge-space: clamp(20px, 4vw, 40px);
     --nav-offset: calc(var(--nav-height) + env(safe-area-inset-top, 0px));
     --hero-bg: #1A1A1A;
     --error: #C0392B;
@@ -68,7 +68,7 @@ const css = `
     color: var(--warm-gray);
     font-weight: 500;
   }
-  .nav-link { font-size: 0.72rem; }
+  .nav-link { font-size: 0.78rem; }
   .product-brand { font-size: 0.68rem; }
   .cart-item-meta { font-size: 0.74rem; }
   .cart-total-label { font-size: 0.74rem; }
@@ -105,10 +105,8 @@ const css = `
     position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
     background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    column-gap: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
     padding-left: max(var(--nav-edge-space), env(safe-area-inset-left, 0px));
     padding-right: max(var(--nav-edge-space), env(safe-area-inset-right, 0px));
     padding-bottom: 0;
@@ -118,21 +116,34 @@ const css = `
     box-sizing: border-box;
     transition: box-shadow 0.3s;
   }
-  .nav-menu-btn { display: none; grid-column: 1; justify-self: start; }
+  .nav-menu-btn { display: none; flex-shrink: 0; }
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
   .nav-logo {
-    grid-column: 1; justify-self: start;
-    font-family: var(--font-serif); font-size: 1.45rem; font-weight: 600;
-    letter-spacing: 0.1em; color: var(--charcoal); cursor: pointer;
+    flex-shrink: 0;
+    font-family: var(--font-serif); font-size: 1.55rem; font-weight: 600;
+    letter-spacing: 0.06em; color: var(--charcoal); cursor: pointer;
     text-transform: uppercase; background: none; border: none; line-height: 1;
+    white-space: nowrap;
   }
-  .nav-logo span { color: var(--gold); }
-  .nav-links { display: flex; gap: 28px; align-items: center; }
-  .nav-links--desktop { grid-column: 2; justify-self: center; }
-  .nav-link { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
+  .logo-accent {
+    color: var(--gold);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 0.88em;
+    letter-spacing: 0.1em;
+  }
+  .nav-links { display: flex; gap: 32px; align-items: center; }
+  .nav-links--desktop {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .nav-links--desktop .nav-link { pointer-events: auto; }
+  .nav-link { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
-  .nav-icons { grid-column: 3; display: flex; gap: 8px; align-items: center; justify-self: end; padding-right: 0; }
-  .nav-icons .btn-primary { padding: 9px 18px; font-size: 0.68rem; }
+  .nav-icons { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-shrink: 0; }
+  .nav-icons .btn-primary { padding: 10px 20px; font-size: 0.7rem; }
   .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 6px; transition: color 0.2s; display: flex; align-items: center; }
   .icon-btn:hover { color: var(--gold); }
   .nav-icons svg { width: 20px; height: 20px; }
@@ -784,7 +795,7 @@ const css = `
   .cookie-lock { font-size: 0.65rem; color: rgba(26,26,26,0.55); letter-spacing: 0.12em; text-transform: uppercase; }
 
   @media (min-width: 1024px) {
-    .nav-link { font-size: 0.74rem; }
+    .nav-link { font-size: 0.8rem; }
     .form-label { font-size: 0.72rem; }
     .form-input { font-size: 0.92rem; }
     .pay-method-card-sub { font-size: 0.74rem; }
@@ -810,7 +821,6 @@ const css = `
   .footer { background: var(--charcoal); color: var(--cream); padding: 60px 40px 28px; }
   .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
   .footer-brand { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
-  .footer-brand span { color: var(--gold); }
   .footer-desc { font-size: 0.78rem; color: rgba(250,247,242,0.5); line-height: 1.7; }
   .footer-col-title { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
   .footer-link { display: block; font-size: 0.75rem; color: rgba(250,247,242,0.55); margin-bottom: 8px; cursor: pointer; transition: color 0.2s; }
@@ -3328,7 +3338,7 @@ export default function App() {
         <button type="button" className="nav-menu-btn icon-btn" aria-label="Open menu" aria-expanded={navOpen} onClick={() => setNavOpen(true)}>
           <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden><path d="M4 7h16M4 12h16M4 17h16" /></svg>
         </button>
-        <button type="button" className="nav-logo" onClick={() => navigate("home")}>sanj<span>iiiii</span></button>
+        <button type="button" className="nav-logo" onClick={() => navigate("home")}>sanj<span className="logo-accent">iii</span></button>
         <div className="nav-links nav-links--desktop">
           {[["home", "Home"], ["shop", "Collection"], ["about", "About"]].map(([p, l]) => (
             <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
@@ -5115,7 +5125,7 @@ function Footer({ navigate }) {
     <footer className="footer">
       <div className="footer-grid">
         <div>
-          <div className="footer-brand">sanj<span>iiiii</span></div>
+          <div className="footer-brand">sanj<span className="logo-accent">iii</span></div>
           <p className="footer-desc">Luxury fashion curated for the modern connoisseur. Sustainable, ethical, timeless.</p>
         </div>
         <div>
