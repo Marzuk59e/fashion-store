@@ -103,7 +103,7 @@ const css = `
     background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 18px; height: 76px; transition: box-shadow 0.3s;
+    padding: 0 40px; height: 76px; transition: box-shadow 0.3s;
   }
   .nav-menu-btn { display: none !important; }
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
@@ -3334,7 +3334,7 @@ export default function App() {
           </button>
           {user && (
             <button className="icon-btn" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
-              <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M7.5 9.5a4.5 4.5 0 1 1 9 0c0 3 .8 4.8 2 6H5.5c1.2-1.2 2-3 2-6" />
                 <path d="M10 18a2 2 0 0 0 4 0" />
               </svg>
