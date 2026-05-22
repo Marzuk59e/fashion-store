@@ -43,11 +43,10 @@ video {
   width: 100%;
   max-width: none;
   margin: 0;
-  text-align: center;
+  text-align: initial;
   border-inline: none;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  display: block;
   box-sizing: border-box;
 }
 

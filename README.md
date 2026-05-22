@@ -64,4 +64,23 @@ VITE_OTP_SEND_ENDPOINT=https://us-central1-<project-id>.cloudfunctions.net/sendR
 VITE_OTP_VERIFY_ENDPOINT=https://us-central1-<project-id>.cloudfunctions.net/verifyRegistrationOtp
 ```
 
+## Vercel push-to-live troubleshooting
+
+If `git push` succeeds but the production site does not update immediately, follow:
+
+- [docs/vercel-deploy-runbook.md](docs/vercel-deploy-runbook.md)
+
+Quick checks:
+
+1. Confirm latest Vercel deployment commit hash equals your pushed commit hash.
+2. If hash matches, validate cache with:
+   - hard reload (`Ctrl+Shift+R`)
+   - incognito window
+   - versioned URL (`?v=<short-commit>`)
+3. For urgent production fixes only, use manual fallback:
+
+```bash
+npx vercel --prod
+```
+
 

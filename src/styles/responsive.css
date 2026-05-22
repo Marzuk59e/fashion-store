@@ -22,12 +22,7 @@ body {
   text-align: initial;
 }
 
-/* Safe areas (notch / home indicator) */
-.navbar {
-  padding-left: max(52px, env(safe-area-inset-left, 0px));
-  padding-right: max(52px, env(safe-area-inset-right, 0px));
-  padding-top: env(safe-area-inset-top, 0px);
-}
+/* Safe areas: horizontal padding comes from App.jsx --nav-edge-space */
 
 .cart-drawer,
 .nav-mobile-drawer {
@@ -90,7 +85,7 @@ button,
   width: min(300px, 88vw);
   background: var(--cream);
   border-right: 1px solid var(--border);
-  padding: calc(72px + env(safe-area-inset-top, 0px)) 24px 24px;
+  padding: calc(var(--nav-offset, 64px) + 16px) 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -136,33 +131,32 @@ button,
   }
 
   .navbar {
-    height: 64px;
-    padding-left: max(14px, env(safe-area-inset-left, 0px));
-    padding-right: max(14px, env(safe-area-inset-right, 0px));
-    display: grid;
+    --nav-height: 56px;
+    --nav-edge-space: 14px;
     grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 8px;
+    column-gap: 8px;
   }
 
   .nav-menu-btn {
+    display: flex;
     grid-column: 1;
+    justify-self: start;
   }
 
   .nav-logo {
-    font-size: 1.5rem;
+    font-size: 1.28rem;
     grid-column: 2;
     justify-self: center;
     margin: 0;
   }
 
+  .nav-links--desktop {
+    display: none !important;
+  }
+
   .nav-icons {
     grid-column: 3;
     justify-self: end;
-  }
-
-  .nav-links--desktop {
-    display: none !important;
   }
 
   .nav-icons {
@@ -181,12 +175,20 @@ button,
     padding: 10px;
   }
 
+  .about-hero {
+    padding: calc(var(--nav-offset) + 32px) 16px 48px;
+  }
+
+  .about-body {
+    padding: 48px 16px;
+  }
+
   .hero {
     height: auto;
     min-height: 100vh;
     min-height: 100dvh;
     min-height: -webkit-fill-available;
-    padding: 100px 16px 64px;
+    padding: calc(var(--nav-offset) + 24px) 16px 64px;
   }
 
   .hero-title {
@@ -244,7 +246,7 @@ button,
   }
 
   .shop-layout {
-    padding: 76px 16px 48px;
+    padding: calc(var(--nav-offset) + 16px) 16px 48px;
   }
 
   .shop-header {
@@ -284,7 +286,7 @@ button,
   .product-detail {
     grid-template-columns: 1fr;
     gap: 28px;
-    padding: 84px 16px 48px;
+    padding: calc(var(--nav-offset) + 16px) 16px 48px;
   }
 
   .detail-name {
@@ -315,11 +317,11 @@ button,
   }
 
   .legal-page {
-    padding: 84px 16px 48px;
+    padding: calc(var(--nav-offset) + 16px) 16px 48px;
   }
 
   .profile-layout {
-    padding: 84px 16px 48px;
+    padding: calc(var(--nav-offset) + 16px) 16px 48px;
   }
 
   .profile-tabs {

@@ -36,6 +36,9 @@ const css = `
     --white: #FFFFFF;
     --surface: #FFFFFF;
     --nav-bg: rgba(250,247,242,0.96);
+    --nav-height: 64px;
+    --nav-edge-space: clamp(16px, 3vw, 32px);
+    --nav-offset: calc(var(--nav-height) + env(safe-area-inset-top, 0px));
     --hero-bg: #1A1A1A;
     --error: #C0392B;
     --success: #27AE60;
@@ -65,7 +68,7 @@ const css = `
     color: var(--warm-gray);
     font-weight: 500;
   }
-  .nav-link { font-size: 0.76rem; }
+  .nav-link { font-size: 0.72rem; }
   .product-brand { font-size: 0.68rem; }
   .cart-item-meta { font-size: 0.74rem; }
   .cart-total-label { font-size: 0.74rem; }
@@ -99,23 +102,38 @@ const css = `
   .animate-scale { animation: scaleIn 0.5s ease both; }
 
   .navbar {
-    --nav-edge-space: 34px;
     position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
     background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
-    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
-    padding: 0 var(--nav-edge-space); height: 76px; transition: box-shadow 0.3s;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    column-gap: 12px;
+    padding-left: max(var(--nav-edge-space), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--nav-edge-space), env(safe-area-inset-right, 0px));
+    padding-bottom: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+    min-height: var(--nav-offset);
+    height: var(--nav-offset);
+    box-sizing: border-box;
+    transition: box-shadow 0.3s;
   }
-  .nav-menu-btn { display: none !important; }
+  .nav-menu-btn { display: none; grid-column: 1; justify-self: start; }
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
-  .nav-logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; letter-spacing: 0.13em; color: var(--charcoal); cursor: pointer; text-transform: uppercase; background: none; border: none; }
+  .nav-logo {
+    grid-column: 1; justify-self: start;
+    font-family: var(--font-serif); font-size: 1.45rem; font-weight: 600;
+    letter-spacing: 0.1em; color: var(--charcoal); cursor: pointer;
+    text-transform: uppercase; background: none; border: none; line-height: 1;
+  }
   .nav-logo span { color: var(--gold); }
-  .nav-links { display: flex; gap: 38px; align-items: center; }
-  .nav-links--desktop { justify-self: center; }
-  .nav-link { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links--desktop { grid-column: 2; justify-self: center; }
+  .nav-link { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
-  .nav-icons { display: flex; gap: 12px; align-items: center; justify-self: end; padding-right: 0; }
-  .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 7px; transition: color 0.2s; display: flex; align-items: center; }
+  .nav-icons { grid-column: 3; display: flex; gap: 8px; align-items: center; justify-self: end; padding-right: 0; }
+  .nav-icons .btn-primary { padding: 9px 18px; font-size: 0.68rem; }
+  .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 6px; transition: color 0.2s; display: flex; align-items: center; }
   .icon-btn:hover { color: var(--gold); }
   .nav-icons svg { width: 20px; height: 20px; }
   .icon-btn--notification svg { width: 20px; height: 20px; stroke-width: 2.1; }
@@ -531,7 +549,7 @@ const css = `
   }
   .receipt-download-btn:hover { border-color: var(--gold); color: var(--gold); }
 
-  .profile-layout { max-width: 1100px; margin: 0 auto; padding: 100px 40px 60px; }
+  .profile-layout { max-width: 1100px; margin: 0 auto; padding: calc(var(--nav-offset) + 24px) 40px 60px; }
   .profile-header { display: flex; gap: 28px; align-items: center; margin-bottom: 48px; padding-bottom: 40px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
   .avatar { width: 80px; height: 80px; background: var(--charcoal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 2rem; color: var(--gold-light); flex-shrink: 0; }
   .profile-name { font-family: var(--font-serif); font-size: 1.8rem; font-weight: 400; margin-bottom: 4px; }
@@ -540,7 +558,7 @@ const css = `
   .profile-tab { padding: 12px 24px; background: none; border: none; cursor: pointer; font-family: var(--font-sans); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--warm-gray); border-bottom: 2px solid transparent; transition: all 0.2s; margin-bottom: -1px; white-space: nowrap; }
   .profile-tab.active { color: var(--charcoal); border-bottom-color: var(--gold); }
 
-  .shop-layout { padding: 88px 40px 60px; max-width: 1300px; margin: 0 auto; }
+  .shop-layout { padding: calc(var(--nav-offset) + 20px) 40px 60px; max-width: 1300px; margin: 0 auto; }
   .shop-header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
   .shop-search-wrap { position: relative; width: 100%; max-width: 520px; margin-bottom: 20px; flex: 1 1 100%; }
   .shop-search-inner { display: flex; gap: 10px; align-items: center; background: white; border: 1px solid var(--border); padding: 10px 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
@@ -766,7 +784,7 @@ const css = `
   .cookie-lock { font-size: 0.65rem; color: rgba(26,26,26,0.55); letter-spacing: 0.12em; text-transform: uppercase; }
 
   @media (min-width: 1024px) {
-    .nav-link { font-size: 0.84rem; }
+    .nav-link { font-size: 0.74rem; }
     .form-label { font-size: 0.72rem; }
     .form-input { font-size: 0.92rem; }
     .pay-method-card-sub { font-size: 0.74rem; }
@@ -775,15 +793,9 @@ const css = `
     .receipt-line-muted { font-size: 0.78rem; }
     .filter-btn { font-size: 0.72rem; }
   }
-  @media (min-width: 1400px) {
-    .navbar { --nav-edge-space: 56px; height: 82px; }
-    .nav-logo { font-size: 2.14rem; }
-    .nav-link { font-size: 0.9rem; }
-    .nav-icons svg { width: 21px; height: 21px; }
-    .badge { width: 18px; height: 18px; font-size: 0.64rem; }
-  }
-
-  .legal-page { padding: 100px 40px 60px; max-width: 1100px; margin: 0 auto; }
+  .legal-page { max-width: 1100px; margin: 0 auto; padding: calc(var(--nav-offset) + 24px) 40px 60px; }
+  .about-hero { background: var(--charcoal); padding: calc(var(--nav-offset) + 48px) 40px 72px; text-align: center; }
+  .about-body { max-width: 780px; margin: 0 auto; padding: 64px 40px; }
   .legal-card { background: white; border: 1px solid var(--border); padding: 28px; }
   .legal-kicker { font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
   .legal-h1 { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 400; margin-bottom: 10px; }
@@ -811,7 +823,7 @@ const css = `
 
   .spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
 
-  .product-detail { max-width: 1100px; margin: 0 auto; padding: 100px 40px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+  .product-detail { max-width: 1100px; margin: 0 auto; padding: calc(var(--nav-offset) + 24px) 40px 60px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
   .detail-img { position: relative; aspect-ratio: 3/4; overflow: hidden; background: var(--surface); }
   .detail-brand { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
   .detail-name { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 400; margin-bottom: 16px; line-height: 1.2; color: var(--charcoal); }
@@ -3345,12 +3357,12 @@ export default function App() {
           )}
           {user ? (
             <button className="icon-btn" onClick={() => navigate("profile")}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.95rem" }}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
                 {user.name[0].toUpperCase()}
               </div>
             </button>
           ) : (
-            <button className="btn-primary" style={{ padding: "10px 24px", fontSize: "0.72rem" }} onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
+            <button className="btn-primary" onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
           )}
         </div>
       </nav>
@@ -4763,11 +4775,11 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
 function AboutPage({ navigate }) {
   return (
     <div>
-      <div style={{ background: "var(--charcoal)", padding: "120px 40px 80px", textAlign: "center" }}>
+      <div className="about-hero">
         <p style={{ fontSize: "0.7rem", letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 20 }}>Est. 2018</p>
         <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(2.5rem,6vw,5rem)", color: "var(--cream)", fontWeight: 300, lineHeight: 1.1 }}>Fashion with<br /><em style={{ color: "var(--gold-light)" }}>Purpose</em></h1>
       </div>
-      <div style={{ maxWidth: 780, margin: "0 auto", padding: "80px 40px" }}>
+      <div className="about-body">
         {[["Our Story", "sanjiiiii was born from a simple belief: that luxury and sustainability are not mutually exclusive. Founded in Paris in 2018, we source only from artisans who share our commitment to ethical production and enduring quality."],
         ["Our Philosophy", "We reject the notion of fast fashion. Every piece in our collection is designed to be worn for decades, not seasons. We work with heritage mills and independent craftspeople to ensure each garment tells a story of skilled hands and considered materials."],
         ["Sustainability", "We are committed to reducing our environmental footprint at every step. From our organic and recycled materials to our carbon-neutral shipping, every decision is made with the planet in mind."]].map(([title, body], i) => (
