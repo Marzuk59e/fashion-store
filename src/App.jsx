@@ -99,24 +99,26 @@ const css = `
   .animate-scale { animation: scaleIn 0.5s ease both; }
 
   .navbar {
+    --nav-edge-space: 34px;
     position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
     background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 40px; height: 76px; transition: box-shadow 0.3s;
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+    padding: 0 var(--nav-edge-space); height: 76px; transition: box-shadow 0.3s;
   }
   .nav-menu-btn { display: none !important; }
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
   .nav-logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; letter-spacing: 0.13em; color: var(--charcoal); cursor: pointer; text-transform: uppercase; background: none; border: none; }
   .nav-logo span { color: var(--gold); }
   .nav-links { display: flex; gap: 38px; align-items: center; }
-  .nav-links--desktop { position: absolute; left: 50%; transform: translateX(-50%); }
+  .nav-links--desktop { justify-self: center; }
   .nav-link { font-size: 0.82rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
-  .nav-icons { display: flex; gap: 12px; align-items: center; padding-right: 6px; }
+  .nav-icons { display: flex; gap: 12px; align-items: center; justify-self: end; padding-right: 0; }
   .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 7px; transition: color 0.2s; display: flex; align-items: center; }
   .icon-btn:hover { color: var(--gold); }
   .nav-icons svg { width: 20px; height: 20px; }
+  .icon-btn--notification svg { width: 20px; height: 20px; stroke-width: 2.1; }
   .badge { position: absolute; top: -4px; right: -6px; background: var(--gold); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .bell-dot {
     position: absolute;
@@ -774,7 +776,7 @@ const css = `
     .filter-btn { font-size: 0.72rem; }
   }
   @media (min-width: 1400px) {
-    .navbar { height: 82px; padding: 0 64px; }
+    .navbar { --nav-edge-space: 56px; height: 82px; }
     .nav-logo { font-size: 2.14rem; }
     .nav-link { font-size: 0.9rem; }
     .nav-icons svg { width: 21px; height: 21px; }
@@ -3333,7 +3335,7 @@ export default function App() {
             {cartCount > 0 && <span className="badge">{cartCount}</span>}
           </button>
           {user && (
-            <button className="icon-btn" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
+            <button className="icon-btn icon-btn--notification" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M7.5 9.5a4.5 4.5 0 1 1 9 0c0 3 .8 4.8 2 6H5.5c1.2-1.2 2-3 2-6" />
                 <path d="M10 18a2 2 0 0 0 4 0" />
