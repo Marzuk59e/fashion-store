@@ -106,6 +106,7 @@ const css = `
     background: var(--nav-bg); backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: nowrap;
     gap: 16px;
     padding-left: max(var(--nav-edge-space), env(safe-area-inset-left, 0px));
     padding-right: max(var(--nav-edge-space), env(safe-area-inset-right, 0px));
@@ -116,21 +117,25 @@ const css = `
     box-sizing: border-box;
     transition: box-shadow 0.3s;
   }
-  .nav-menu-btn { display: none; flex-shrink: 0; }
+  .nav-menu-btn {
+    display: none !important;
+    width: 0; height: 0; padding: 0; margin: 0;
+    overflow: hidden; opacity: 0; pointer-events: none; border: none;
+  }
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
   .nav-logo {
     flex-shrink: 0;
-    font-family: var(--font-serif); font-size: 1.55rem; font-weight: 600;
-    letter-spacing: 0.06em; color: var(--charcoal); cursor: pointer;
-    text-transform: uppercase; background: none; border: none; line-height: 1;
+    font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600;
+    letter-spacing: 0.03em; color: var(--charcoal); cursor: pointer;
+    text-transform: lowercase; background: none; border: none; line-height: 1;
     white-space: nowrap;
   }
   .logo-accent {
     color: var(--gold);
     font-family: var(--font-sans);
     font-weight: 600;
-    font-size: 0.88em;
-    letter-spacing: 0.1em;
+    font-size: 1em;
+    letter-spacing: 0.05em;
   }
   .nav-links { display: flex; gap: 32px; align-items: center; }
   .nav-links--desktop {
@@ -820,7 +825,7 @@ const css = `
 
   .footer { background: var(--charcoal); color: var(--cream); padding: 60px 40px 28px; }
   .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
-  .footer-brand { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+  .footer-brand { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; letter-spacing: 0.03em; text-transform: lowercase; margin-bottom: 12px; }
   .footer-desc { font-size: 0.78rem; color: rgba(250,247,242,0.5); line-height: 1.7; }
   .footer-col-title { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; }
   .footer-link { display: block; font-size: 0.75rem; color: rgba(250,247,242,0.55); margin-bottom: 8px; cursor: pointer; transition: color 0.2s; }
@@ -3335,10 +3340,7 @@ export default function App() {
     <div style={{ minHeight: "100vh" }}>
       {/* Navbar */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
-        <button type="button" className="nav-menu-btn icon-btn" aria-label="Open menu" aria-expanded={navOpen} onClick={() => setNavOpen(true)}>
-          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-        </button>
-        <button type="button" className="nav-logo" onClick={() => navigate("home")}>sanj<span className="logo-accent">iii</span></button>
+        <button type="button" className="nav-logo" onClick={() => navigate("home")}>sanj<span className="logo-accent">iiiii</span></button>
         <div className="nav-links nav-links--desktop">
           {[["home", "Home"], ["shop", "Collection"], ["about", "About"]].map(([p, l]) => (
             <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
@@ -5125,7 +5127,7 @@ function Footer({ navigate }) {
     <footer className="footer">
       <div className="footer-grid">
         <div>
-          <div className="footer-brand">sanj<span className="logo-accent">iii</span></div>
+          <div className="footer-brand">sanj<span className="logo-accent">iiiii</span></div>
           <p className="footer-desc">Luxury fashion curated for the modern connoisseur. Sustainable, ethical, timeless.</p>
         </div>
         <div>
