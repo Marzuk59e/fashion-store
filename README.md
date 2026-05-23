@@ -17,17 +17,38 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Production wiring (OTP)
 
-Copy `.env.example` to `.env` and set:
+Sign-up sends a 6-digit code by email. The live site (Vercel) calls **`/api/send-registration-otp`** and **`/api/verify-registration-otp`** automatically — you do not need `VITE_OTP_*` unless you override the URLs.
 
-- `VITE_OTP_SEND_ENDPOINT`: POST endpoint to send a 6-digit email OTP.
-- `VITE_OTP_VERIFY_ENDPOINT`: POST endpoint to verify OTP before account creation.
+### Vercel (recommended)
+
+1. Deploy the site to Vercel (push to `main`).
+2. In **Vercel → Project → Settings → Environment Variables**, add:
+
+| Variable | Example |
+|----------|---------|
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Full JSON from Firebase Console → Project settings → Service accounts → Generate new private key (paste as one line) |
+| `OTP_HASH_SECRET` | Any long random string |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | Your Gmail address |
+| `SMTP_PASS` | Gmail **App Password** (not your normal password) |
+| `OTP_FROM_EMAIL` | Same as `SMTP_USER` |
+| `OTP_FROM_NAME` | `sanjiiiii` |
+
+1. Redeploy after saving variables.
+
+**Gmail:** turn on 2-Step Verification, then create an App Password under Google Account → Security.
+
+Optional overrides in `.env` (see `.env.example`):
+
+- `VITE_OTP_SEND_ENDPOINT` / `VITE_OTP_VERIFY_ENDPOINT`
 
 Expected JSON contracts:
 
-- OTP send request: `{ "email": "user@example.com", "purpose": "register" }`
-- OTP verify request: `{ "email": "user@example.com", "code": "123456", "purpose": "register" }`
+- OTP send: `{ "email": "user@example.com", "purpose": "register" }`
+- OTP verify: `{ "email": "user@example.com", "code": "123456", "purpose": "register" }`
 
-## Firebase Functions setup
+## Firebase Functions setup (alternative)
 
 Functions were added in `functions/`:
 
@@ -82,5 +103,3 @@ Quick checks:
 ```bash
 npx vercel --prod
 ```
-
-
