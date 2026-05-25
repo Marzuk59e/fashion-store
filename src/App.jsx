@@ -10,7 +10,7 @@ import {
   signInWithEmailLink,
 } from "firebase/auth";
 import { collection, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
-import { auth, googleProvider, db } from "./firebase.js";
+import { auth, googleProvider, db, isAdminAccountUid } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 import { CATEGORY_FALLBACK_IMAGES, normalizeProductList } from "./data/productImages.js";
 import ProductPhoto from "./components/ProductPhoto.jsx";
@@ -36,7 +36,7 @@ const css = `
     --white: #FFFFFF;
     --surface: #FFFFFF;
     --nav-bg: rgba(250,247,242,0.96);
-    --nav-height: 68px;
+    --nav-height: 52px;
     --nav-edge-space: clamp(20px, 4vw, 40px);
     --nav-offset: calc(var(--nav-height) + env(safe-area-inset-top, 0px));
     --hero-bg: #1A1A1A;
@@ -125,7 +125,7 @@ const css = `
   .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
   .nav-logo {
     flex-shrink: 0;
-    font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600;
+    font-family: var(--font-serif); font-size: 1.35rem; font-weight: 600;
     letter-spacing: 0.03em; color: var(--charcoal); cursor: pointer;
     text-transform: lowercase; background: none; border: none; line-height: 1;
     white-space: nowrap;
@@ -149,9 +149,9 @@ const css = `
   .nav-link:hover, .nav-link.active { color: var(--charcoal); }
   .nav-icons { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-shrink: 0; }
   .nav-icons .btn-primary { padding: 10px 20px; font-size: 0.7rem; }
-  .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 6px; transition: color 0.2s; display: flex; align-items: center; }
+  .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 4px; transition: color 0.2s; display: flex; align-items: center; }
   .icon-btn:hover { color: var(--gold); }
-  .nav-icons svg { width: 20px; height: 20px; }
+  .nav-icons svg { width: 18px; height: 18px; }
   .icon-btn--notification svg { width: 20px; height: 20px; stroke-width: 2.1; }
   .badge { position: absolute; top: -4px; right: -6px; background: var(--gold); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .bell-dot {
@@ -2535,6 +2535,14 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       try {
         if (fbUser) {
+          if (await isAdminAccountUid(fbUser.uid)) {
+            await signOut(auth);
+            setUser(null);
+            const g = readGuestBagFromStorage(catalogRef.current);
+            setCart(g.cart);
+            setWishlist(g.wishlist);
+            return;
+          }
           const ref = doc(db, "users", fbUser.uid);
           const snap = await getDoc(ref);
           const parsedNames = splitName(fbUser.displayName || "");

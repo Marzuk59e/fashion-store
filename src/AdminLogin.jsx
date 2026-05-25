@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "./firebase.js";
+import { adminAuth } from "./firebase.js";
 import { isOtpConfigured, sendOtp, verifyOtp } from "./lib/authOtp.js";
 
 const C = {
@@ -171,7 +171,7 @@ export default function AdminLogin({ storefrontUrl, busy, msg, setMsg, email, pa
         setView("forgot-otp");
         setInfo(`We sent a 6-digit code to ${em}.`);
       } else {
-        await sendPasswordResetEmail(auth, em, { url: `${window.location.origin}/` });
+        await sendPasswordResetEmail(adminAuth, em, { url: `${window.location.origin}/` });
         setView("forgot-done");
         setInfo("Password reset link sent. Check your inbox (and spam folder).");
       }
@@ -193,7 +193,7 @@ export default function AdminLogin({ storefrontUrl, busy, msg, setMsg, email, pa
     setLocalBusy(true);
     try {
       await verifyOtp({ email: em, code, purpose: "password_reset" });
-      await sendPasswordResetEmail(auth, em, { url: `${window.location.origin}/` });
+      await sendPasswordResetEmail(adminAuth, em, { url: `${window.location.origin}/` });
       setView("forgot-done");
       setInfo("Code verified. We also sent a password reset link to your email.");
     } catch (e) {

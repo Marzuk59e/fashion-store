@@ -6,8 +6,7 @@ import {
   onSnapshot, query, serverTimestamp,
   setDoc, updateDoc, orderBy,
 } from "firebase/firestore";
-import { auth, db, storage } from "./firebase.js";
-// ↑ Make sure firebase.js exports: auth, db, storage
+import { adminAuth, db, storage } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 import { getProductImage, normalizeProduct, normalizeProductList } from "./data/productImages.js";
 import AdminLogin from "./AdminLogin.jsx";
@@ -900,7 +899,7 @@ export default function AdminApp() {
   }, []);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => { setUser(u); setAuthReady(true); });
+    const unsub = onAuthStateChanged(adminAuth, u => { setUser(u); setAuthReady(true); });
     return () => unsub();
   }, []);
 
@@ -951,7 +950,7 @@ export default function AdminApp() {
     }
     setBusy(true); setMsg("");
     try {
-      const cred = await createUserWithEmailAndPassword(auth, em, pw);
+      const cred = await createUserWithEmailAndPassword(adminAuth, em, pw);
       await updateProfile(cred.user, { displayName: name });
       await setDoc(doc(db, "admins", cred.user.uid), {
         active: true,
@@ -959,12 +958,6 @@ export default function AdminApp() {
         name: name,
         createdAt: serverTimestamp(),
       });
-      await setDoc(doc(db, "users", cred.user.uid), {
-        email: em,
-        name: name,
-        role: "admin",
-        createdAt: serverTimestamp(),
-      }, { merge: true });
     } catch (e) {
       setBusy(false);
       const errMap = {
@@ -980,13 +973,13 @@ export default function AdminApp() {
 
   const loginEmail = async () => {
     setBusy(true); setMsg("");
-    try { await signInWithEmailAndPassword(auth, email, password); }
+    try { await signInWithEmailAndPassword(adminAuth, email, password); }
     catch { setMsg("Invalid email or password."); }
     finally { setBusy(false); }
   };
 
   const logout = async () => {
-    try { await signOut(auth); } catch { void 0; }
+    try { await signOut(adminAuth); } catch { void 0; }
     setCustomers([]); setCustomersLoaded(false); setOrders([]);
   };
 
@@ -997,8 +990,9 @@ export default function AdminApp() {
       const snap = await getDocs(query(collection(db, "users"), limit(200)));
       const rows = snap.docs.map(d => {
         const x = d.data() || {};
-        return { id: d.id, email: x.email || "—", name: x.name || "—", orders: Array.isArray(x.orders) ? x.orders.length : 0 };
-      }).sort((a, b) => b.orders - a.orders);
+        const isAdmin = x.role === "admin" || x.profile?.role === "admin";
+        return { id: d.id, email: x.email || "—", name: x.name || "—", orders: Array.isArray(x.orders) ? x.orders.length : 0, isAdmin };
+      }).filter((r) => !r.isAdmin).sort((a, b) => b.orders - a.orders);
       setCustomers(rows); setCustomersLoaded(true);
     } catch (e) { setMsg(e?.message || "Could not load customers."); }
     finally { setBusy(false); }
