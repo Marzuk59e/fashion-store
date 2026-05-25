@@ -38,8 +38,12 @@ try {
 export const adminAuth = _adminAuth;
 
 export const googleProvider = new GoogleAuthProvider();
+/** Storefront Firestore — uses storefront `auth` token in security rules. */
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+/** Admin panel Firestore/Storage — must pair with `adminAuth` (same Firebase app). */
+export const adminDb = getFirestore(adminApp);
+export const adminStorage = getStorage(adminApp);
 
 /** True when this Firebase UID is an admin (not a storefront customer). */
 export async function isAdminAccountUid(uid) {

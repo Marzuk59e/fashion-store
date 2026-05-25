@@ -6,7 +6,7 @@ import {
   onSnapshot, query, serverTimestamp,
   setDoc, updateDoc, orderBy,
 } from "firebase/firestore";
-import { adminAuth, db, storage } from "./firebase.js";
+import { adminAuth, adminDb, adminStorage } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 import { getProductImage, normalizeProduct, normalizeProductList } from "./data/productImages.js";
 import AdminLogin from "./AdminLogin.jsx";
@@ -108,10 +108,10 @@ async function parseExcelFile(file) {
 
 /* ─── Image upload helper ───────────────────────────────────── */
 async function uploadImage(file) {
-  if (!storage) throw new Error("Firebase Storage not initialized. Export 'storage' from firebase.js");
+  if (!adminStorage) throw new Error("Firebase Storage not initialized. Export 'adminStorage' from firebase.js");
   const { ref: sRef, uploadBytes, getDownloadURL } = await import("firebase/storage");
   const path = `admin-products/${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-  const fileRef = sRef(storage, path);
+  const fileRef = sRef(adminStorage, path);
   await uploadBytes(fileRef, file);
   return getDownloadURL(fileRef);
 }
@@ -909,10 +909,10 @@ export default function AdminApp() {
     let cancelled = false;
     (async () => {
       try {
-        const adminSnap = await getDoc(doc(db, "admins", user.uid));
+        const adminSnap = await getDoc(doc(adminDb, "admins", user.uid));
         let ok = adminSnap.exists() && adminSnap.data()?.active === true;
         if (!ok) {
-          const userSnap = await getDoc(doc(db, "users", user.uid));
+          const userSnap = await getDoc(doc(adminDb, "users", user.uid));
           ok = userSnap.exists() && (userSnap.data()?.role === "admin" || userSnap.data()?.profile?.role === "admin");
         }
         if (!cancelled) { setAdminOk(ok); setAdminCheckDone(true); }
@@ -924,7 +924,7 @@ export default function AdminApp() {
   /* Live products */
   useEffect(() => {
     if (!adminOk) return;
-    const unsub = onSnapshot(doc(db, "catalog", "store"), snap => {
+    const unsub = onSnapshot(doc(adminDb, "catalog", "store"), snap => {
       const list = snap.exists() ? snap.data()?.products : null;
       const raw = Array.isArray(list) && list.length ? list : DEFAULT_PRODUCTS;
       setProducts(normalizeProductList(raw));
@@ -936,7 +936,7 @@ export default function AdminApp() {
   useEffect(() => {
     if (!adminOk) return;
     try {
-      const q = query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(200));
+      const q = query(collection(adminDb, "orders"), orderBy("createdAt", "desc"), limit(200));
       const unsub = onSnapshot(q, snap => {
         setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       });
@@ -952,7 +952,7 @@ export default function AdminApp() {
     try {
       const cred = await createUserWithEmailAndPassword(adminAuth, em, pw);
       await updateProfile(cred.user, { displayName: name });
-      await setDoc(doc(db, "admins", cred.user.uid), {
+      await setDoc(doc(adminDb, "admins", cred.user.uid), {
         active: true,
         email: em,
         name: name,
@@ -987,7 +987,7 @@ export default function AdminApp() {
     if (!adminOk) return;
     setBusy(true); setMsg("");
     try {
-      const snap = await getDocs(query(collection(db, "users"), limit(200)));
+      const snap = await getDocs(query(collection(adminDb, "users"), limit(200)));
       const rows = snap.docs.map(d => {
         const x = d.data() || {};
         const isAdmin = x.role === "admin" || x.profile?.role === "admin";
@@ -1006,7 +1006,7 @@ export default function AdminApp() {
     setBusy(true);
     try {
       const clean = JSON.parse(JSON.stringify(normalizeProductList(updatedProducts)));
-      await setDoc(doc(db, "catalog", "store"),
+      await setDoc(doc(adminDb, "catalog", "store"),
         { products: clean, updatedAt: serverTimestamp(), updatedBy: user?.email || user?.uid || null },
         { merge: true });
       const opMap = { add: "Product added", edit: "Product updated", bulk: "Bulk upload complete", delete: "Product deleted" };
@@ -1038,7 +1038,7 @@ export default function AdminApp() {
   const handleOrderStatusChange = useCallback(async (orderId, newStatus) => {
     setBusy(true);
     try {
-      await updateDoc(doc(db, "orders", orderId), { status: newStatus, updatedAt: serverTimestamp() });
+      await updateDoc(doc(adminDb, "orders", orderId), { status: newStatus, updatedAt: serverTimestamp() });
     } catch (e) { setMsg(e?.message || "Could not update order status."); }
     finally { setBusy(false); }
   }, []);
