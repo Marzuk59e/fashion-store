@@ -2397,6 +2397,7 @@ export default function App() {
   const checkoutPushCountRef = useRef(0);
   const checkoutProfileSyncRef = useRef(null);
   const productLayerCountRef = useRef(0);
+  const pendingAuthActionRef = useRef(null);
   const ignorePopRef = useRef(false);
   const emailLinkCompletionBusyRef = useRef(false);
   const cartRef = useRef(cart);
@@ -2845,6 +2846,34 @@ export default function App() {
     void saveUserToCloud(updated);
   };
 
+  const promptSignIn = (action, message = "Please sign in to continue.") => {
+    pendingAuthActionRef.current = action;
+    setAuthMode("login");
+    setAuthOpen(true);
+    if (message) addToast(message);
+  };
+
+  const commitAddToCart = (product, size) => {
+    const existing = cart.findIndex(i => i.product.id === product.id && i.size === size);
+    let newCart;
+    if (existing >= 0) {
+      newCart = cart.map((i, idx) => idx === existing ? { ...i, qty: i.qty + 1 } : i);
+    } else {
+      newCart = [...cart, { product, size: size || product.sizes[0], qty: 1 }];
+    }
+    setCart(newCart);
+    persist(newCart, wishlist, user);
+    addToast(`${product.name} added to bag ✓`, "success");
+    setCartOpen(true);
+  };
+
+  const commitToggleWishlist = (productId) => {
+    const newWish = wishlist.includes(productId) ? wishlist.filter(id => id !== productId) : [...wishlist, productId];
+    setWishlist(newWish);
+    persist(cart, newWish, user);
+    addToast(newWish.includes(productId) ? "Added to wishlist ♡" : "Removed from wishlist");
+  };
+
   const updateUserProfile = (patch) => {
     if (!user) return;
     const base = normalizeUser(user);
@@ -2860,17 +2889,11 @@ export default function App() {
   };
 
   const addToCart = (product, size) => {
-    const existing = cart.findIndex(i => i.product.id === product.id && i.size === size);
-    let newCart;
-    if (existing >= 0) {
-      newCart = cart.map((i, idx) => idx === existing ? { ...i, qty: i.qty + 1 } : i);
-    } else {
-      newCart = [...cart, { product, size: size || product.sizes[0], qty: 1 }];
+    if (!user) {
+      promptSignIn({ type: "cart", product, size: size || product.sizes[0] }, "Sign in to add this item to your bag.");
+      return;
     }
-    setCart(newCart);
-    persist(newCart, wishlist, user);
-    addToast(`${product.name} added to bag ✓`, "success");
-    setCartOpen(true);
+    commitAddToCart(product, size);
   };
 
   const removeFromCart = (idx) => {
@@ -2887,11 +2910,23 @@ export default function App() {
   };
 
   const toggleWishlist = (productId) => {
-    const newWish = wishlist.includes(productId) ? wishlist.filter(id => id !== productId) : [...wishlist, productId];
-    setWishlist(newWish);
-    persist(cart, newWish, user);
-    addToast(newWish.includes(productId) ? "Added to wishlist ♡" : "Removed from wishlist");
+    if (!user) {
+      promptSignIn({ type: "wishlist", productId }, "Sign in to save this item to your wishlist.");
+      return;
+    }
+    commitToggleWishlist(productId);
   };
+
+  useEffect(() => {
+    const action = pendingAuthActionRef.current;
+    if (!user || !action) return;
+    pendingAuthActionRef.current = null;
+    if (action.type === "cart") {
+      commitAddToCart(action.product, action.size);
+    } else if (action.type === "wishlist") {
+      commitToggleWishlist(action.productId);
+    }
+  }, [user]);
 
   const login = ({ email, password, firstName, lastName }) => {
     let u = normalizeUser(LS.getUser(email));
@@ -2988,16 +3023,17 @@ export default function App() {
     return sum % 10 === 0;
   };
 
-  const getProductDiscount = (item) => item?.product?.badge === "Sale" ? item.product.price * 0.15 * item.qty : 0;
+  const getProductDiscount = (item) => isOnSale(item?.product) ? (item.product.compareAt - item.product.price) * item.qty : 0;
   const getPricing = () => {
     const shippingFee = checkoutDraft.deliveryType === "express" ? 20 : 8;
     const subtotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
     const itemDiscount = cart.reduce((s, i) => s + getProductDiscount(i), 0);
-    const discountedSubtotal = Math.max(0, subtotal - itemDiscount);
+    const priceTotal = subtotal + itemDiscount;
+    const discountedSubtotal = Math.max(0, subtotal);
     const normalizedPromo = promoCode.trim().toUpperCase();
     const promoDiscount = normalizedPromo === "SAVE10" ? discountedSubtotal * 0.1 : 0;
     const total = Math.max(0, discountedSubtotal - promoDiscount + shippingFee);
-    return { shippingFee, subtotal, itemDiscount, discountedSubtotal, promoDiscount, total, normalizedPromo };
+    return { shippingFee, priceTotal, subtotal, itemDiscount, discountedSubtotal, promoDiscount, total, normalizedPromo };
   };
 
   const downloadCheckoutReceipt = () => {
@@ -3019,7 +3055,7 @@ export default function App() {
           ? checkoutDraft.paypalEmail.trim()
           : "—";
     const lines = cart.map((item) => {
-      const lineTotal = item.product.price * item.qty;
+      const lineTotal = isOnSale(item.product) ? item.product.compareAt * item.qty : item.product.price * item.qty;
       const lineDiscount = getProductDiscount(item);
       let s = `${item.product.name} × ${item.qty}\n  ${fmt(lineTotal)}`;
       if (lineDiscount > 0) s += `\n  Discount: -${fmt(lineDiscount)}`;
@@ -3043,7 +3079,7 @@ export default function App() {
   <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.15em;margin-bottom:8px">Items</div>
   <pre style="font-family:inherit;font-size:13px;white-space:pre-wrap;margin:0;line-height:1.5;text-align:left">${lines.join("\n\n")}</pre>
   <hr style="border:none;border-top:1px dashed #999;margin:14px 0">
-  <div style="font-size:13px;margin:4px 0">Subtotal<br>${fmt(p.subtotal)}</div>
+  <div style="font-size:13px;margin:4px 0">Price<br>${fmt(p.priceTotal)}</div>
   <div style="font-size:13px;margin:4px 0">Product discount<br>- ${fmt(p.itemDiscount)}</div>
   <div style="font-size:13px;margin:4px 0">After discount<br>${fmt(p.discountedSubtotal)}</div>
   ${p.promoDiscount > 0 ? `<div style="font-size:13px;margin:4px 0">Promo (${p.normalizedPromo})<br>- ${fmt(p.promoDiscount)}</div>` : ""}
@@ -3832,7 +3868,7 @@ export default function App() {
                   <>
                     <div style={{ border: "1px solid var(--border)", padding: 14, marginBottom: 18, background: "var(--cream)" }}>
                       <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", marginBottom: 10 }}>Bill Summary</div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Subtotal</span><span>{fmt(getPricing().subtotal)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Price</span><span>{fmt(getPricing().priceTotal)}</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Product Discount</span><span>- {fmt(getPricing().itemDiscount)}</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>After Product Discount</span><span>{fmt(getPricing().discountedSubtotal)}</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Promo Discount</span><span>- {fmt(getPricing().promoDiscount)}</span></div>
@@ -3968,7 +4004,7 @@ export default function App() {
                       <hr className="receipt-rule" />
                       <div className="receipt-label">Items</div>
                       {cart.map((item, idx) => {
-                        const lineTotal = item.product.price * item.qty;
+                        const lineTotal = isOnSale(item.product) ? item.product.compareAt * item.qty : item.product.price * item.qty;
                         const lineDiscount = getProductDiscount(item);
                         return (
                           <div key={`${item.product.id}-${idx}`} className="receipt-item-block">
@@ -3981,7 +4017,7 @@ export default function App() {
                         );
                       })}
                       <div className="receipt-total-block">
-                        <div className="receipt-total-line">Subtotal — {fmt(getPricing().subtotal)}</div>
+                        <div className="receipt-total-line">Price — {fmt(getPricing().priceTotal)}</div>
                         <div className="receipt-total-line">Product discount — −{fmt(getPricing().itemDiscount)}</div>
                         <div className="receipt-total-line">After discount — {fmt(getPricing().discountedSubtotal)}</div>
                         {getPricing().promoDiscount > 0 && (
@@ -5439,3 +5475,7 @@ function TermsPage({ navigate }) {
     </div>
   );
 }
+
+
+
+
