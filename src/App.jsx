@@ -34,7 +34,7 @@ const css = `
     --warm-gray: #4F4841;
     --border: #E8E2D9;
     --white: #FFFFFF;
-    --surface: #FFFFFF;n
+    --surface: #FFFFFF;
     --nav-bg: rgba(250,247,242,0.96);
     --nav-height: 52px;
     --nav-edge-space: clamp(20px, 4vw, 40px);
@@ -2860,12 +2860,6 @@ export default function App() {
   };
 
   const addToCart = (product, size) => {
-    if (!user) {
-      setAuthMode("login");
-      setAuthOpen(true);
-      addToast("Please sign in first to add products to your bag.", "info");
-      return;
-    }
     const existing = cart.findIndex(i => i.product.id === product.id && i.size === size);
     let newCart;
     if (existing >= 0) {
@@ -2893,12 +2887,6 @@ export default function App() {
   };
 
   const toggleWishlist = (productId) => {
-    if (!user) {
-      setAuthMode("login");
-      setAuthOpen(true);
-      addToast("Please sign in first to save favorites.", "info");
-      return;
-    }
     const newWish = wishlist.includes(productId) ? wishlist.filter(id => id !== productId) : [...wishlist, productId];
     setWishlist(newWish);
     persist(cart, newWish, user);
@@ -3000,18 +2988,12 @@ export default function App() {
     return sum % 10 === 0;
   };
 
-  const getOriginalLinePrice = (item) => {
-    const originalUnit = Number(item?.product?.compareAt);
-    const saleUnit = Number(item?.product?.price) || 0;
-    const unit = originalUnit > saleUnit ? originalUnit : saleUnit;
-    return unit * (item?.qty || 0);
-  };
-  const getLineSaleDiscount = (item) => Math.max(0, getOriginalLinePrice(item) - ((Number(item?.product?.price) || 0) * (item?.qty || 0)));
+  const getProductDiscount = (item) => item?.product?.badge === "Sale" ? item.product.price * 0.15 * item.qty : 0;
   const getPricing = () => {
     const shippingFee = checkoutDraft.deliveryType === "express" ? 20 : 8;
-    const subtotal = cart.reduce((s, i) => s + getOriginalLinePrice(i), 0);
-    const discountedSubtotal = cart.reduce((s, i) => s + ((Number(i?.product?.price) || 0) * (i?.qty || 0)), 0);
-    const itemDiscount = Math.max(0, subtotal - discountedSubtotal);
+    const subtotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
+    const itemDiscount = cart.reduce((s, i) => s + getProductDiscount(i), 0);
+    const discountedSubtotal = Math.max(0, subtotal - itemDiscount);
     const normalizedPromo = promoCode.trim().toUpperCase();
     const promoDiscount = normalizedPromo === "SAVE10" ? discountedSubtotal * 0.1 : 0;
     const total = Math.max(0, discountedSubtotal - promoDiscount + shippingFee);
@@ -3038,7 +3020,7 @@ export default function App() {
           : "—";
     const lines = cart.map((item) => {
       const lineTotal = item.product.price * item.qty;
-      const lineDiscount = getLineSaleDiscount(item);
+      const lineDiscount = getProductDiscount(item);
       let s = `${item.product.name} × ${item.qty}\n  ${fmt(lineTotal)}`;
       if (lineDiscount > 0) s += `\n  Discount: -${fmt(lineDiscount)}`;
       return esc(s);
@@ -3061,9 +3043,9 @@ export default function App() {
   <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.15em;margin-bottom:8px">Items</div>
   <pre style="font-family:inherit;font-size:13px;white-space:pre-wrap;margin:0;line-height:1.5;text-align:left">${lines.join("\n\n")}</pre>
   <hr style="border:none;border-top:1px dashed #999;margin:14px 0">
-  <div style="font-size:13px;margin:4px 0">Price<br>${fmt(p.subtotal)}</div>
+  <div style="font-size:13px;margin:4px 0">Subtotal<br>${fmt(p.subtotal)}</div>
   <div style="font-size:13px;margin:4px 0">Product discount<br>- ${fmt(p.itemDiscount)}</div>
-  <div style="font-size:13px;margin:4px 0">After product discount<br>${fmt(p.discountedSubtotal)}</div>
+  <div style="font-size:13px;margin:4px 0">After discount<br>${fmt(p.discountedSubtotal)}</div>
   ${p.promoDiscount > 0 ? `<div style="font-size:13px;margin:4px 0">Promo (${p.normalizedPromo})<br>- ${fmt(p.promoDiscount)}</div>` : ""}
   <div style="font-size:13px;margin:4px 0">Shipping<br>${fmt(p.shippingFee)}</div>
   <div style="font-size:15px;font-weight:700;margin-top:12px;letter-spacing:.05em">Total due<br>${fmt(p.total)}</div>
@@ -3850,7 +3832,7 @@ export default function App() {
                   <>
                     <div style={{ border: "1px solid var(--border)", padding: 14, marginBottom: 18, background: "var(--cream)" }}>
                       <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", marginBottom: 10 }}>Bill Summary</div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Price</span><span>{fmt(getPricing().subtotal)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Subtotal</span><span>{fmt(getPricing().subtotal)}</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Product Discount</span><span>- {fmt(getPricing().itemDiscount)}</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>After Product Discount</span><span>{fmt(getPricing().discountedSubtotal)}</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 6 }}><span>Promo Discount</span><span>- {fmt(getPricing().promoDiscount)}</span></div>
@@ -3987,7 +3969,7 @@ export default function App() {
                       <div className="receipt-label">Items</div>
                       {cart.map((item, idx) => {
                         const lineTotal = item.product.price * item.qty;
-                        const lineDiscount = getLineSaleDiscount(item);
+                        const lineDiscount = getProductDiscount(item);
                         return (
                           <div key={`${item.product.id}-${idx}`} className="receipt-item-block">
                             <div className="receipt-item-name">{item.product.name} × {item.qty}</div>
@@ -3999,9 +3981,9 @@ export default function App() {
                         );
                       })}
                       <div className="receipt-total-block">
-                        <div className="receipt-total-line">Price — {fmt(getPricing().subtotal)}</div>
+                        <div className="receipt-total-line">Subtotal — {fmt(getPricing().subtotal)}</div>
                         <div className="receipt-total-line">Product discount — −{fmt(getPricing().itemDiscount)}</div>
-                        <div className="receipt-total-line">After product discount — {fmt(getPricing().discountedSubtotal)}</div>
+                        <div className="receipt-total-line">After discount — {fmt(getPricing().discountedSubtotal)}</div>
                         {getPricing().promoDiscount > 0 && (
                           <div className="receipt-total-line">Promo ({getPricing().normalizedPromo}) — −{fmt(getPricing().promoDiscount)}</div>
                         )}
