@@ -23,19 +23,27 @@ service cloud.firestore {
       );
     }
 
+    // ── Admins ──────────────────────────────────────────────────────────────
+    // Only the admin themselves can read their own record. Nobody can write
+    // (admin records are created manually in the Firebase Console).
     match /admins/{adminId} {
       allow read: if isSignedIn() && request.auth.uid == adminId;
       allow write: if false;
     }
 
+    // ── Product Catalog ─────────────────────────────────────────────────────
+    // Public read so the storefront loads without sign-in.
+    // Only admins can create, update, or delete products.
     match /catalog/{document=**} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // ── Users ───────────────────────────────────────────────────────────────
+    // Customers can read and write only their own document and sub-collections.
+    // Admins can read and update any user record (e.g. for customer support).
     match /users/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
       allow read, update: if isAdmin();
     }
 
@@ -43,6 +51,19 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
       allow read, write: if isAdmin();
     }
+
+    // ── Orders ──────────────────────────────────────────────────────────────
+    // A signed-in customer can create an order and read their own orders.
+    // Customers cannot update or delete orders after placement.
+    // Admins can read all orders and update status (e.g. pending → shipped).
+    match /orders/{orderId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow read:   if isSignedIn()
+                    && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
   }
 }
-

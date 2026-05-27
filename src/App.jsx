@@ -5430,8 +5430,7 @@ function PrivacyPage({ navigate }) {
         <div className="legal-kicker">Privacy</div>
         <div className="legal-h1">Privacy Policy</div>
         <p className="legal-p">
-          This is a demo storefront. We minimize personal data usage and store account/cart information locally in your browser.
-          Email accounts stay on this device (localStorage). Google sign-in syncs your bag, wishlist, and orders to Firestore for your account.
+          sanjiiiii is a fashion storefront. We minimize personal data collection and only store what is necessary to run your account. Email accounts are secured via OTP verification. Google sign-in syncs your bag, wishlist, and orders to your account via Firestore.
         </p>
         <ul style={{ paddingLeft: 18 }}>
           <li className="legal-li"><strong>Necessary cookies</strong>: required for core functionality and security.</li>
@@ -5460,22 +5459,18 @@ function TermsPage({ navigate }) {
         <div className="legal-kicker">Legal</div>
         <div className="legal-h1">Terms & Conditions</div>
         <p className="legal-p">
-          This is a demo project. No real payments are processed and products are illustrative only.
+          Welcome to sanjiiiii. By using this store, you agree to the following terms.
         </p>
         <ul style={{ paddingLeft: 18 }}>
-          <li className="legal-li"><strong>Orders</strong>: created for demonstration purposes; saved locally on your device.</li>
+          <li className="legal-li"><strong>Orders</strong>: placed through this store are saved to your account and processed accordingly.</li>
           <li className="legal-li"><strong>Pricing</strong>: displayed in USD; VAT included where applicable and shown for EU deliveries at checkout.</li>
-          <li className="legal-li"><strong>Returns</strong>: policies shown are sample terms.</li>
+          <li className="legal-li"><strong>Returns</strong>: accepted within 7 days of delivery for unused items in original condition.</li>
         </ul>
         <div className="legal-note">
-          If you are testing as a European client, make sure cookie consent is captured and the VAT disclosure is visible at checkout.
+          For EU customers: VAT is included where applicable and shown at checkout. Cookie preferences can be updated anytime via your browser settings.
         </div>
       </div>
       <Footer navigate={navigate} />
     </div>
   );
 }
-
-
-
-
