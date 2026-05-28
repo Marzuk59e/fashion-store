@@ -49,7 +49,7 @@ const STATUS_COLORS = {
 
 /* ─── Admin secret key ─────────────────────────────── */
 // Change this to a strong secret before going live!
-const ADMIN_SECRET_KEY = "sanjiiiii-admin-2025";
+const ADMIN_SECRET_KEY = import.meta.env.VITE_ADMIN_SECRET_KEY ?? "sanjiiiii-admin-2025";
 
 
 /* ─── Validation ────────────────────────────────────────────── */
