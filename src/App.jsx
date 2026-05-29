@@ -3244,6 +3244,7 @@ export default function App() {
         customerName: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "—",
         customerEmail: user.email || "—",
         customerUid: user.firebaseUid || null,
+        userId: user.firebaseUid || null,
         status: "pending",
         createdAt: serverTimestamp(),
         items: (newOrder.items || []).map(i => ({
