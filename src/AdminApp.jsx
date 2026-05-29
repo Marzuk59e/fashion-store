@@ -721,7 +721,7 @@ function ProductsPage({ products, onSave, onDelete, busy, msg, setMsg }) {
 }
 
 /* ─── Orders Page ────────────────────────────────────────────── */
-function OrdersPage({ orders, onStatusChange, busy }) {
+function OrdersPage({ orders, onStatusChange, onReload, busy }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -734,7 +734,13 @@ function OrdersPage({ orders, onStatusChange, busy }) {
 
   if (orders.length === 0) return (
     <div>
-      <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Orders</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Orders</h2>
+        <button type="button" onClick={onReload} disabled={busy}
+          style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>
+          {busy ? "Reloading…" : "↺ Reload"}
+        </button>
+      </div>
       <p style={{ fontSize: 14, color: C.muted, margin: "0 0 32px" }}>Manage customer orders</p>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, gap: 12, color: C.muted }}>
         <span style={{ fontSize: 32, opacity: 0.3 }}>📦</span>
@@ -746,8 +752,15 @@ function OrdersPage({ orders, onStatusChange, busy }) {
 
   return (
     <div>
-      <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: "0 0 5px" }}>Orders</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Orders</h2>
+        <button type="button" onClick={onReload} disabled={busy}
+          style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>
+          {busy ? "Reloading…" : "↺ Reload"}
+        </button>
+      </div>
       <p style={{ fontSize: 16, fontWeight: 600, color: C.muted, margin: "0 0 22px" }}>{orders.length} total orders</p>
+
 
       <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
         <input
@@ -1035,6 +1048,19 @@ export default function AdminApp() {
     await saveProducts(updated, "delete");
   }, [products, saveProducts]);
 
+  const handleOrderReload = useCallback(async () => {
+    if (!adminOk) return;
+    setBusy(true);
+    try {
+      const { getDocs } = await import("firebase/firestore");
+      const snap = await getDocs(
+        query(collection(adminDb, "orders"), orderBy("createdAt", "desc"))
+      );
+      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { setMsg(e?.message || "Could not reload orders."); }
+    finally { setBusy(false); }
+  }, [adminOk]);
+
   const handleOrderStatusChange = useCallback(async (orderId, newStatus) => {
     setBusy(true);
     try {
@@ -1106,7 +1132,7 @@ export default function AdminApp() {
         <main className="adm-main-pad" style={{ flex: 1, overflowY: "auto", padding: "44px 56px" }}>
           {tab === "dashboard" && <DashboardPage products={products} customers={customers} customersLoaded={customersLoaded} orders={orders} />}
           {tab === "products" && <ProductsPage products={products} onSave={handleProductSave} onDelete={handleProductDelete} busy={busy} msg={msg} setMsg={setMsg} />}
-          {tab === "orders" && <OrdersPage orders={orders} onStatusChange={handleOrderStatusChange} busy={busy} />}
+          {tab === "orders" && <OrdersPage orders={orders} onStatusChange={handleOrderStatusChange} onReload={handleOrderReload} busy={busy} />}
           {tab === "customers" && <CustomersPage customers={customers} customersLoaded={customersLoaded} onLoad={loadCustomers} busy={busy} msg={msg} setMsg={setMsg} />}
         </main>
       </div>
