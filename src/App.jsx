@@ -9,7 +9,7 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink,
 } from "firebase/auth";
-import { collection, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, onSnapshot, orderBy, query, setDoc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { auth, googleProvider, db, isAdminAccountUid } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 import { CATEGORY_FALLBACK_IMAGES, normalizeProductList } from "./data/productImages.js";
@@ -3237,6 +3237,27 @@ export default function App() {
     const updatedOrders = [newOrder, ...(user.orders || [])];
     setCart([]);
     persist([], wishlist, user, updatedOrders);
+
+    try {
+      await setDoc(doc(db, "orders", newOrder.id), {
+        ...newOrder,
+        customerName: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "—",
+        customerEmail: user.email || "—",
+        customerUid: user.firebaseUid || null,
+        status: "pending",
+        createdAt: serverTimestamp(),
+        items: (newOrder.items || []).map(i => ({
+          productId: i.product?.id,
+          productName: i.product?.name,
+          productPrice: i.product?.price,
+          size: i.size,
+          qty: i.qty,
+        })),
+      });
+    } catch (e) {
+      console.error("Order sync failed:", e);
+    }
+
     closeCheckout();
     try { localStorage.removeItem(CHECKOUT_CACHE_KEY); } catch { void 0; }
     setCheckoutDraft({
