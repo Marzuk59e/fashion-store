@@ -2393,7 +2393,7 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [profileTab, setProfileTab] = useState("orders");
   const [notifications, setNotifications] = useState([]);
-  const [googleAuthBusy, setGoogleAuthBusy] = useState(false);
+  const [stockRequestPopup, setStockRequestPopup] = useState(null);
   const checkoutPushCountRef = useRef(0);
   const checkoutProfileSyncRef = useRef(null);
   const productLayerCountRef = useRef(0);
@@ -3255,7 +3255,7 @@ export default function App() {
           qty: i.qty,
         })),
       });
-    } catch (e) { 
+    } catch (e) {
       console.error("Order sync failed:", e);
     }
 
@@ -3401,7 +3401,33 @@ export default function App() {
     productLayerCountRef.current += 1;
     history.pushState({ kind: "app", page: "product", productId: product.id }, "", "");
   };
+  const onRequestStock = (productOrName, product = null) => {
+    const prod = product || (typeof productOrName === "object" ? productOrName : null);
+    if (prod && Array.isArray(prod.sizes) && prod.sizes.length > 1) {
+      setStockRequestPopup({ product: prod });
+      return;
+    }
+    const name = prod?.name || (typeof productOrName === "string" ? productOrName : "Unknown");
+    submitStockRequest(name, null, prod?.id ?? null);
+  };
 
+  const submitStockRequest = async (productName, size, productId) => {
+    setStockRequestPopup(null);
+    try {
+      await addDoc(collection(db, "stockRequests"), {
+        productName,
+        productId: productId ?? null,
+        size: size ?? null,
+        requestedAt: serverTimestamp(),
+        customerName: user?.name || "Guest",
+        customerEmail: user?.email || "guest",
+        customerUid: user?.firebaseUid || null,
+      });
+      addToast(`Stock request submitted for "${productName}" ✓`, "success");
+    } catch {
+      addToast(`Stock request noted for "${productName}".`, "info");
+    }
+  };
   return (
     <div style={{ minHeight: "100vh" }}>
       {/* Navbar */}
@@ -3466,7 +3492,7 @@ export default function App() {
         </>
       )}
 
-      {page === "home" && <HomePage navigate={navigate} products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
+      {page === "home" && <HomePage navigate={navigate} products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={onRequestStock} />}
       {page === "shop" && (
         <ShopPage
           products={products}
@@ -3482,10 +3508,10 @@ export default function App() {
           onCloseSearch={closeShopSearch}
           searchQuery={shopSearchQuery}
           setSearchQuery={setShopSearchQuery}
-          onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")}
+          onRequestStock={onRequestStock}
         />
       )}
-      {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={(name) => addToast(name ? `Stock request noted for “${name}”.` : "Stock request noted.", "info")} />}
+      {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={onRequestStock} />}
       {page === "profile" && (
         <ProfilePage
           user={user}
@@ -3558,7 +3584,7 @@ export default function App() {
                               <button
                                 type="button"
                                 className="cart-oos-cta"
-                                onClick={() => addToast(`Stock request noted for “${item.product.name}”.`, "info")}
+                                onClick={() => onRequestStock(item.product.name, item.product)}
                               >
                                 Request for stock
                               </button>
@@ -4123,7 +4149,44 @@ export default function App() {
           </div>
         </>
       )}
-
+      {/* Stock Request Size Popup */}
+      {stockRequestPopup && (
+        <>
+          <div className="overlay-backdrop" onClick={() => setStockRequestPopup(null)} />
+          <div className="overlay-center">
+            <div className="modal" style={{ padding: "32px 28px" }}>
+              <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.4rem", marginBottom: 8 }}>
+                {stockRequestPopup.product.name}
+              </h3>
+              <p style={{ fontSize: "0.78rem", color: "var(--warm-gray)", marginBottom: 20 }}>
+                Please choose a size first before submitting your stock request.
+              </p>
+              <div className="size-grid" style={{ marginBottom: 20 }}>
+                {stockRequestPopup.product.sizes.map(s => (
+                  <button
+                    key={s}
+                    className="size-btn"
+                    onClick={() => submitStockRequest(
+                      stockRequestPopup.product.name,
+                      s,
+                      stockRequestPopup.product.id
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="filter-btn"
+                style={{ width: "100%", textAlign: "center" }}
+                onClick={() => setStockRequestPopup(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       {/* Toasts */}
       <div className="toast-container">
         {toasts.map(t => (
@@ -4269,7 +4332,7 @@ function ProductCard({ product, delay, navigate, addToCart, toggleWishlist, wish
             onClick={(e) => {
               e.stopPropagation();
               if (inStock) addToCart(product, product.sizes[0]);
-              else onRequestStock?.(product.name);
+              else onRequestStock?.(product, product);
             }}
           >
             {inStock ? "Add to Bag" : "Request for stock"}
@@ -4441,7 +4504,7 @@ function ProductDetailPage({ product, navigate, addToCart, toggleWishlist, wishl
               className="add-cart-btn"
               onClick={() => {
                 if (inStock) addToCart(product, selectedSize);
-                else onRequestStock?.(product.name);
+                else onRequestStock?.(product, product);
               }}
             >
               {inStock ? "Add to Bag" : "Request for stock"}
