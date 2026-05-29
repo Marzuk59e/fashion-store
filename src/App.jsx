@@ -3255,7 +3255,7 @@ export default function App() {
           qty: i.qty,
         })),
       });
-    } catch (e) {
+    } catch (e) { 
       console.error("Order sync failed:", e);
     }
 
