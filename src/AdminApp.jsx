@@ -1052,9 +1052,8 @@ export default function AdminApp() {
     if (!adminOk) return;
     setBusy(true);
     try {
-      const { getDocs } = await import("firebase/firestore");
       const snap = await getDocs(
-        query(collection(adminDb, "orders"), orderBy("createdAt", "desc"))
+        query(collection(adminDb, "orders"), orderBy("createdAt", "desc"), limit(200))
       );
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { setMsg(e?.message || "Could not reload orders."); }
