@@ -3181,7 +3181,7 @@ export default function App() {
     pushCheckoutHistory(3);
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!user) {
       closeCheckout();
       setAuthMode("login");
