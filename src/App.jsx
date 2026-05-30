@@ -3241,9 +3241,9 @@ export default function App() {
     try {
       await setDoc(doc(db, "orders", newOrder.id), {
         ...newOrder,
-        customerName: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "—",
-        customerEmail: user.email || "—",
-        customerUid: user.firebaseUid || null,
+        userName: user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "—",
+        userEmail: user.email || "—",
+        userUid: user.firebaseUid || null,
         userId: user.firebaseUid || null,
         status: "pending",
         createdAt: serverTimestamp(),
@@ -3419,9 +3419,9 @@ export default function App() {
         productId: productId ?? null,
         size: size ?? null,
         requestedAt: serverTimestamp(),
-        customerName: user?.name || "Guest",
-        customerEmail: user?.email || "guest",
-        customerUid: user?.firebaseUid || null,
+        userName: user?.name || "Guest",
+        userEmail: user?.email || "guest",
+        userUid: user?.firebaseUid || null,
       });
       addToast(`Stock request submitted for "${productName}" ✓`, "success");
     } catch {
@@ -4117,7 +4117,7 @@ export default function App() {
                     {payConfirmOrder.payment.cardMasked ? ` (${payConfirmOrder.payment.cardMasked})` : ""}
                   </div>
                   <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
-                    Customer: {payConfirmOrder.delivery.fullName}
+                    User: {payConfirmOrder.delivery.fullName}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
