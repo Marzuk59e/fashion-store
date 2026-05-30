@@ -2358,6 +2358,7 @@ export default function App() {
   const [payConfirmOrder, setPayConfirmOrder] = useState(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
+  const [googleAuthBusy, setGoogleAuthBusy] = useState(false);
   const [cookieConsent, setCookieConsent] = useState(null);
   const [cookieOpen, setCookieOpen] = useState(false);
   const [checkoutDraft, setCheckoutDraft] = useState({
