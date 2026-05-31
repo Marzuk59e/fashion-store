@@ -3293,6 +3293,21 @@ export default function App() {
     setPayConfirmOrder(order);
   };
 
+  const handleCancelOrder = (order) => {
+    if (!user || !order) return;
+    if (!window.confirm(`Cancel order ${order.id}? This cannot be undone.`)) return;
+    const updatedOrders = (user.orders || []).map((o) => {
+      if (o.id !== order.id) return o;
+      return {
+        ...o,
+        status: "cancelled",
+        payment: { ...o.payment, status: "cancelled" },
+      };
+    });
+    persist(cart, wishlist, user, updatedOrders);
+    addToast(`Order ${order.id} has been cancelled.`, "info");
+  };
+
   const handleConfirmMarkPaid = () => {
     if (!user || !payConfirmOrder) return;
     const orderId = payConfirmOrder.id;
@@ -3524,6 +3539,7 @@ export default function App() {
           setTab={setProfileTab}
           navigate={navigate}
           onMarkOrderPaid={handleOpenMarkPaid}
+          onCancelOrder={handleCancelOrder}
           onUpdateProfile={updateUserProfile}
           addToast={addToast}
           onFirebaseEmailReload={async () => {
@@ -4548,7 +4564,7 @@ function fulfillmentForDisplay(order) {
   };
 }
 
-function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onUpdateProfile, addToast, onFirebaseEmailReload }) {
+function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onCancelOrder, onUpdateProfile, addToast, onFirebaseEmailReload }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [editingSettings, setEditingSettings] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
@@ -4680,6 +4696,15 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                         {o.payment.status === "due" && (
                           <button className="btn-primary" style={{ padding: "8px 14px", fontSize: "0.62rem" }} onClick={() => onMarkOrderPaid(o)}>
                             Mark as Paid
+                          </button>
+                        )}
+                        {o.status !== "cancelled" && (
+                          <button
+                            className="filter-btn"
+                            style={{ padding: "8px 14px", fontSize: "0.62rem", color: "var(--error, #c0392b)", borderColor: "var(--error, #c0392b)" }}
+                            onClick={() => onCancelOrder(o)}
+                          >
+                            Cancel Order
                           </button>
                         )}
                       </div>
