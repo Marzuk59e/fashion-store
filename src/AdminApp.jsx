@@ -727,7 +727,7 @@ function OrdersPage({ orders, onStatusChange, onReload, busy }) {
 
   const filtered = useMemo(() => orders.filter(o => {
     const q = search.toLowerCase();
-    const matchQ = !q || o.customerEmail?.toLowerCase().includes(q) || o.customerName?.toLowerCase().includes(q) || o.id?.toLowerCase().includes(q);
+    const matchQ = !q || (o.userEmail || o.customerEmail)?.toLowerCase().includes(q) || (o.userName || o.customerName)?.toLowerCase().includes(q) || o.id?.toLowerCase().includes(q);
     const matchS = statusFilter === "all" || o.status === statusFilter;
     return matchQ && matchS;
   }), [orders, search, statusFilter]);
@@ -796,8 +796,8 @@ function OrdersPage({ orders, onStatusChange, onReload, busy }) {
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                   <td style={{ padding: "13px 14px", color: C.muted, fontFamily: font.mono, fontSize: 11 }}>{o.id?.slice(0, 8)}…</td>
                   <td style={{ padding: "13px 14px" }}>
-                    <p style={{ margin: "0 0 2px", color: C.text, fontWeight: 500 }}>{o.customerName || "—"}</p>
-                    <p style={{ margin: 0, color: C.muted, fontSize: 11 }}>{o.customerEmail || ""}</p>
+                    <p style={{ margin: "0 0 2px", color: C.text, fontWeight: 500 }}>{o.userName || o.customerName || "—"}</p>
+                    <p style={{ margin: 0, color: C.muted, fontSize: 11 }}>{o.userEmail || o.customerEmail || ""}</p>
                   </td>
                   <td style={{ padding: "13px 14px", color: C.muted, fontSize: 12 }}>{date}</td>
                   <td style={{ padding: "13px 14px", color: C.text, fontFamily: font.mono }}>{Array.isArray(o.items) ? o.items.length : "—"}</td>
