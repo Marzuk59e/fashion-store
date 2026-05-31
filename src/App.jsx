@@ -3542,6 +3542,7 @@ export default function App() {
           navigate={navigate}
           onMarkOrderPaid={handleOpenMarkPaid}
           onCancelOrder={handleCancelOrder}
+          onPayNow={(order) => { setPayNowOrder(order); setPayNowMethod("card"); }}
           onUpdateProfile={updateUserProfile}
           addToast={addToast}
           onFirebaseEmailReload={async () => {
@@ -4164,12 +4165,7 @@ export default function App() {
               Order: {payNowOrder.id} · Total: ${payNowOrder.payment?.amount || payNowOrder.total}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-              {[
-                { id: "card", title: "Card", sub: "Visa, Mastercard, Amex" },
-                { id: "paypal", title: "PayPal", sub: "Pay with your PayPal balance" },
-                { id: "google_pay", title: "Google Pay", sub: "Fast checkout on supported devices" },
-                { id: "apple_pay", title: "Apple Pay", sub: "Touch ID, Face ID, or device passcode" },
-              ].map(opt => (
+              {PAYMENT_METHOD_OPTIONS.map(opt => (
                 <div key={opt.id} className={`pay-method-card${payNowMethod === opt.id ? " selected" : ""}`}
                   onClick={() => setPayNowMethod(opt.id)}
                   style={{ cursor: "pointer" }}>
@@ -4625,7 +4621,7 @@ function fulfillmentForDisplay(order) {
   };
 }
 
-function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onCancelOrder, onUpdateProfile, addToast, onFirebaseEmailReload }) {
+function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navigate, onMarkOrderPaid, onCancelOrder, onPayNow, onUpdateProfile, addToast, onFirebaseEmailReload }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [editingSettings, setEditingSettings] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
@@ -4758,7 +4754,7 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                           <button
                             className="btn-primary"
                             style={{ padding: "8px 14px", fontSize: "0.62rem" }}
-                            onClick={() => { setPayNowOrder(o); setPayNowMethod("card"); }}
+                            onClick={() => onPayNow(o)}
                           >
                             Pay Now
                           </button>
