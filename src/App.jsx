@@ -2359,6 +2359,8 @@ export default function App() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("login");
   const [googleAuthBusy, setGoogleAuthBusy] = useState(false);
+  const [payNowOrder, setPayNowOrder] = useState(null);
+  const [payNowMethod, setPayNowMethod] = useState("card");
   const [cookieConsent, setCookieConsent] = useState(null);
   const [cookieOpen, setCookieOpen] = useState(false);
   const [checkoutDraft, setCheckoutDraft] = useState({
@@ -4149,6 +4151,65 @@ export default function App() {
         </>
       )}
 
+      {/* Pay Now Modal */}
+      {payNowOrder && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setPayNowOrder(null)}>
+          <div style={{ background: "var(--cream)", borderRadius: 16, padding: "32px 28px", maxWidth: 420, width: "90%", position: "relative" }}
+            onClick={e => e.stopPropagation()}>
+            <button onClick={() => setPayNowOrder(null)}
+              style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--warm-gray)" }}>✕</button>
+            <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem", marginBottom: 8 }}>Complete Payment</h3>
+            <p style={{ fontSize: "0.8rem", color: "var(--warm-gray)", marginBottom: 20 }}>
+              Order: {payNowOrder.id} · Total: ${payNowOrder.payment?.amount || payNowOrder.total}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+              {[
+                { id: "card", title: "Card", sub: "Visa, Mastercard, Amex" },
+                { id: "paypal", title: "PayPal", sub: "Pay with your PayPal balance" },
+                { id: "google_pay", title: "Google Pay", sub: "Fast checkout on supported devices" },
+                { id: "apple_pay", title: "Apple Pay", sub: "Touch ID, Face ID, or device passcode" },
+              ].map(opt => (
+                <div key={opt.id} className={`pay-method-card${payNowMethod === opt.id ? " selected" : ""}`}
+                  onClick={() => setPayNowMethod(opt.id)}
+                  style={{ cursor: "pointer" }}>
+                  <div className="pay-method-card-text" style={{ padding: "12px 16px" }}>
+                    <div className="pay-method-card-title">{opt.title}</div>
+                    <div className="pay-method-card-sub">{opt.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button className="filter-btn" onClick={() => setPayNowOrder(null)}>Cancel</button>
+              <button className="btn-primary" style={{ padding: "10px 20px", fontSize: "0.72rem" }}
+                onClick={() => {
+                  const now = new Date();
+                  const txn = `TXN-${Date.now()}-${Math.floor(Math.random() * 9000 + 1000)}`;
+                  const updatedOrders = (user.orders || []).map(o =>
+                    o.id !== payNowOrder.id ? o : {
+                      ...o,
+                      status: "processing",
+                      payment: {
+                        ...o.payment,
+                        status: "paid",
+                        method: payNowMethod,
+                        paidAt: now.toISOString(),
+                        transactionId: txn,
+                      },
+                    }
+                  );
+                  persist(cart, wishlist, user, updatedOrders);
+                  addToast("Payment completed successfully!", "success");
+                  setPayNowOrder(null);
+                }}>
+                Confirm Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Auth Modal */}
       {authOpen && (
         <>
@@ -4693,18 +4754,13 @@ function ProfilePage({ user, cart, wishlist, products, logout, tab, setTab, navi
                         <button className="filter-btn" onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}>
                           {expandedOrderId === o.id ? "Hide Items" : "View Items"}
                         </button>
-                        {o.payment.status === "due" && (
-                          <button className="btn-primary" style={{ padding: "8px 14px", fontSize: "0.62rem" }} onClick={() => onMarkOrderPaid(o)}>
-                            Mark as Paid
-                          </button>
-                        )}
-                        {o.status !== "cancelled" && (
+                        {o.payment?.status === "due" && (
                           <button
-                            className="filter-btn"
-                            style={{ padding: "8px 14px", fontSize: "0.62rem", color: "var(--error, #c0392b)", borderColor: "var(--error, #c0392b)" }}
-                            onClick={() => onCancelOrder(o)}
+                            className="btn-primary"
+                            style={{ padding: "8px 14px", fontSize: "0.62rem" }}
+                            onClick={() => { setPayNowOrder(o); setPayNowMethod("card"); }}
                           >
-                            Cancel Order
+                            Pay Now
                           </button>
                         )}
                       </div>
