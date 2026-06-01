@@ -112,6 +112,9 @@ const css = `
     box-sizing: border-box;
     transition: box-shadow 0.3s;
   }
+  @media (max-width: 768px) {
+    .navbar { backdrop-filter: none; background: var(--cream); }
+  }
   .nav-menu-btn {
     display: none !important;
     width: 0; height: 0; padding: 0; margin: 0;
@@ -170,11 +173,11 @@ const css = `
   .hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, var(--hero-bg) 0%, #2C2416 40%, var(--hero-bg) 100%); }
   .hero-pattern { position: absolute; inset: 0; opacity: 0.04; background-image: repeating-linear-gradient(45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 50%); background-size: 20px 20px; }
   .hero-content { position: relative; z-index: 2; text-align: center; padding: 20px; max-width: 800px; }
-  .hero-eyebrow { font-family: var(--font-sans); font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; animation: fadeIn 0.8s ease both; }
-  .hero-title { font-family: var(--font-serif); font-size: clamp(3rem, 8vw, 6.5rem); font-weight: 300; line-height: 1.05; color: var(--cream); margin-bottom: 28px; animation: fadeIn 0.8s 0.2s ease both; }
+  .hero-eyebrow { font-family: var(--font-sans); font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; animation: fadeIn 0.5s ease forwards; }
+  .hero-title { font-family: var(--font-serif); font-size: clamp(3rem, 8vw, 6.5rem); font-weight: 300; line-height: 1.05; color: var(--cream); margin-bottom: 28px; animation: fadeIn 0.6s ease forwards; }
   .hero-title em { font-style: italic; color: var(--gold-light); }
-  .hero-sub { font-size: 0.8rem; letter-spacing: 0.12em; color: rgba(250,247,242,0.55); margin-bottom: 48px; animation: fadeIn 0.8s 0.4s ease both; text-transform: uppercase; }
-  .hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeIn 0.8s 0.6s ease both; flex-wrap: wrap; }
+  .hero-sub { font-size: 0.8rem; letter-spacing: 0.12em; color: rgba(250,247,242,0.55); margin-bottom: 48px; animation: fadeIn 0.5s 0.15s ease both; text-transform: uppercase; }
+  .hero-actions { display: flex; gap: 16px; justify-content: center; animation: fadeIn 0.5s 0.25s ease both; flex-wrap: wrap; }
 
   .btn-primary { background: var(--gold); color: white; border: none; cursor: pointer; padding: 14px 36px; font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; transition: all 0.3s; }
   .btn-primary:hover { background: #B8915A; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,169,110,0.35); }
