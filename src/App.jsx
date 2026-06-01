@@ -16,12 +16,7 @@ import { CATEGORY_FALLBACK_IMAGES, normalizeProductList } from "./data/productIm
 import ProductPhoto from "./components/ProductPhoto.jsx";
 import { sendOtp as sendRegistrationOtp, verifyOtp as verifyRegistrationOtp } from "./lib/authOtp.js";
 
-// ─── Google Fonts ─────────────────────────────────────────────────────────────
-const fontLink = document.createElement("link");
-fontLink.rel = "stylesheet";
-fontLink.href =
-  "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap";
-document.head.appendChild(fontLink);
+// ─── Google Fonts loaded via <link> in index.html (preconnect + stylesheet) ───
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
 const css = `
@@ -3460,13 +3455,13 @@ export default function App() {
           <button type="button" className="icon-btn" onClick={goToCollectionSearch} aria-label="Search collection">
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
           </button>
-          <button className="icon-btn" onClick={() => user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true)}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-            {wishlist.length > 0 && <span className="badge">{wishlist.length}</span>}
+          <button type="button" className="icon-btn" aria-label="Wishlist" onClick={() => user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true)}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+            {wishlist.length > 0 && <span className="badge" aria-label={`${wishlist.length} items in wishlist`}>{wishlist.length}</span>}
           </button>
-          <button className="icon-btn" onClick={() => setCartOpen(true)}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
-            {cartCount > 0 && <span className="badge">{cartCount}</span>}
+          <button type="button" className="icon-btn" aria-label="Shopping bag" onClick={() => setCartOpen(true)}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
+            {cartCount > 0 && <span className="badge" aria-label={`${cartCount} items in bag`}>{cartCount}</span>}
           </button>
           {user && (
             <button className="icon-btn icon-btn--notification" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
@@ -3478,7 +3473,7 @@ export default function App() {
             </button>
           )}
           {user ? (
-            <button className="icon-btn" onClick={() => navigate("profile")}>
+            <button type="button" className="icon-btn" aria-label="View profile" onClick={() => navigate("profile")}>
               <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
                 {user.name[0].toUpperCase()}
               </div>
@@ -3564,7 +3559,7 @@ export default function App() {
           <div className="cart-drawer">
             <div className="cart-header">
               <div className="cart-title">Shopping Bag <span style={{ fontFamily: "var(--font-sans)", fontSize: "0.75rem", color: "var(--warm-gray)", fontWeight: 400 }}>({cartCount})</span></div>
-              <button className="close-btn" onClick={() => setCartOpen(false)}>✕</button>
+              <button className="close-btn" aria-label="Close cart" onClick={() => setCartOpen(false)}>✕</button>
             </div>
             {cart.length === 0 ? (
               <div className="empty-cart">
@@ -4188,7 +4183,7 @@ export default function App() {
                       status: "processing",
                       payment: {
                         ...o.payment,
-                        status: "completed",
+                        status: "paid",
                         method: payNowMethod,
                         paidAt: now.toISOString(),
                         transactionId: txn,
