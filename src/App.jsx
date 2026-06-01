@@ -4188,7 +4188,7 @@ export default function App() {
                       status: "processing",
                       payment: {
                         ...o.payment,
-                        status: "paid",
+                        status: "completed",
                         method: payNowMethod,
                         paidAt: now.toISOString(),
                         transactionId: txn,
