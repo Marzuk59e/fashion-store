@@ -273,8 +273,8 @@ const css = `
     animation: cookieModalIn 0.25s ease both;
   }
   .overlay-center .checkout-modal {
-    width: min(1100px, 94vw);
-    max-width: 1100px;
+    width: min(980px, 92vw);
+    max-width: 980px;
     max-height: min(92vh, calc(100vh - 24px));
     top: auto;
     left: auto;
@@ -284,8 +284,8 @@ const css = `
     top: 50%;
     left: 50%;
     transform: translate(-50%,-50%);
-    width: min(1100px, 94vw);
-    max-width: 1100px;
+    width: min(980px, 92vw);
+    max-width: 980px;
     max-height: 92vh;
     height: auto;
     border-radius: 4px;
@@ -3972,7 +3972,7 @@ export default function App() {
                       </>
                     )}
 
-                    {checkoutDraft.paymentMethod === "card" && (
+                    {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && (
                       <div className="form-group">
                         <label className="form-label">Card network</label>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
