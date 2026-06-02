@@ -3956,17 +3956,21 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Promo Code (if any)</label>
-                      <input className="form-input" placeholder="Use SAVE10" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
-                    </div>
+                    {!checkoutDraft.markAsDue && (
+                      <>
+                        <div className="form-group">
+                          <label className="form-label">Promo Code (if any)</label>
+                          <input className="form-input" placeholder="Use SAVE10" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
+                        </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Paying with</label>
-                      <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
-                        {PAYMENT_METHOD_OPTIONS.find((o) => o.id === checkoutDraft.paymentMethod)?.title || "Payment"}
-                      </div>
-                    </div>
+                        <div className="form-group">
+                          <label className="form-label">Paying with</label>
+                          <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
+                            {PAYMENT_METHOD_OPTIONS.find((o) => o.id === checkoutDraft.paymentMethod)?.title || "Payment"}
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     {checkoutDraft.paymentMethod === "card" && (
                       <div className="form-group">
