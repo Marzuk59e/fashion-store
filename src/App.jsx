@@ -3926,6 +3926,17 @@ export default function App() {
                     <p className="pay-detail-hint" style={{ marginTop: 4 }}>
                       Card, PayPal, Google Pay, and Apple Pay are processed through a secure payment flow.
                     </p>
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ fontSize: "0.75rem", cursor: "pointer", color: "var(--warm-gray)" }}>
+                        <input
+                          type="checkbox"
+                          checked={checkoutDraft.markAsDue}
+                          onChange={e => setCheckoutDraft({ ...checkoutDraft, markAsDue: e.target.checked })}
+                          style={{ marginRight: 8 }}
+                        />
+                        Save order as payment due
+                      </label>
+                    </div>
                     <button type="button" className="form-submit" onClick={handleConfirmAddress}>Continue to payment details</button>
                   </>
                 )}
@@ -3988,18 +3999,6 @@ export default function App() {
                           : "On a live site, Apple Pay would authorize on your device. Continue when you are ready to finalize on the next step."}
                       </div>
                     )}
-
-                    <div style={{ marginBottom: 14 }}>
-                      <label style={{ fontSize: "0.75rem", cursor: "pointer", color: "var(--warm-gray)" }}>
-                        <input
-                          type="checkbox"
-                          checked={checkoutDraft.markAsDue}
-                          onChange={e => setCheckoutDraft({ ...checkoutDraft, markAsDue: e.target.checked })}
-                          style={{ marginRight: 8 }}
-                        />
-                        Save order as payment due
-                      </label>
-                    </div>
 
                     {!checkoutDraft.markAsDue && checkoutDraft.paymentMethod === "card" && (
                       <>
