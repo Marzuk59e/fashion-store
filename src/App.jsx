@@ -37,6 +37,7 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import AboutPage from "./pages/AboutPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
 import TermsPage from "./pages/TermsPage.jsx";
+import PaymentModal from "./components/PaymentModal.jsx";
 
 injectGlobalStyles();
 
@@ -1852,58 +1853,46 @@ export default function App() {
       )}
 
       {/* Pay Now Modal */}
-      {payNowOrder && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}
-          onClick={() => setPayNowOrder(null)}>
-          <div style={{ background: "var(--cream)", borderRadius: 16, padding: "32px 28px", maxWidth: 420, width: "90%", position: "relative" }}
-            onClick={e => e.stopPropagation()}>
-            <button onClick={() => setPayNowOrder(null)}
-              style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--warm-gray)" }}>✕</button>
-            <h3 style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem", marginBottom: 8 }}>Complete Payment</h3>
-            <p style={{ fontSize: "0.8rem", color: "var(--warm-gray)", marginBottom: 20 }}>
-              Order: {payNowOrder.id} · Total: ${payNowOrder.payment?.amount || payNowOrder.total}
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
-              {PAYMENT_METHOD_OPTIONS.map(opt => (
-                <div key={opt.id} className={`pay-method-card${payNowMethod === opt.id ? " selected" : ""}`}
-                  onClick={() => setPayNowMethod(opt.id)}
-                  style={{ cursor: "pointer" }}>
-                  <div className="pay-method-card-text" style={{ padding: "12px 16px" }}>
-                    <div className="pay-method-card-title">{opt.title}</div>
-                    <div className="pay-method-card-sub">{opt.sub}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button className="filter-btn" onClick={() => setPayNowOrder(null)}>Cancel</button>
-              <button className="btn-primary" style={{ padding: "10px 20px", fontSize: "0.72rem" }}
-                onClick={() => {
-                  const now = new Date();
-                  const txn = `TXN-${Date.now()}-${Math.floor(Math.random() * 9000 + 1000)}`;
-                  const updatedOrders = (user.orders || []).map(o =>
-                    o.id !== payNowOrder.id ? o : {
-                      ...o,
-                      status: "processing",
-                      payment: {
-                        ...o.payment,
-                        status: "paid",
-                        method: payNowMethod,
-                        paidAt: now.toISOString(),
-                        transactionId: txn,
-                      },
-                    }
-                  );
-                  persist(cart, wishlist, user, updatedOrders);
-                  addToast("Payment completed successfully!", "success");
-                  setPayNowOrder(null);
-                }}>
-                Confirm Payment
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+{payNowOrder && (
+  <PaymentModal
+    order={payNowOrder}
+    onClose={() => setPayNowOrder(null)}
+    onPaymentComplete={async (result) => {
+      const updatedOrders = (user.orders || []).map(o =>
+        o.id !== payNowOrder.id ? o : {
+          ...o,
+          status: "processing",
+          payment: {
+            ...o.payment,
+            status: "completed",
+            method: result.method,
+            transactionId: result.transactionId,
+            paidAt: result.paidAt,
+            cardMasked: result.cardMasked || o.payment.cardMasked || null,
+            paypalEmail: result.paypalEmail || o.payment.paypalEmail || null,
+          },
+        }
+      );
+      persist(cart, wishlist, user, updatedOrders);
+      if (user.firebaseUid) {
+        try {
+          await updateDoc(doc(db, "orders", payNowOrder.id), {
+            "payment.status": "completed",
+            "payment.method": result.method,
+            "payment.transactionId": result.transactionId,
+            "payment.paidAt": result.paidAt,
+            "payment.cardMasked": result.cardMasked || null,
+            "payment.paypalEmail": result.paypalEmail || null,
+          });
+        } catch (e) {
+          console.error("Firestore order update failed:", e);
+        }
+      }
+      setPayNowOrder(null);
+      addToast("Payment completed successfully!", "success");
+    }}
+  />
+)}
 
       {/* Auth Modal */}
       {authOpen && (
