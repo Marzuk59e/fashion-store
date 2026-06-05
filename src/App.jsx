@@ -1888,7 +1888,7 @@ export default function App() {
           console.error("Firestore order update failed:", e);
         }
       }
-      setPayNowOrder(null);
+      
       addToast("Payment completed successfully!", "success");
     }}
   />
