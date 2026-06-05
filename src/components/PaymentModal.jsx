@@ -114,6 +114,36 @@ const S = {
   },
 };
 
+// ─── Cancel / Back button ─────────────────────────────────────────────────────
+function CancelBackBtn({ onClick, label }) {
+  const [active, setActive] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setActive(true)}
+      onMouseLeave={() => setActive(false)}
+      onMouseDown={() => setActive(true)}
+      onMouseUp={() => setActive(false)}
+      onTouchStart={() => setActive(true)}
+      onTouchEnd={() => setActive(false)}
+      style={{
+        background: active ? "var(--charcoal)" : "#fff",
+        color: active ? "#fff" : "var(--charcoal)",
+        border: "1px solid var(--border)",
+        cursor: "pointer",
+        fontSize: "0.68rem",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        padding: "10px 20px",
+        fontFamily: "inherit",
+        transition: "background 0.15s, color 0.15s",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PaymentModal({ order, onClose, onPaymentComplete }) {
   const [step,       setStep]       = useState(1);
@@ -207,46 +237,6 @@ export default function PaymentModal({ order, onClose, onPaymentComplete }) {
               style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.4rem", color: "var(--warm-gray)", lineHeight: 1, padding: "2px 4px" }}
             >×</button>
           )}
-        </div>
-
-        {/* ── Step Indicator ────────────────────────────────────────────── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "1.1rem 1.5rem 0.6rem", gap: 0 }}>
-          {["Method", "Details", "Done"].map((label, i) => {
-            const s = i + 1;
-            const active = step >= s;
-            const done   = step > s;
-            return (
-              <div key={s} style={{ display: "flex", alignItems: "center" }}>
-                {i > 0 && (
-                  <div style={{
-                    width: 44, height: 1,
-                    background: active ? "var(--gold)" : "var(--border)",
-                    margin: "0 6px", transition: "background 0.35s",
-                  }} />
-                )}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%",
-                    background: active ? "var(--gold)" : "var(--surface)",
-                    color: active ? "#fff" : "var(--warm-gray)",
-                    border: step === s ? "2px solid var(--charcoal)" : "2px solid transparent",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "0.72rem", fontWeight: 700,
-                    transition: "all 0.35s",
-                  }}>
-                    {done ? "✓" : s}
-                  </div>
-                  <span style={{
-                    fontSize: "0.58rem", letterSpacing: "0.1em", textTransform: "uppercase",
-                    color: active ? "var(--gold)" : "var(--warm-gray)",
-                    transition: "color 0.35s",
-                  }}>
-                    {label}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
         </div>
 
         {/* ── Body ──────────────────────────────────────────────────────── */}
@@ -488,18 +478,11 @@ export default function PaymentModal({ order, onClose, onPaymentComplete }) {
         }}>
           {step < 3 ? (
             <>
-              {/* Back / Cancel */}
-              <button
+              {/* Back / Cancel — bordered box, white → black on hover/active */}
+              <CancelBackBtn
                 onClick={step === 1 ? onClose : () => { setError(""); setStep((s) => s - 1); }}
-                style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase",
-                  color: "var(--warm-gray)", padding: "8px 4px",
-                  fontFamily: "inherit",
-                }}
-              >
-                {step === 1 ? "Cancel" : "← Back"}
-              </button>
+                label={step === 1 ? "Cancel" : "← Back"}
+              />
 
               {/* Next / Confirm */}
               <button
