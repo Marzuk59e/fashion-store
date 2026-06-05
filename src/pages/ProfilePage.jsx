@@ -97,7 +97,7 @@ export default function ProfilePage({ user, cart, wishlist, products, logout, ta
                   return (
                     <div key={o.id} style={{ background: "var(--surface)", padding: 16, border: "1px solid var(--border)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
-                        <div style={{ fontFamily: "var(--font-serif)", fontSize: "1rem" }}>{o.id}</div>
+                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", fontWeight: 700, letterSpacing: "0.06em", color: "var(--charcoal)" }}>{o.id}</div>
                         <span
                           style={{
                             fontSize: "0.65rem",

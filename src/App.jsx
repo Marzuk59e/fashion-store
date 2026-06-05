@@ -1601,27 +1601,47 @@ export default function App() {
                     </div>
 
                     <p className="form-label" style={{ marginBottom: 14, marginTop: 8 }}>Choose how you would like to pay</p>
-                    <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
-                      {PAYMENT_METHOD_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          role="radio"
-                          aria-checked={checkoutDraft.paymentMethod === opt.id}
-                          className={`pay-method-card${checkoutDraft.paymentMethod === opt.id ? " selected" : ""}`}
-                          onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
-                        >
-                          <span className="pay-method-check" aria-hidden />
-                          <div className="pay-method-card-icon">
-                            <PayMethodIcon name={opt.icon} />
-                          </div>
-                          <div className="pay-method-card-text">
-                            <div className="pay-method-card-title">{opt.title}</div>
-                            <div className="pay-method-card-sub">{opt.sub}</div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+<div style={{ display: "grid", gap: 8 }} role="radiogroup" aria-label="Payment method">
+  {PAYMENT_METHOD_OPTIONS.map((opt) => {
+    const sel = checkoutDraft.paymentMethod === opt.id;
+    return (
+      <button
+        key={opt.id}
+        type="button"
+        role="radio"
+        aria-checked={sel}
+        onClick={() => setCheckoutDraft({ ...checkoutDraft, paymentMethod: opt.id })}
+        style={{
+          display: "flex", alignItems: "center", gap: 14,
+          padding: "13px 16px", textAlign: "left",
+          border: sel ? "1px solid var(--gold)" : "1px solid var(--border)",
+          background: sel ? "rgba(181,146,76,0.05)" : "#fff",
+          cursor: "pointer", transition: "border 0.15s, background 0.15s",
+          borderRadius: 3, width: "100%",
+        }}
+      >
+        <div style={{
+          width: 38, height: 38, borderRadius: 5, flexShrink: 0,
+          background: sel ? "var(--gold)" : "var(--surface)",
+          color: sel ? "#fff" : "var(--charcoal)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "background 0.15s, color 0.15s",
+        }}>
+          <PayMethodIcon name={opt.icon} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--charcoal)", marginBottom: 2 }}>{opt.title}</div>
+          <div style={{ fontSize: "0.7rem", color: "var(--warm-gray)" }}>{opt.sub}</div>
+        </div>
+        <div style={{
+          width: 16, height: 16, borderRadius: "50%", flexShrink: 0,
+          border: sel ? "5px solid var(--gold)" : "1.5px solid var(--border)",
+          transition: "all 0.15s",
+        }} />
+      </button>
+    );
+  })}
+</div>
                     <p className="pay-detail-hint" style={{ marginTop: 4 }}>
                       Card, PayPal, Google Pay, and Apple Pay are processed through a secure payment flow.
                     </p>
