@@ -14,8 +14,8 @@ export default function Footer({ navigate }) {
   { label: "Men",         filter: "Men" },
   { label: "Kids",        filter: "Kids" },
   { label: "Accessories", filter: "Accessories" },
-  { label: "New Arrivals",filter: "All" },
-  { label: "Sale",        filter: "All" },
+  { label: "New Arrivals", filter: "New Arrivals" },
+{ label: "Sale",         filter: "Sale" },
 ].map(({ label, filter }) => (
   <span key={label} className="footer-link" onClick={() => {
     window.dispatchEvent(new CustomEvent("sanjiiiii:shop-filter", { detail: filter }));

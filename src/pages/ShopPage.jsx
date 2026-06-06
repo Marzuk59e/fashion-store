@@ -15,7 +15,11 @@ export default function ShopPage({ products, navigate, filter, setFilter, sort, 
   }, [searchOpen]);
 
   const { displayed, suggestions } = useMemo(() => {
-    let base = filter === "All" ? products : products.filter(p => p.category === filter);
+    let base;
+if (filter === "All") base = products;
+else if (filter === "New Arrivals") base = products.filter(p => p.badge === "New");
+else if (filter === "Sale") base = products.filter(p => p.badge === "Sale" || p.originalPrice);
+else base = products.filter(p => p.category === filter);
     if (sort === "price-asc") base = [...base].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") base = [...base].sort((a, b) => b.price - a.price);
     if (sort === "new") base = [...base].filter(p => p.badge === "New").concat(base.filter(p => p.badge !== "New"));
@@ -35,13 +39,12 @@ export default function ShopPage({ products, navigate, filter, setFilter, sort, 
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div className="filter-bar">
-            {["All", "Women", "Men", "Kids", "Accessories"].map(c => (
+          {["All", "Women", "Men", "Kids", "Accessories", "New Arrivals", "Sale"].map(c => (
               <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
           <select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
             <option value="featured">Featured</option>
-            <option value="new">New Arrivals</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
           </select>
