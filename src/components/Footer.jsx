@@ -1,5 +1,5 @@
 // ─── Footer ───────────────────────────────────────────────────────────────────
-export default function Footer({ navigate }) {
+export default function Footer({ navigate, navigateShop }) {
   return (
     <footer className="footer">
       <div className="footer-grid">
@@ -9,7 +9,16 @@ export default function Footer({ navigate }) {
         </div>
         <div>
           <div className="footer-col-title">Shop</div>
-          {["Women", "Men", "Kids", "Accessories", "New Arrivals", "Sale"].map(l => <span key={l} className="footer-link" onClick={() => navigate("shop")}>{l}</span>)}
+          {[
+  { label: "Women",       filter: "Women" },
+  { label: "Men",         filter: "Men" },
+  { label: "Kids",        filter: "Kids" },
+  { label: "Accessories", filter: "Accessories" },
+  { label: "New Arrivals",filter: "All" },
+  { label: "Sale",        filter: "All" },
+].map(({ label, filter }) => (
+  <span key={label} className="footer-link" onClick={() => { navigateShop(filter); }}>{label}</span>
+))}
         </div>
         <div>
           <div className="footer-col-title">Help</div>
