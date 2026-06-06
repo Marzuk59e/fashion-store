@@ -1,5 +1,5 @@
 // ─── Footer ───────────────────────────────────────────────────────────────────
-export default function Footer({ navigate, navigateShop }) {
+export default function Footer({ navigate }) {
   return (
     <footer className="footer">
       <div className="footer-grid">
@@ -17,7 +17,10 @@ export default function Footer({ navigate, navigateShop }) {
   { label: "New Arrivals",filter: "All" },
   { label: "Sale",        filter: "All" },
 ].map(({ label, filter }) => (
-  <span key={label} className="footer-link" onClick={() => { navigateShop(filter); }}>{label}</span>
+  <span key={label} className="footer-link" onClick={() => {
+    window.dispatchEvent(new CustomEvent("sanjiiiii:shop-filter", { detail: filter }));
+    navigate("shop");
+  }}>{label}</span>
 ))}
         </div>
         <div>

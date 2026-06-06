@@ -86,6 +86,11 @@ export default function App() {
   const [promoCode, setPromoCode] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [shopFilter, setShopFilter] = useState("All");
+  useEffect(() => {
+    const handler = (e) => setShopFilter(e.detail);
+    window.addEventListener("sanjiiiii:shop-filter", handler);
+    return () => window.removeEventListener("sanjiiiii:shop-filter", handler);
+  }, []);
   const [shopSort, setShopSort] = useState("featured");
   const [shopSearchOpen, setShopSearchOpen] = useState(false);
   const [shopSearchQuery, setShopSearchQuery] = useState("");
