@@ -1212,7 +1212,7 @@ export default function App() {
         </>
       )}
 
-      {page === "home" && <HomePage navigate={navigate} products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={onRequestStock} />}
+      {page === "home" && <HomePage navigate={navigate} products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={onRequestStock} setFilter={setShopFilter} />}
       {page === "shop" && (
         <ShopPage
           products={products}
