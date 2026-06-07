@@ -31,100 +31,102 @@ else base = products.filter(p => p.category === filter);
   }, [products, filter, sort, searchQuery]);
 
   return (
-    <div className="shop-layout">
-      <div className="shop-header animate-fade">
-        <div>
-          <h1 className="shop-title">The Collection</h1>
-          <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{displayed.length} pieces</p>
-        </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <div className="filter-bar">
-          {[
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <div className="shop-layout" style={{ flex: 1 }}>
+        <div className="shop-header animate-fade">
+          <div>
+            <h1 className="shop-title">The Collection</h1>
+            <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{displayed.length} pieces</p>
+          </div>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div className="filter-bar">
+            {[
   "All", "Women", "Men", "Kids", "Accessories",
   ...(filter === "New Arrivals" ? ["New Arrivals"] : []),
   ...(filter === "Sale" ? ["Sale"] : []),
 ].map(c => (
-              <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
-            ))}
-          </div>
-          <select
-            className="sort-select"
-            value={filter === "New Arrivals" ? "new-arrivals" : filter === "Sale" ? "sale" : sort}
-            onChange={e => {
-              const val = e.target.value;
-              if (val === "new-arrivals") {
-                setFilter("New Arrivals");
-                setSort("featured");
-              } else if (val === "sale") {
-                setFilter("Sale");
-                setSort("featured");
-              } else {
-                if (filter === "New Arrivals" || filter === "Sale") setFilter("All");
-                setSort(val);
-              }
-            }}
-          >
-            <option value="featured">Featured</option>
-            <option value="new-arrivals">New Arrivals</option>
-            <option value="sale">Sale</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-          </select>
-        </div>
-      </div>
-      {searchOpen && (
-        <div className="shop-search-wrap animate-fade">
-          <div className="shop-search-inner">
-            <svg width="18" height="18" fill="none" stroke="var(--gold)" strokeWidth="1.6" viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
-            <input
-              ref={searchInputRef}
-              className="shop-search-input"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by product name or brand…"
-              aria-autocomplete="list"
-              aria-expanded={Boolean(searchQuery.trim())}
-              autoComplete="off"
-            />
-            <button type="button" className="shop-search-close" onClick={onCloseSearch} aria-label="Close search">✕</button>
-          </div>
-          {searchQuery.trim() && (
-            <div className="shop-search-dropdown" role="listbox">
-              {suggestions.length === 0 ? (
-                <div className="shop-search-empty">No matches for that search.</div>
-              ) : (
-                suggestions.map(p => (
-                  <div
-                    key={p.id}
-                    role="option"
-                    className="shop-search-suggestion"
-                    onClick={() => navigate("product", p)}
-                  >
-                    <div className="shop-search-sug-thumb">
-                      <ProductPhoto product={p} />
-                    </div>
-                    <div className="shop-search-sug-text">
-                      <div className="shop-search-sug-name">{p.name}</div>
-                      <div className="shop-search-sug-meta">{p.brand} · {p.category}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      {p.inStock === false && <div className="shop-search-sug-badge">Request for stock</div>}
-                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--gold)", marginTop: p.inStock === false ? 4 : 0 }}>{fmt(p.price)}</div>
-                    </div>
-                  </div>
-                ))
-              )}
+                <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
+              ))}
             </div>
-          )}
+            <select
+              className="sort-select"
+              value={filter === "New Arrivals" ? "new-arrivals" : filter === "Sale" ? "sale" : sort}
+              onChange={e => {
+                const val = e.target.value;
+                if (val === "new-arrivals") {
+                  setFilter("New Arrivals");
+                  setSort("featured");
+                } else if (val === "sale") {
+                  setFilter("Sale");
+                  setSort("featured");
+                } else {
+                  if (filter === "New Arrivals" || filter === "Sale") setFilter("All");
+                  setSort(val);
+                }
+              }}
+            >
+              <option value="featured">Featured</option>
+              <option value="new-arrivals">New Arrivals</option>
+              <option value="sale">Sale</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+          </div>
         </div>
-      )}
-      <div className="products-grid">
-        {displayed.map((p, i) => (
-          <ProductCard key={p.id} product={p} delay={i % 4} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
-        ))}
+        {searchOpen && (
+          <div className="shop-search-wrap animate-fade">
+            <div className="shop-search-inner">
+              <svg width="18" height="18" fill="none" stroke="var(--gold)" strokeWidth="1.6" viewBox="0 0 24 24" aria-hidden><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
+              <input
+                ref={searchInputRef}
+                className="shop-search-input"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by product name or brand…"
+                aria-autocomplete="list"
+                aria-expanded={Boolean(searchQuery.trim())}
+                autoComplete="off"
+              />
+              <button type="button" className="shop-search-close" onClick={onCloseSearch} aria-label="Close search">✕</button>
+            </div>
+            {searchQuery.trim() && (
+              <div className="shop-search-dropdown" role="listbox">
+                {suggestions.length === 0 ? (
+                  <div className="shop-search-empty">No matches for that search.</div>
+                ) : (
+                  suggestions.map(p => (
+                    <div
+                      key={p.id}
+                      role="option"
+                      className="shop-search-suggestion"
+                      onClick={() => navigate("product", p)}
+                    >
+                      <div className="shop-search-sug-thumb">
+                        <ProductPhoto product={p} />
+                      </div>
+                      <div className="shop-search-sug-text">
+                        <div className="shop-search-sug-name">{p.name}</div>
+                        <div className="shop-search-sug-meta">{p.brand} · {p.category}</div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        {p.inStock === false && <div className="shop-search-sug-badge">Request for stock</div>}
+                        <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--gold)", marginTop: p.inStock === false ? 4 : 0 }}>{fmt(p.price)}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        <div className="products-grid">
+          {displayed.map((p, i) => (
+            <ProductCard key={p.id} product={p} delay={i % 4} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
+          ))}
+        </div>
       </div>
+      <div style={{ borderTop: "1px solid var(--border)" }} />
       <Footer navigate={navigate} />
     </div>
   );
 }
-
