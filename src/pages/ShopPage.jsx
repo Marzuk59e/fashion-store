@@ -47,8 +47,26 @@ else base = products.filter(p => p.category === filter);
               <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
-          <select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
+          <select
+            className="sort-select"
+            value={filter === "New Arrivals" ? "new-arrivals" : filter === "Sale" ? "sale" : sort}
+            onChange={e => {
+              const val = e.target.value;
+              if (val === "new-arrivals") {
+                setFilter("New Arrivals");
+                setSort("featured");
+              } else if (val === "sale") {
+                setFilter("Sale");
+                setSort("featured");
+              } else {
+                if (filter === "New Arrivals" || filter === "Sale") setFilter("All");
+                setSort(val);
+              }
+            }}
+          >
             <option value="featured">Featured</option>
+            <option value="new-arrivals">New Arrivals</option>
+            <option value="sale">Sale</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
           </select>

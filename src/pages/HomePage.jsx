@@ -5,7 +5,7 @@ import ProductCard from "../components/ProductCard.jsx";
 
 
 // ─── Home Page ────────────────────────────────────────────────────────────────
-export default function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist, onRequestStock }) {
+export default function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist, onRequestStock, setFilter }) {
   return (
     <div>
       <section className="hero">
@@ -85,7 +85,7 @@ export default function HomePage({ navigate, products, addToCart, toggleWishlist
           ))}
         </div>
         <div style={{ textAlign: "center", marginTop: 48 }}>
-          <button className="btn-primary" onClick={() => navigate("shop")}>View All Pieces</button>
+          <button className="btn-primary" onClick={() => { setFilter("New Arrivals"); navigate("shop"); }}>View All Pieces</button>
         </div>
       </section>
 
@@ -100,7 +100,7 @@ export default function HomePage({ navigate, products, addToCart, toggleWishlist
           ))}
         </div>
         <div style={{ textAlign: "center", marginTop: 48 }}>
-          <button className="btn-primary" onClick={() => navigate("shop")}>Shop the Sale</button>
+          <button className="btn-primary" onClick={() => { setFilter("Sale"); navigate("shop"); }}>Shop the Sale</button>
         </div>
       </section>
 
