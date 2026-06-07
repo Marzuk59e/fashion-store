@@ -39,7 +39,11 @@ else base = products.filter(p => p.category === filter);
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div className="filter-bar">
-          {["All", "Women", "Men", "Kids", "Accessories", "New Arrivals", "Sale"].map(c => (
+          {[
+  "All", "Women", "Men", "Kids", "Accessories",
+  ...(filter === "New Arrivals" ? ["New Arrivals"] : []),
+  ...(filter === "Sale" ? ["Sale"] : []),
+].map(c => (
               <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
             ))}
           </div>
