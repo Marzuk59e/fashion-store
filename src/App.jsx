@@ -1231,7 +1231,7 @@ export default function App() {
           onRequestStock={onRequestStock}
         />
       )}
-      {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={onRequestStock} />}
+      {page === "product" && selectedProduct && <ProductDetailPage product={selectedProduct} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlist={wishlist} onRequestStock={onRequestStock} products={products} />}
       {page === "profile" && (
         <ProfilePage
           user={user}
