@@ -3,9 +3,29 @@ import { CATEGORY_FALLBACK_IMAGES } from "../data/productImages.js";
 import { isOnSale } from "../utils/helpers.js";
 import ProductCard from "../components/ProductCard.jsx";
 
+// Badge priority: BEST SELLER → NEW → SALE → others
+const BADGE_RANK = { "BEST SELLER": 0, "NEW": 1, "SALE": 2 };
+const badgeRank = (p) => BADGE_RANK[String(p.badge ?? "").toUpperCase()] ?? 99;
 
 // ─── Home Page ────────────────────────────────────────────────────────────────
 export default function HomePage({ navigate, products, addToCart, toggleWishlist, wishlist, onRequestStock, setFilter }) {
+
+  // Editor's Picks: badge আছে এমন products, BEST SELLER → NEW → SALE priority তে, max 16
+  const editorsPicks = products
+    .filter(p => p.badge)
+    .sort((a, b) => badgeRank(a) - badgeRank(b))
+    .slice(0, 16);
+
+  // New Arrivals: শুধু NEW badge এর products, max 4
+  const newArrivals = products
+    .filter(p => String(p.badge ?? "").toUpperCase() === "NEW")
+    .slice(0, 4);
+
+  // Sales: SALE badge অথবা compareAt > price (isOnSale), max 4
+  const saleProducts = products
+    .filter(p => isOnSale(p) || String(p.badge ?? "").toUpperCase() === "SALE")
+    .slice(0, 4);
+
   return (
     <div>
       <section className="hero">
@@ -53,13 +73,14 @@ export default function HomePage({ navigate, products, addToCart, toggleWishlist
         </div>
       </section>
 
+      {/* ── Editor's Picks ── */}
       <section className="section" style={{ background: "var(--surface)" }}>
         <div className="section-header animate-fade">
           <p className="section-eyebrow">Hand-Picked</p>
           <h2 className="section-title">Editor's <em>Picks</em></h2>
         </div>
         <div className="products-grid">
-          {products.filter(p => p.badge).map((p, i) => (
+          {editorsPicks.map((p, i) => (
             <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
           ))}
         </div>
@@ -74,13 +95,14 @@ export default function HomePage({ navigate, products, addToCart, toggleWishlist
         <button className="btn-primary" onClick={() => navigate("shop")}>Shop the Collection</button>
       </section>
 
+      {/* ── New Arrivals ── */}
       <section className="section">
         <div className="section-header animate-fade">
           <p className="section-eyebrow">Just In</p>
           <h2 className="section-title">New <em>Arrivals</em></h2>
         </div>
         <div className="products-grid">
-          {products.slice(6, 10).map((p, i) => (
+          {newArrivals.map((p, i) => (
             <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
           ))}
         </div>
@@ -89,13 +111,14 @@ export default function HomePage({ navigate, products, addToCart, toggleWishlist
         </div>
       </section>
 
+      {/* ── Sales ── */}
       <section className="section" style={{ background: "var(--surface)" }}>
         <div className="section-header animate-fade">
           <p className="section-eyebrow">Best Value</p>
           <h2 className="section-title"><em>Sales</em></h2>
         </div>
         <div className="products-grid">
-          {products.filter(isOnSale).slice(0, 4).map((p, i) => (
+          {saleProducts.map((p, i) => (
             <ProductCard key={p.id} product={p} delay={i} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
           ))}
         </div>
@@ -108,4 +131,3 @@ export default function HomePage({ navigate, products, addToCart, toggleWishlist
     </div>
   );
 }
-
