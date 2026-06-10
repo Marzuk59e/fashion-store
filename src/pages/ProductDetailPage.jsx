@@ -53,7 +53,7 @@ export default function ProductDetailPage({
 
   // Related products — same category first, then fallback
   const sameCategory = products.filter(p => p.id !== product.id && p.category === product.category);
-  const suggestions = (sameCategory.length >= 2 ? sameCategory : products.filter(p => p.id !== product.id)).slice(0, 4);
+  const suggestions = (sameCategory.length >= 2 ? sameCategory : products.filter(p => p.id !== product.id)).slice(0, 8);
 
   return (
     <div style={{ background: "var(--cream)", minHeight: "100vh" }}>
@@ -80,22 +80,23 @@ export default function ProductDetailPage({
         margin: "0 auto",
         padding: "clamp(24px, 5vw, 56px) clamp(20px, 5vw, 48px)",
         gap: "clamp(32px, 5vw, 72px)",
-        alignItems: "start",
       }}>
 
-        {/* ── Left: Image ── */}
-        <div style={{ position: "sticky", top: 80 }}>
-          <div style={{ position: "relative", background: "var(--surface)", aspectRatio: "3/4", overflow: "hidden" }}>
-            <div className="product-badge-stack">
-              {product.badge && <div className="product-badge">{product.badge}</div>}
-              {!inStock && <div className="product-badge product-badge-oos">Out of Stock</div>}
+        {/* ── Left: Image — stretches to right column height, image sticky inside ── */}
+        <div>
+          <div style={{ position: "sticky", top: 80 }}>
+            <div style={{ position: "relative", background: "var(--surface)", aspectRatio: "3/4", overflow: "hidden" }}>
+              <div className="product-badge-stack">
+                {product.badge && <div className="product-badge">{product.badge}</div>}
+                {!inStock && <div className="product-badge product-badge-oos">Out of Stock</div>}
+              </div>
+              <ProductPhoto product={product} />
             </div>
-            <ProductPhoto product={product} />
           </div>
         </div>
 
-        {/* ── Right: Info ── */}
-        <div>
+        {/* ── Right: Info — alignSelf:start so it doesn't stretch ── */}
+        <div style={{ alignSelf: "start" }}>
           {/* Brand */}
           <p style={{ fontSize: "0.6rem", letterSpacing: "0.32em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 10 }}>
             {product.brand}
@@ -271,15 +272,16 @@ export default function ProductDetailPage({
       {/* ── You May Also Like ── */}
       {suggestions.length > 0 && (
         <section style={{
-          padding: "clamp(40px, 6vw, 72px) clamp(20px, 5vw, 48px)",
+          padding: "32px clamp(20px, 5vw, 48px) 48px",
           background: "var(--surface)",
           borderTop: "1px solid var(--border)",
         }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <p style={{ fontSize: "0.6rem", letterSpacing: "0.32em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 24 }}>
+            <p style={{ fontSize: "0.6rem", letterSpacing: "0.28em", textTransform: "uppercase", color: "var(--gold)" }}>
               Complete Your Look
             </p>
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.5rem, 3vw, 2.2rem)", fontWeight: 300, color: "var(--charcoal)" }}>
+            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.1rem, 2vw, 1.4rem)", fontWeight: 300, color: "var(--charcoal)" }}>
               You May Also <em>Like</em>
             </h2>
           </div>
