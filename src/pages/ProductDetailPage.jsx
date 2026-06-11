@@ -1,6 +1,5 @@
 import { useState } from "react";
 import ProductPhoto from "../components/ProductPhoto.jsx";
-import ProductCard from "../components/ProductCard.jsx";
 import { isOnSale, saleDiscountPercent, fmt } from "../utils/helpers.js";
 
 // ─── Accordion ────────────────────────────────────────────────────────────────
@@ -35,6 +34,56 @@ function Accordion({ title, children, defaultOpen = false }) {
   );
 }
 
+// ─── Size Guide Table ─────────────────────────────────────────────────────────
+function SizeGuideTable() {
+  return (
+    <div style={{
+      marginTop: 14,
+      marginBottom: 6,
+      overflow: "hidden",
+      border: "1px solid var(--border)",
+      animation: "fadeSlideDown 0.22s ease",
+    }}>
+      <style>{`
+        @keyframes fadeSlideDown {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem", minWidth: 320 }}>
+          <thead>
+            <tr>
+              {["Size", "UK", "EU", "US", "Chest", "Waist"].map(h => (
+                <th key={h} style={{
+                  padding: "8px 12px", background: "var(--charcoal)", color: "var(--cream)",
+                  fontWeight: 600, textAlign: "left", letterSpacing: "0.1em", fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["XS", "6",  "34", "2",  "32\"", "24\""],
+              ["S",  "8",  "36", "4",  "34\"", "26\""],
+              ["M",  "10", "38", "6",  "36\"", "28\""],
+              ["L",  "12", "40", "8",  "38\"", "30\""],
+              ["XL", "14", "42", "10", "40\"", "32\""],
+            ].map((row, i) => (
+              <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "var(--surface)" }}>
+                {row.map((cell, j) => (
+                  <td key={j} style={{ padding: "8px 12px", color: "var(--charcoal)" }}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 const CRUMB_BTN = {
   background: "none", border: "none", cursor: "pointer",
   fontSize: "0.65rem", letterSpacing: "0.12em", textTransform: "uppercase",
@@ -44,16 +93,12 @@ const CRUMB_BTN = {
 // ─── Product Detail ───────────────────────────────────────────────────────────
 export default function ProductDetailPage({
   product, navigate, addToCart, toggleWishlist, wishlist, onRequestStock,
-  products = [],
 }) {
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] ?? "Free Size");
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
   const wishlisted = wishlist.includes(product.id);
   const inStock = product.inStock !== false;
   const onSale = isOnSale(product);
-
-  // Related products — same category first, then fallback
-  const sameCategory = products.filter(p => p.id !== product.id && p.category === product.category);
-  const suggestions = (sameCategory.length >= 2 ? sameCategory : products.filter(p => p.id !== product.id)).slice(0, 8);
 
   return (
     <div style={{ background: "var(--cream)", minHeight: "100vh" }}>
@@ -82,7 +127,7 @@ export default function ProductDetailPage({
         gap: "clamp(32px, 5vw, 72px)",
       }}>
 
-        {/* ── Left: Image — stretches to right column height, image sticky inside ── */}
+        {/* ── Left: Image ── */}
         <div>
           <div style={{ position: "sticky", top: 80 }}>
             <div style={{ position: "relative", background: "var(--surface)", aspectRatio: "3/4", overflow: "hidden" }}>
@@ -95,8 +140,9 @@ export default function ProductDetailPage({
           </div>
         </div>
 
-        {/* ── Right: Info — alignSelf:start so it doesn't stretch ── */}
+        {/* ── Right: Info ── */}
         <div style={{ alignSelf: "start" }}>
+
           {/* Brand */}
           <p style={{ fontSize: "0.6rem", letterSpacing: "0.32em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 10 }}>
             {product.brand}
@@ -113,8 +159,16 @@ export default function ProductDetailPage({
           {/* Price */}
           {onSale ? (
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "8px 14px", marginBottom: 24 }}>
-              <span style={{ fontFamily: "var(--font-serif)", fontSize: "1.45rem", color: "var(--charcoal)" }}>{fmt(product.price)}</span>
-              <span style={{ textDecoration: "line-through", color: "var(--warm-gray)", fontSize: "0.95rem" }}>{fmt(product.compareAt)}</span>
+              <span style={{
+                fontFamily: "var(--font-serif)", fontWeight: 700, fontStyle: "normal",
+                fontVariantNumeric: "lining-nums", fontSize: "1.5rem",
+                color: "var(--charcoal)", letterSpacing: "0.01em"
+              }}>{fmt(product.price)}</span>
+              <span style={{
+                textDecoration: "line-through", color: "var(--warm-gray)", fontSize: "0.95rem",
+                fontFamily: "var(--font-serif)", fontWeight: 700, fontStyle: "normal",
+                fontVariantNumeric: "lining-nums"
+              }}>{fmt(product.compareAt)}</span>
               <span style={{
                 fontSize: "0.6rem", letterSpacing: "0.12em",
                 background: "var(--charcoal)", color: "var(--cream)",
@@ -122,7 +176,11 @@ export default function ProductDetailPage({
               }}>{saleDiscountPercent(product)}% off</span>
             </div>
           ) : (
-            <p style={{ fontFamily: "var(--font-serif)", fontSize: "1.45rem", color: "var(--charcoal)", marginBottom: 24 }}>
+            <p style={{
+              fontFamily: "var(--font-serif)", fontWeight: 700, fontStyle: "normal",
+              fontVariantNumeric: "lining-nums", fontSize: "1.5rem",
+              color: "var(--charcoal)", marginBottom: 24, letterSpacing: "0.01em"
+            }}>
               {fmt(product.price)}
             </p>
           )}
@@ -132,16 +190,27 @@ export default function ProductDetailPage({
             {product.desc}
           </p>
 
-          {/* Size */}
+          {/* Size + Size Guide toggle */}
           <div style={{ marginBottom: 26 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <span style={{ fontSize: "0.62rem", letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--charcoal)" }}>
                 Size
               </span>
-              <button type="button" style={{ ...CRUMB_BTN, textDecoration: "underline", textUnderlineOffset: 3 }}>
-                Size Guide ↗
+              <button
+                type="button"
+                onClick={() => setShowSizeGuide(v => !v)}
+                style={{
+                  ...CRUMB_BTN,
+                  textDecoration: "underline",
+                  textUnderlineOffset: 3,
+                  color: showSizeGuide ? "var(--charcoal)" : "var(--warm-gray)",
+                  transition: "color 0.2s",
+                }}
+              >
+                {showSizeGuide ? "Size Guide ✕" : "Size Guide ↗"}
               </button>
             </div>
+
             <div className="size-grid">
               {(product.sizes ?? ["Free Size"]).map(s => (
                 <button key={s} className={`size-btn${selectedSize === s ? " selected" : ""}`} onClick={() => setSelectedSize(s)}>
@@ -149,6 +218,9 @@ export default function ProductDetailPage({
                 </button>
               ))}
             </div>
+
+            {/* Inline Size Guide — appears right below size buttons */}
+            {showSizeGuide && <SizeGuideTable />}
           </div>
 
           {/* CTA */}
@@ -183,12 +255,12 @@ export default function ProductDetailPage({
             <Accordion title="Product Details" defaultOpen>
               <div style={{ display: "grid", gap: 8 }}>
                 {[
-                  ["Material",       "Premium sustainable fabric blend"],
-                  ["Fit",            "True to size · Regular fit"],
-                  ["Origin",         "Ethically crafted in Italy"],
-                  ["Care",           "Dry clean recommended · Do not tumble dry"],
-                  ["Sustainability", "Made with responsibly sourced materials"],
-                  ["Packaging",      "Ships in recycled, plastic-free packaging"],
+                  ["Material",       product.material       ?? "Premium sustainable fabric blend"],
+                  ["Fit",            product.fit            ?? "True to size · Regular fit"],
+                  ["Origin",         product.origin         ?? "Ethically crafted in Italy"],
+                  ["Care",           product.care           ?? "Dry clean recommended · Do not tumble dry"],
+                  ["Sustainability", product.sustainability  ?? "Made with responsibly sourced materials"],
+                  ["Packaging",      product.packaging      ?? "Ships in recycled, plastic-free packaging"],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: "flex", gap: 14 }}>
                     <span style={{ minWidth: 100, fontWeight: 600, color: "var(--charcoal)", fontSize: "0.72rem", flexShrink: 0 }}>{k}</span>
@@ -214,38 +286,6 @@ export default function ProductDetailPage({
               </div>
             </Accordion>
 
-            <Accordion title="Size Guide">
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem", minWidth: 320 }}>
-                  <thead>
-                    <tr>
-                      {["Size", "UK", "EU", "US", "Chest", "Waist"].map(h => (
-                        <th key={h} style={{
-                          padding: "7px 10px", background: "var(--charcoal)", color: "var(--cream)",
-                          fontWeight: 600, textAlign: "left", letterSpacing: "0.1em", fontFamily: "inherit",
-                        }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      ["XS", "6",  "34", "2",  "32\"", "24\""],
-                      ["S",  "8",  "36", "4",  "34\"", "26\""],
-                      ["M",  "10", "38", "6",  "36\"", "28\""],
-                      ["L",  "12", "40", "8",  "38\"", "30\""],
-                      ["XL", "14", "42", "10", "40\"", "32\""],
-                    ].map((row, i) => (
-                      <tr key={i} style={{ background: i % 2 === 0 ? "transparent" : "var(--surface)" }}>
-                        {row.map((cell, j) => (
-                          <td key={j} style={{ padding: "7px 10px", color: "var(--charcoal)" }}>{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Accordion>
-
             <div style={{ borderTop: "1px solid var(--border)" }} />
           </div>
 
@@ -266,38 +306,9 @@ export default function ProductDetailPage({
               </div>
             ))}
           </div>
+
         </div>
       </div>
-
-      {/* ── You May Also Like ── */}
-      {suggestions.length > 0 && (
-        <section style={{
-          padding: "32px clamp(20px, 5vw, 48px) 48px",
-          background: "var(--surface)",
-          borderTop: "1px solid var(--border)",
-        }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 24 }}>
-            <p style={{ fontSize: "0.6rem", letterSpacing: "0.28em", textTransform: "uppercase", color: "var(--gold)" }}>
-              Complete Your Look
-            </p>
-            <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-            <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(1.1rem, 2vw, 1.4rem)", fontWeight: 300, color: "var(--charcoal)" }}>
-              You May Also <em>Like</em>
-            </h2>
-          </div>
-          <div className="products-grid" style={{ maxWidth: 1160, margin: "0 auto" }}>
-            {suggestions.map((p, i) => (
-              <ProductCard
-                key={p.id} product={p} delay={i}
-                navigate={navigate} addToCart={addToCart}
-                toggleWishlist={toggleWishlist}
-                wishlisted={wishlist.includes(p.id)}
-                onRequestStock={onRequestStock}
-              />
-            ))}
-          </div>
-        </section>
-      )}
 
     </div>
   );
