@@ -37,6 +37,9 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import AboutPage from "./pages/AboutPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
 import TermsPage from "./pages/TermsPage.jsx";
+import ShippingPage from "./pages/ShippingPage.jsx";
+import FAQPage from "./pages/FAQPage.jsx";
+import ContactPage from "./pages/ContactPage.jsx";
 import PaymentModal from "./components/PaymentModal.jsx";
 
 injectGlobalStyles();
@@ -1258,6 +1261,10 @@ export default function App() {
       {page === "about" && <AboutPage navigate={navigate} />}
       {page === "privacy" && <PrivacyPage navigate={navigate} />}
       {page === "terms" && <TermsPage navigate={navigate} />}
+      {page === "shipping" && <ShippingPage navigate={navigate} />}
+      {page === "faq" && <FAQPage navigate={navigate} />}
+      {page === "contact" && <ContactPage navigate={navigate} />}
+
 
       {/* Cart Drawer */}
       {cartOpen && (

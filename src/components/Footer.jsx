@@ -10,22 +10,26 @@ export default function Footer({ navigate }) {
         <div>
           <div className="footer-col-title">Shop</div>
           {[
-  { label: "Women",       filter: "Women" },
-  { label: "Men",         filter: "Men" },
-  { label: "Kids",        filter: "Kids" },
-  { label: "Accessories", filter: "Accessories" },
-  { label: "New Arrivals", filter: "New Arrivals" },
-{ label: "Sale",         filter: "Sale" },
-].map(({ label, filter }) => (
-  <span key={label} className="footer-link" onClick={() => {
-    window.dispatchEvent(new CustomEvent("sanjiiiii:shop-filter", { detail: filter }));
-    navigate("shop");
-  }}>{label}</span>
-))}
+            { label: "Women",        filter: "Women" },
+            { label: "Men",          filter: "Men" },
+            { label: "Kids",         filter: "Kids" },
+            { label: "Accessories",  filter: "Accessories" },
+            { label: "New Arrivals", filter: "New Arrivals" },
+            { label: "Sale",         filter: "Sale" },
+          ].map(({ label, filter }) => (
+            <span key={label} className="footer-link" onClick={() => {
+              window.dispatchEvent(new CustomEvent("sanjiiiii:shop-filter", { detail: filter }));
+              navigate("shop");
+            }}>{label}</span>
+          ))}
         </div>
         <div>
           <div className="footer-col-title">Help</div>
-          {["Shipping & Returns", "Size Guide", "FAQ", "Contact Us", "Stores"].map(l => <span key={l} className="footer-link">{l}</span>)}
+          <span className="footer-link" onClick={() => navigate("shipping")}>Shipping &amp; Returns</span>
+          <span className="footer-link" onClick={() => navigate("shipping")}>Size Guide</span>
+          <span className="footer-link" onClick={() => navigate("faq")}>FAQ</span>
+          <span className="footer-link" onClick={() => navigate("contact")}>Contact Us</span>
+          <span className="footer-link" onClick={() => navigate("about")}>Stores</span>
           <span className="footer-link" onClick={() => navigate("privacy")}>Privacy Policy</span>
           <span className="footer-link" onClick={() => navigate("terms")}>Terms</span>
           <span className="footer-link" onClick={() => window.dispatchEvent(new Event("velours:cookie-settings"))}>
@@ -34,7 +38,10 @@ export default function Footer({ navigate }) {
         </div>
         <div>
           <div className="footer-col-title">Company</div>
-          {["Our Story", "Sustainability", "Careers", "Press"].map(l => <span key={l} className="footer-link" onClick={() => navigate("about")}>{l}</span>)}
+          <span className="footer-link" onClick={() => navigate("about")}>Our Story</span>
+          <span className="footer-link" onClick={() => navigate("about")}>Sustainability</span>
+          <span className="footer-link" onClick={() => navigate("about")}>Careers</span>
+          <span className="footer-link" onClick={() => navigate("about")}>Press</span>
         </div>
       </div>
       <div className="footer-bottom">
@@ -46,4 +53,3 @@ export default function Footer({ navigate }) {
     </footer>
   );
 }
-
