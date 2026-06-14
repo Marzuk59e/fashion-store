@@ -329,7 +329,7 @@ button,
   }
 
   .legal-page {
-    padding: calc(var(--nav-offset) + 16px) 16px 48px;
+    padding: calc(var(--nav-offset) + 16px) 16px 0px;
   }
 
   .profile-layout {

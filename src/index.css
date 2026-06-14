@@ -26,8 +26,13 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+html, body {
+  height: 100%;
   margin: 0;
+  padding: 0;
+  }
+
+body {
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -46,7 +51,19 @@ video {
   text-align: initial;
   border-inline: none;
   min-height: 100vh;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* App wrapper — fills full height so footer sits at bottom */
+#root > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100vh;
+  margin-bottom: 0;
+  padding-bottom: 0;
   box-sizing: border-box;
 }
 
@@ -87,4 +104,9 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+footer {
+  margin-bottom: 0;
+  padding-bottom: 0;
 }

@@ -63,8 +63,8 @@ export default function ContactPage({ navigate }) {
           We're here to help. Whether you have a question about an order, need styling advice, or just want to say hello — reach out and we'll get back to you within one business day.
         </p>
 
-        {/* Contact methods */}
-        <div style={{
+      {/* Contact methods */}
+      <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: 12, marginBottom: 36,
@@ -72,13 +72,19 @@ export default function ContactPage({ navigate }) {
           {[
             { icon: "✉", label: "Email", value: "hello@sanjiiiii.com", note: "Response within 24hrs" },
             { icon: "◎", label: "Live Chat", value: "Mon–Fri, 9am–6pm", note: "Available in the app" },
-            { icon: "⌚", label: "Hours", value: "Mon–Fri", note: "9:00am – 6:00pm GMT" },
+            { icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="7"/>
+                <polyline points="12 9 12 12 13.5 13.5"/>
+                <path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"/>
+              </svg>
+            ), label: "Hours", value: "Mon–Fri", note: "9:00am – 6:00pm GMT" },
           ].map(({ icon, label, value, note }) => (
             <div key={label} style={{
               padding: "18px 20px", background: "var(--surface)",
               border: "1px solid var(--border)",
             }}>
-              <div style={{ fontSize: "1.1rem", marginBottom: 10 }}>{icon}</div>
+              <div style={{ fontSize: "1.1rem", marginBottom: 10, color: "var(--warm-gray)", display: "flex" }}>{icon}</div>
               <div style={{
                 fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase",
                 color: "var(--warm-gray)", fontWeight: 600, marginBottom: 4,
@@ -88,6 +94,7 @@ export default function ContactPage({ navigate }) {
             </div>
           ))}
         </div>
+        
 
         {/* Form or success */}
         {submitted ? (

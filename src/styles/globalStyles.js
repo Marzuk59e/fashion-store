@@ -786,7 +786,7 @@ const css = `
     .receipt-line-muted { font-size: 0.78rem; }
     .filter-btn { font-size: 0.72rem; }
   }
-  .legal-page { max-width: 1100px; margin: 0 auto; padding: calc(var(--nav-offset) + 24px) 40px 60px; }
+  .legal-page { max-width: 1100px; margin: 0 auto; padding: calc(var(--nav-offset) + 24px) 40px 0px; }
   .about-hero { background: var(--charcoal); padding: calc(var(--nav-offset) + 48px) 40px 72px; text-align: center; }
   .about-body { max-width: 780px; margin: 0 auto; padding: 64px 40px; }
   .legal-card { background: white; border: 1px solid var(--border); padding: 28px; }
