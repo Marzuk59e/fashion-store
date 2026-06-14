@@ -1,7 +1,16 @@
 // ─── Footer ───────────────────────────────────────────────────────────────────
 export default function Footer({ navigate }) {
   return (
-    <footer className="footer">
+    <footer
+      className="footer"
+      style={{
+        width: "100vw",
+        marginLeft: "calc(50% - 50vw)",
+        marginTop: "80px",
+        position: "relative",
+        boxSizing: "border-box",
+      }}
+    >
       <div className="footer-grid">
         <div>
           <div className="footer-brand">sanj<span className="logo-accent">iiiii</span></div>
@@ -26,7 +35,6 @@ export default function Footer({ navigate }) {
         <div>
           <div className="footer-col-title">Help</div>
           <span className="footer-link" onClick={() => navigate("shipping")}>Shipping &amp; Returns</span>
-          <span className="footer-link" onClick={() => navigate("shipping")}>Size Guide</span>
           <span className="footer-link" onClick={() => navigate("faq")}>FAQ</span>
           <span className="footer-link" onClick={() => navigate("contact")}>Contact Us</span>
           <span className="footer-link" onClick={() => navigate("about")}>Stores</span>
