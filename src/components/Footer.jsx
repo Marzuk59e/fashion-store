@@ -37,7 +37,7 @@ export default function Footer({ navigate }) {
           <span className="footer-link" onClick={() => navigate("shipping")}>Shipping &amp; Returns</span>
           <span className="footer-link" onClick={() => navigate("faq")}>FAQ</span>
           <span className="footer-link" onClick={() => navigate("contact")}>Contact Us</span>
-          <span className="footer-link" onClick={() => navigate("about")}>Stores</span>
+          <span className="footer-link" onClick={() => navigate("stores")}>Stores</span>
           <span className="footer-link" onClick={() => navigate("privacy")}>Privacy Policy</span>
           <span className="footer-link" onClick={() => navigate("terms")}>Terms</span>
           <span className="footer-link" onClick={() => window.dispatchEvent(new Event("velours:cookie-settings"))}>
@@ -46,10 +46,10 @@ export default function Footer({ navigate }) {
         </div>
         <div>
           <div className="footer-col-title">Company</div>
-          <span className="footer-link" onClick={() => navigate("about")}>Our Story</span>
-          <span className="footer-link" onClick={() => navigate("about")}>Sustainability</span>
-          <span className="footer-link" onClick={() => navigate("about")}>Careers</span>
-          <span className="footer-link" onClick={() => navigate("about")}>Press</span>
+          <span className="footer-link" onClick={() => navigate("ourstory")}>Our Story</span>
+          <span className="footer-link" onClick={() => navigate("sustainability")}>Sustainability</span>
+          <span className="footer-link" onClick={() => navigate("careers")}>Careers</span>
+          <span className="footer-link" onClick={() => navigate("press")}>Press</span>
         </div>
       </div>
       <div className="footer-bottom">

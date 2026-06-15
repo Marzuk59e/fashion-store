@@ -45,6 +45,7 @@ import OurStoryPage from "./pages/OurStoryPage.jsx";
 import SustainabilityPage from "./pages/SustainabilityPage.jsx";
 import CareersPage from "./pages/CareersPage.jsx";
 import PressPage from "./pages/PressPage.jsx";
+import StoresPage from "./pages/StoresPage.jsx";
 
 injectGlobalStyles();
 
@@ -1272,6 +1273,7 @@ export default function App() {
       {page === "sustainability" && <SustainabilityPage navigate={navigate} />}
       {page === "careers" && <CareersPage navigate={navigate} />}
       {page === "press" && <PressPage navigate={navigate} />}
+      {page === "stores" && <StoresPage navigate={navigate} />}
 
       {/* Cart Drawer */}
       {cartOpen && (
