@@ -41,6 +41,10 @@ import ShippingPage from "./pages/ShippingPage.jsx";
 import FAQPage from "./pages/FAQPage.jsx";
 import ContactPage from "./pages/ContactPage.jsx";
 import PaymentModal from "./components/PaymentModal.jsx";
+import OurStoryPage from "./pages/OurStoryPage.jsx";
+import SustainabilityPage from "./pages/SustainabilityPage.jsx";
+import CareersPage from "./pages/CareersPage.jsx";
+import PressPage from "./pages/PressPage.jsx";
 
 injectGlobalStyles();
 
@@ -1264,7 +1268,10 @@ export default function App() {
       {page === "shipping" && <ShippingPage navigate={navigate} />}
       {page === "faq" && <FAQPage navigate={navigate} />}
       {page === "contact" && <ContactPage navigate={navigate} />}
-
+      {page === "our-story" && <OurStoryPage navigate={navigate} />}
+      {page === "sustainability" && <SustainabilityPage navigate={navigate} />}
+      {page === "careers" && <CareersPage navigate={navigate} />}
+      {page === "press" && <PressPage navigate={navigate} />}
 
       {/* Cart Drawer */}
       {cartOpen && (
