@@ -1005,7 +1005,7 @@ export default function App() {
     setPayConfirmOrder(order);
   };
 
-  const handleCancelOrder = (order) => {
+  const handleCancelOrder = async (order) => {
     if (!user || !order) return;
     if (!window.confirm(`Cancel order ${order.id}? This cannot be undone.`)) return;
     const updatedOrders = (user.orders || []).map((o) => {
@@ -1018,9 +1018,19 @@ export default function App() {
     });
     persist(cart, wishlist, user, updatedOrders);
     addToast(`Order ${order.id} has been cancelled.`, "info");
+    try {
+      await updateDoc(doc(db, "orders", order.id), {
+        status: "cancelled",
+        "payment.status": "cancelled",
+        cancelledAt: serverTimestamp(),
+        cancelledBy: "customer",
+      });
+    } catch (e) {
+      console.error("Order cancel sync failed:", e);
+    }
   };
 
-  const handleConfirmMarkPaid = () => {
+  const handleConfirmMarkPaid = async () => {
     if (!user || !payConfirmOrder) return;
     const orderId = payConfirmOrder.id;
     const updatedOrders = (user.orders || []).map((o) => {
@@ -1039,6 +1049,16 @@ export default function App() {
     persist(cart, wishlist, user, updatedOrders);
     setPayConfirmOrder(null);
     addToast(`Payment completed (${orderId})`, "success");
+    try {
+      await updateDoc(doc(db, "orders", orderId), {
+        "payment.status": "completed",
+        "payment.paidAt": new Date().toISOString(),
+        updatedAt: serverTimestamp(),
+        paidByCustomerAt: serverTimestamp(),
+      });
+    } catch (e) {
+      console.error("Mark as paid sync failed:", e);
+    }
   };
 
   const cartTotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
