@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 import {
-  collection, doc, getDoc, getDocs, limit,
+  addDoc, collection, doc, getDoc, getDocs, limit,
   onSnapshot, query, serverTimestamp,
   setDoc, updateDoc, orderBy,
 } from "firebase/firestore";
@@ -168,7 +168,7 @@ function MsgBanner({ msg, onClose }) {
   );
 }
 
-function NavBtn({ id, label, icon, active, onClick }) {
+function NavBtn({ id, label, icon, active, onClick, badge }) {
   const [hov, setHov] = useState(false);
   return (
     <button type="button" onClick={() => onClick(id)}
@@ -181,7 +181,13 @@ function NavBtn({ id, label, icon, active, onClick }) {
         fontSize: 15, fontFamily: font.sans, fontWeight: active ? 800 : 600,
         letterSpacing: "0.07em", textTransform: "uppercase", cursor: "pointer", textAlign: "left", transition: "all 0.15s"
       }}>
-      <span style={{ fontSize: 14 }}>{icon}</span>{label}
+      <span style={{ fontSize: 14 }}>{icon}</span>
+      {label}
+      {badge > 0 && (
+        <span style={{ marginLeft: "auto", minWidth: 20, height: 20, borderRadius: 10, background: C.gold, color: "#0C0B09", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 6px" }}>
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
@@ -737,8 +743,9 @@ function OrdersPage({ orders, onStatusChange, onReload, busy }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
         <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Orders</h2>
         <button type="button" onClick={onReload} disabled={busy}
-          style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>
-          {busy ? "Reloading…" : "↺ Reload"}
+          style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold, minWidth: 110, display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ display: "inline-block", animation: busy ? "spin 1s linear infinite" : "none" }}>↺</span>
+          {busy ? "Reloading…" : "Reload"}
         </button>
       </div>
       <p style={{ fontSize: 14, color: C.muted, margin: "0 0 32px" }}>Manage customer orders</p>
@@ -755,8 +762,9 @@ function OrdersPage({ orders, onStatusChange, onReload, busy }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
         <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Orders</h2>
         <button type="button" onClick={onReload} disabled={busy}
-          style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>
-          {busy ? "Reloading…" : "↺ Reload"}
+          style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold, minWidth: 110, display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ display: "inline-block", animation: busy ? "spin 1s linear infinite" : "none" }}>↺</span>
+          {busy ? "Reloading…" : "Reload"}
         </button>
       </div>
       <p style={{ fontSize: 16, fontWeight: 600, color: C.muted, margin: "0 0 22px" }}>{orders.length} total orders</p>
@@ -879,6 +887,108 @@ function CustomersPage({ customers, customersLoaded, onLoad, busy, msg, setMsg }
   );
 }
 
+/* ─── Stock Requests Page ────────────────────────────────────── */
+function StockRequestsPage({ requests, onFulfill, busy, msg, setMsg }) {
+  const pending = requests.filter(r => r.status !== "fulfilled");
+  const fulfilled = requests.filter(r => r.status === "fulfilled");
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Stock Requests</h2>
+        {pending.length > 0 && (
+          <span style={{ padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(226,188,92,0.15)", color: C.gold }}>
+            {pending.length} pending
+          </span>
+        )}
+      </div>
+      <p style={{ fontSize: 16, fontWeight: 600, color: C.muted, margin: "0 0 26px" }}>
+        Customer restock requests — notify them when available
+      </p>
+      <MsgBanner msg={msg} onClose={() => setMsg("")} />
+
+      {requests.length === 0 && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, gap: 12, color: C.muted }}>
+          <span style={{ fontSize: 32, opacity: 0.3 }}>📦</span>
+          <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>No stock requests yet</p>
+          <p style={{ fontSize: 13, margin: 0 }}>Customers can request restocks from out-of-stock product pages.</p>
+        </div>
+      )}
+
+      {pending.length > 0 && (
+        <>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono, margin: "0 0 12px" }}>Pending</h3>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 32 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                  {["Product", "Customer", "Date", "Action"].map(h => (
+                    <th key={h} style={{ padding: "12px 14px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pending.map((r, i) => {
+                  const date = r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "—";
+                  return (
+                    <tr key={r.id} style={{ borderBottom: i < pending.length - 1 ? `1px solid ${C.border}` : "none" }}
+                      onMouseEnter={e => e.currentTarget.style.background = C.surface2}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <td style={{ padding: "13px 14px" }}>
+                        <p style={{ margin: "0 0 2px", color: C.text, fontWeight: 500 }}>{r.productName || "—"}</p>
+                        <p style={{ margin: 0, color: C.muted, fontSize: 11, fontFamily: font.mono }}>ID: {r.productId}</p>
+                      </td>
+                      <td style={{ padding: "13px 14px" }}>
+                        <p style={{ margin: "0 0 2px", color: C.text }}>{r.userName || "—"}</p>
+                        <p style={{ margin: 0, color: C.muted, fontSize: 11 }}>{r.userEmail || "—"}</p>
+                      </td>
+                      <td style={{ padding: "13px 14px", color: C.muted, fontSize: 12 }}>{date}</td>
+                      <td style={{ padding: "13px 14px" }}>
+                        <button type="button" disabled={busy}
+                          onClick={() => onFulfill(r.id, r.productId, r.userId, r.productName)}
+                          style={{ ...S.btnPrimary, padding: "7px 16px", fontSize: 11 }}>
+                          Notify Customer
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {fulfilled.length > 0 && (
+        <>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono, margin: "0 0 12px" }}>Fulfilled</h3>
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <tbody>
+                {fulfilled.map((r, i) => {
+                  const date = r.fulfilledAt?.toDate ? r.fulfilledAt.toDate().toLocaleDateString() : "—";
+                  return (
+                    <tr key={r.id} style={{ borderBottom: i < fulfilled.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                      <td style={{ padding: "13px 14px" }}>
+                        <p style={{ margin: "0 0 2px", color: C.muted, fontWeight: 500 }}>{r.productName || "—"}</p>
+                        <p style={{ margin: 0, color: C.muted, fontSize: 11 }}>{r.userEmail || "—"}</p>
+                      </td>
+                      <td style={{ padding: "13px 14px", color: C.muted, fontSize: 12 }}>Notified: {date}</td>
+                      <td style={{ padding: "13px 14px" }}>
+                        <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: C.successBg, color: "#6DBF8A", fontFamily: font.mono }}>✓ Done</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main AdminApp ──────────────────────────────────────────── */
 export default function AdminApp() {
   const [user, setUser] = useState(null);
@@ -892,6 +1002,7 @@ export default function AdminApp() {
   const [customers, setCustomers] = useState([]);
   const [customersLoaded, setCustomersLoaded] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [stockRequests, setStockRequests] = useState([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -952,6 +1063,18 @@ export default function AdminApp() {
       const q = query(collection(adminDb, "orders"), orderBy("createdAt", "desc"), limit(200));
       const unsub = onSnapshot(q, snap => {
         setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+      return () => unsub();
+    } catch { return undefined; }
+  }, [adminOk]);
+
+  /* Live stock requests */
+  useEffect(() => {
+    if (!adminOk) return;
+    try {
+      const q = query(collection(adminDb, "stockRequests"), orderBy("createdAt", "desc"));
+      const unsub = onSnapshot(q, snap => {
+        setStockRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       });
       return () => unsub();
     } catch { return undefined; }
@@ -1068,6 +1191,28 @@ export default function AdminApp() {
     finally { setBusy(false); }
   }, []);
 
+  const handleFulfillStockRequest = useCallback(async (requestId, productId, userId, productName) => {
+    setBusy(true); setMsg("");
+    try {
+      await updateDoc(doc(adminDb, "stockRequests", requestId), {
+        status: "fulfilled",
+        fulfilledAt: serverTimestamp(),
+      });
+      if (userId) {
+        await addDoc(collection(adminDb, "users", userId, "notifications"), {
+          type: "restock",
+          productId,
+          productName,
+          message: `Great news! "${productName}" is back in stock.`,
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
+      setMsg(`✓ Customer notified for "${productName}"`);
+    } catch (e) { setMsg(e?.message || "Could not fulfill request."); }
+    finally { setBusy(false); }
+  }, []);
+
   /* Guards */
   if (!authReady) return <LoadingScreen text="Loading…" />;
   if (!adminCheckDone) return <LoadingScreen text="Checking admin access…" />;
@@ -1079,6 +1224,7 @@ export default function AdminApp() {
     { id: "products", label: "Products", icon: "⟨⟩" },
     { id: "orders", label: "Orders", icon: "◻" },
     { id: "customers", label: "Customers", icon: "◉" },
+    { id: "stockRequests", label: "Stock Requests", icon: "◌", badge: stockRequests.filter(r => r.status !== "fulfilled").length },
   ];
 
   return (
@@ -1114,7 +1260,7 @@ export default function AdminApp() {
         {/* Sidebar */}
         <aside className="adm-sidebar" style={{ width: 250, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <nav style={{ padding: "20px 0", flex: 1 }}>
-            {navItems.map(n => <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />)}
+          {navItems.map(n => <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />)}
           </nav>
           <div style={{ padding: "14px 18px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.goldBg, border: `1px solid ${C.border2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.gold, fontWeight: 700, flexShrink: 0 }}>
@@ -1133,6 +1279,7 @@ export default function AdminApp() {
           {tab === "products" && <ProductsPage products={products} onSave={handleProductSave} onDelete={handleProductDelete} busy={busy} msg={msg} setMsg={setMsg} />}
           {tab === "orders" && <OrdersPage orders={orders} onStatusChange={handleOrderStatusChange} onReload={handleOrderReload} busy={busy} />}
           {tab === "customers" && <CustomersPage customers={customers} customersLoaded={customersLoaded} onLoad={loadCustomers} busy={busy} msg={msg} setMsg={setMsg} />}
+          {tab === "stockRequests" && <StockRequestsPage requests={stockRequests} onFulfill={handleFulfillStockRequest} busy={busy} msg={msg} setMsg={setMsg} />}
         </main>
       </div>
 
