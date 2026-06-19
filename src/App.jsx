@@ -92,6 +92,7 @@ export default function App() {
   const [checkoutErrors, setCheckoutErrors] = useState({});
   const [checkoutStep, setCheckoutStep] = useState(1);
   const [promoCode, setPromoCode] = useState("");
+  const [promoCodes, setPromoCodes] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [shopFilter, setShopFilter] = useState("All");
   useEffect(() => {
@@ -150,6 +151,16 @@ export default function App() {
       () => {
         setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
       },
+    );
+    return () => unsub();
+  }, []);
+
+  /* Live promo codes from Firestore */
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, "promoCodes"),
+      (snap) => setPromoCodes(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      () => setPromoCodes([]),
     );
     return () => unsub();
   }, []);
@@ -744,7 +755,8 @@ export default function App() {
     const priceTotal = subtotal + itemDiscount;
     const discountedSubtotal = Math.max(0, subtotal);
     const normalizedPromo = promoCode.trim().toUpperCase();
-    const promoDiscount = normalizedPromo === "SAVE10" ? discountedSubtotal * 0.1 : 0;
+    const activePromo = promoCodes.find(c => c.code === normalizedPromo && c.active === true);
+    const promoDiscount = activePromo ? discountedSubtotal * (activePromo.discount / 100) : 0;
     const total = Math.max(0, discountedSubtotal - promoDiscount + shippingFee);
     return { shippingFee, priceTotal, subtotal, itemDiscount, discountedSubtotal, promoDiscount, total, normalizedPromo };
   };
@@ -853,9 +865,13 @@ export default function App() {
   };
 
   const handleConfirmPayment = () => {
-    if (promoCode.trim() && promoCode.trim().toUpperCase() !== "SAVE10") {
-      addToast("Promo code is invalid. Try SAVE10 or leave blank.");
-      return;
+    if (promoCode.trim()) {
+      const normalized = promoCode.trim().toUpperCase();
+      const valid = promoCodes.find(c => c.code === normalized && c.active === true);
+      if (!valid) {
+        addToast("Promo code is invalid or expired.");
+        return;
+      }
     }
 
     if (!checkoutDraft.markAsDue) {

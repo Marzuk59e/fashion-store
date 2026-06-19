@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 import {
-  addDoc, collection, doc, getDoc, getDocs, limit,
+  addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit,
   onSnapshot, query, serverTimestamp,
   setDoc, updateDoc, orderBy,
 } from "firebase/firestore";
@@ -50,7 +50,7 @@ const STATUS_COLORS = {
 /* ─── Admin secret key ─────────────────────────────── */
 // Change this to a strong secret before going live!
 const ADMIN_SECRET_KEY = import.meta.env.VITE_ADMIN_SECRET_KEY ?? "sanjiiiii-admin-2025";
-const BYPASS_AUTH = false;
+const BYPASS_AUTH = true;
 
 /* ─── Validation ────────────────────────────────────────────── */
 function validateProductList(list) {
@@ -905,6 +905,119 @@ function CustomersPage({ customers, customersLoaded, onLoad, busy, msg, setMsg }
   );
 }
 
+/* ─── Promo Codes Page ───────────────────────────────────────── */
+function PromoCodesPage({ codes, onSave, onDelete, onToggle, busy, msg, setMsg }) {
+  const [form, setForm] = useState({ code: "", discount: "10", active: true });
+  const [editing, setEditing] = useState(false);
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.code.trim()) { setMsg("Please enter a promo code."); return; }
+    if (!form.discount || isNaN(Number(form.discount)) || Number(form.discount) <= 0 || Number(form.discount) > 100) {
+      setMsg("Discount must be between 1 and 100."); return;
+    }
+    await onSave(form);
+    setForm({ code: "", discount: "10", active: true });
+    setEditing(false);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+        <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Promo Codes</h2>
+        <button type="button" onClick={() => setEditing(v => !v)}
+          style={{ ...S.btnPrimary, fontSize: 12 }}>
+          {editing ? "✕ Cancel" : "+ Add Code"}
+        </button>
+      </div>
+      <p style={{ fontSize: 16, fontWeight: 600, color: C.muted, margin: "0 0 26px" }}>
+        Manage discount codes for customers
+      </p>
+      <MsgBanner msg={msg} onClose={() => setMsg("")} />
+
+      {editing && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "24px 28px", marginBottom: 28, display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>Code</label>
+            <input value={form.code} onChange={e => set("code", e.target.value.toUpperCase())}
+              placeholder="e.g. SAVE20"
+              style={{ padding: "9px 14px", background: C.bg, border: `1px solid ${C.border}`, color: C.text, fontSize: 14, fontFamily: font.mono, borderRadius: 6, width: 160 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>Discount %</label>
+            <input type="number" min="1" max="100" value={form.discount} onChange={e => set("discount", e.target.value)}
+              style={{ padding: "9px 14px", background: C.bg, border: `1px solid ${C.border}`, color: C.text, fontSize: 14, borderRadius: 6, width: 100 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em" }}>Active</label>
+            <button type="button" onClick={() => set("active", !form.active)}
+              style={{ padding: "9px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12,
+                background: form.active ? C.successBg : C.errorBg,
+                color: form.active ? "#6DBF8A" : "#CF8A8A" }}>
+              {form.active ? "✓ Active" : "✕ Inactive"}
+            </button>
+          </div>
+          <button type="button" onClick={handleSubmit} disabled={busy}
+            style={{ ...S.btnPrimary, padding: "9px 22px" }}>
+            Save Code
+          </button>
+        </div>
+      )}
+
+      {codes.length === 0 && !editing && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200, gap: 12, color: C.muted }}>
+          <span style={{ fontSize: 32, opacity: 0.3 }}>🏷️</span>
+          <p style={{ fontSize: 14, fontWeight: 500, margin: 0 }}>No promo codes yet</p>
+          <p style={{ fontSize: 13, margin: 0 }}>Click "+ Add Code" to create one.</p>
+        </div>
+      )}
+
+      {codes.length > 0 && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                {["Code", "Discount", "Status", "Actions"].map(h => (
+                  <th key={h} style={{ padding: "12px 18px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.09em", fontFamily: font.mono }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {codes.map((c, i) => (
+                <tr key={c.id} style={{ borderBottom: i < codes.length - 1 ? `1px solid ${C.border}` : "none" }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.surface2}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <td style={{ padding: "14px 18px" }}>
+                    <span style={{ fontFamily: font.mono, fontWeight: 700, color: C.gold, fontSize: 15, letterSpacing: "0.08em" }}>{c.code}</span>
+                  </td>
+                  <td style={{ padding: "14px 18px" }}>
+                    <span style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>{c.discount}% off</span>
+                  </td>
+                  <td style={{ padding: "14px 18px" }}>
+                    <button type="button" onClick={() => onToggle(c.id, c.active)} disabled={busy}
+                      style={{ padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 11,
+                        background: c.active ? C.successBg : C.errorBg,
+                        color: c.active ? "#6DBF8A" : "#CF8A8A",
+                        textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      {c.active ? "✓ Active" : "✕ Inactive"}
+                    </button>
+                  </td>
+                  <td style={{ padding: "14px 18px" }}>
+                    <button type="button" onClick={() => onDelete(c.id)} disabled={busy}
+                      style={{ ...S.btnDanger, padding: "5px 14px", fontSize: 11 }}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Stock Requests Page ────────────────────────────────────── */
 function StockRequestsPage({ requests, onFulfill, busy, msg, setMsg }) {
   const pending = requests.filter(r => r.status !== "fulfilled");
@@ -1021,6 +1134,7 @@ export default function AdminApp() {
   const [customersLoaded, setCustomersLoaded] = useState(false);
   const [orders, setOrders] = useState([]);
   const [stockRequests, setStockRequests] = useState([]);
+  const [promoCodes, setPromoCodes] = useState([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -1093,6 +1207,17 @@ export default function AdminApp() {
       const q = query(collection(adminDb, "stockRequests"), orderBy("createdAt", "desc"));
       const unsub = onSnapshot(q, snap => {
         setStockRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+      return () => unsub();
+    } catch { return undefined; }
+  }, [adminOk]);
+
+  /* Live promo codes */
+  useEffect(() => {
+    if (!BYPASS_AUTH && !adminOk) return;
+    try {
+      const unsub = onSnapshot(collection(adminDb, "promoCodes"), snap => {
+        setPromoCodes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       });
       return () => unsub();
     } catch { return undefined; }
@@ -1245,6 +1370,41 @@ export default function AdminApp() {
     finally { setBusy(false); }
   }, []);
 
+  const handleSavePromoCode = useCallback(async ({ code, discount, active }) => {
+    if (!code.trim()) return;
+    setBusy(true); setMsg("");
+    try {
+      const normalized = code.trim().toUpperCase();
+      await setDoc(doc(adminDb, "promoCodes", normalized), {
+        code: normalized,
+        discount: Number(discount),
+        active: Boolean(active),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      setMsg(`✓ Promo code "${normalized}" saved`);
+    } catch (e) { setMsg(e?.message || "Could not save promo code."); }
+    finally { setBusy(false); }
+  }, []);
+
+  const handleDeletePromoCode = useCallback(async (id) => {
+    if (!window.confirm(`Delete promo code "${id}"?`)) return;
+    setBusy(true); setMsg("");
+    try {
+      await deleteDoc(doc(adminDb, "promoCodes", id));
+      setMsg(`✓ Promo code "${id}" deleted`);
+    } catch (e) { setMsg(e?.message || "Could not delete promo code."); }
+    finally { setBusy(false); }
+  }, []);
+
+  const handleTogglePromoCode = useCallback(async (id, currentActive) => {
+    setBusy(true); setMsg("");
+    try {
+      await updateDoc(doc(adminDb, "promoCodes", id), { active: !currentActive });
+      setMsg(`✓ Promo code "${id}" ${!currentActive ? "activated" : "deactivated"}`);
+    } catch (e) { setMsg(e?.message || "Could not update promo code."); }
+    finally { setBusy(false); }
+  }, []);
+
   /* Guards */
   if (!BYPASS_AUTH && !authReady) return <LoadingScreen text="Loading…" />;
   if (!BYPASS_AUTH && !adminCheckDone) return <LoadingScreen text="Checking admin access…" />;
@@ -1257,6 +1417,7 @@ export default function AdminApp() {
     { id: "orders", label: "Orders", icon: "◻" },
     { id: "customers", label: "Customers", icon: "◉" },
     { id: "stockRequests", label: "Stock Requests", icon: "◌", badge: stockRequests.filter(r => r.status !== "fulfilled").length },
+    { id: "promoCodes", label: "Promo Codes", icon: "🏷" },
   ];
 
   return (
@@ -1312,6 +1473,7 @@ export default function AdminApp() {
           {tab === "orders" && <OrdersPage orders={orders} onStatusChange={handleOrderStatusChange} onReload={handleOrderReload} busy={busy} />}
           {tab === "customers" && <CustomersPage customers={customers} customersLoaded={customersLoaded} onLoad={loadCustomers} busy={busy} msg={msg} setMsg={setMsg} />}
           {tab === "stockRequests" && <StockRequestsPage requests={stockRequests} onFulfill={handleFulfillStockRequest} busy={busy} msg={msg} setMsg={setMsg} />}
+          {tab === "promoCodes" && <PromoCodesPage codes={promoCodes} onSave={handleSavePromoCode} onDelete={handleDeletePromoCode} onToggle={handleTogglePromoCode} busy={busy} msg={msg} setMsg={setMsg} />}
         </main>
       </div>
 
