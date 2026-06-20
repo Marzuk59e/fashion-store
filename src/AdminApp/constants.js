@@ -40,7 +40,7 @@ export const STATUS_COLORS = {
 
 /* ─── Admin secret key ──────────────────────────────────────── */
 export const ADMIN_SECRET_KEY = import.meta.env.VITE_ADMIN_SECRET_KEY ?? "sanjiiiii-admin-2025";
-export const BYPASS_AUTH = true;
+export const BYPASS_AUTH = false;
 
 /* ─── Shared button / input styles ─────────────────────────── */
 export const S = {
