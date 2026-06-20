@@ -1,4 +1,4 @@
-import { adminStorage } from "../firebase.js";
+import { adminStorage } from "../../firebase.js";
 
 export async function uploadImage(file) {
   if (!adminStorage)

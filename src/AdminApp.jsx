@@ -11,21 +11,20 @@ import {
 import { adminAuth, adminDb } from "./firebase.js";
 import { DEFAULT_PRODUCTS } from "./data/catalog.js";
 import { normalizeProduct, normalizeProductList } from "./data/productImages.js";
-import { validateProductList } from "./utils/validation.js";
-import { ADMIN_SECRET_KEY, BYPASS_AUTH, C, font, S } from "./constants.js";
+import { validateProductList } from "./AdminApp/utils/validation.js";
+import { ADMIN_SECRET_KEY, BYPASS_AUTH, C, font, S } from "./AdminApp/constants.js";
 
 import AdminLogin        from "./AdminLogin.jsx";
-import LoadingScreen     from "./components/LoadingScreen.jsx";
-import NavBtn            from "./components/NavBtn.jsx";
-import AccessDenied      from "./components/AccessDenied.jsx";
+import LoadingScreen     from "./AdminApp/components/LoadingScreen.jsx";
+import NavBtn            from "./AdminApp/components/NavBtn.jsx";
+import AccessDenied      from "./AdminApp/components/AccessDenied.jsx";
 
-import DashboardPage     from "./pages/DashboardPage.jsx";
-import ProductsPage      from "./pages/products/ProductsPage.jsx";
-import OrdersPage        from "./pages/OrdersPage.jsx";
-import CustomersPage     from "./pages/CustomersPage.jsx";
-import StockRequestsPage from "./pages/StockRequestsPage.jsx";
-import PromoCodesPage    from "./pages/PromoCodesPage.jsx";
-
+import DashboardPage     from "./AdminApp/pages/DashboardPage.jsx";
+import ProductsPage      from "./AdminApp/pages/products/ProductsPage.jsx";
+import OrdersPage        from "./AdminApp/pages/OrdersPage.jsx";
+import CustomersPage     from "./AdminApp/pages/CustomersPage.jsx";
+import StockRequestsPage from "./AdminApp/pages/StockRequestsPage.jsx";
+import PromoCodesPage    from "./AdminApp/pages/PromoCodesPage.jsx";
 const storefrontUrl = import.meta.env.VITE_STOREFRONT_URL ?? "/";
 
 /* ─── Helper: preserve docId after normalization ─────────────

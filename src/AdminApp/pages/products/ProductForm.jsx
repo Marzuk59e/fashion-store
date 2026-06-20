@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { C, font, S, CATEGORIES } from "../../constants.js";
 import FormField from "../../components/FormField.jsx";
-import { getProductImage, normalizeProduct } from "../../data/productImages.js";
+import { getProductImage, normalizeProduct } from "../../../data/productImages.js";
 import { uploadImage } from "../../utils/imageUpload.js";
 
 const EMPTY = {

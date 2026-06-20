@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { C, font, S, CATEGORIES } from "../../constants.js";
+import { C, S, CATEGORIES, font } from "../../constants.js";
 import MsgBanner from "../../components/MsgBanner.jsx";
-import { getProductImage } from "../../data/productImages.js";
+import { getProductImage } from "../../../data/productImages.js";
 import ProductForm from "./ProductForm.jsx";
 import ExcelUploadPanel from "./ExcelUploadPanel.jsx";
 
