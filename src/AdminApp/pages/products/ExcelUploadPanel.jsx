@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { C, font, S } from "../../constants.js";
 import MsgBanner from "../../components/MsgBanner.jsx";
 import { parseExcelFile } from "../../utils/excelParser.js";
+import { normalizeProduct } from "../../../data/productImages.js";
 
 export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, busy }) {
   const [preview, setPreview] = useState(null);

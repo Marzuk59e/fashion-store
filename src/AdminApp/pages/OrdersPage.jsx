@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { C, font, S, ORDER_STATUSES } from "../constants.js";
 import StatusBadge from "../components/StatusBadge.jsx";
+import ScrollToTop from "../components/ScrollToTop.jsx";
 
 export default function OrdersPage({ orders, onStatusChange, onReload, busy }) {
   const [search,       setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const scrollRef = useRef(null);
 
   const filtered = useMemo(() =>
     orders.filter(o => {
@@ -21,14 +23,22 @@ export default function OrdersPage({ orders, onStatusChange, onReload, busy }) {
 
   const reloadBtn = (
     <button type="button" onClick={onReload} disabled={busy}
-      style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold, minWidth: 110, display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ display: "inline-block", animation: busy ? "spin 1s linear infinite" : "none" }}>↺</span>
+      style={{
+        ...S.btnGhost, color: C.gold, borderColor: C.gold,
+        minWidth: 110, display: "flex", alignItems: "center", gap: 6,
+      }}>
+      <span style={{
+        display: "inline-block",
+        animation: busy ? "spin 1s linear infinite" : "none",
+        transformOrigin: "center",
+        lineHeight: 1,
+      }}>↺</span>
       {busy ? "Reloading…" : "Reload"}
     </button>
   );
 
   if (orders.length === 0) return (
-    <div>
+    <div ref={scrollRef} style={{ height: "100%", overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
         <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Orders</h2>
         {reloadBtn}
@@ -46,7 +56,7 @@ export default function OrdersPage({ orders, onStatusChange, onReload, busy }) {
   const blur  = e => (e.target.style.borderColor = C.border2);
 
   return (
-    <div>
+    <div ref={scrollRef} style={{ height: "100%", overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
         <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>Orders</h2>
         {reloadBtn}
@@ -127,6 +137,8 @@ export default function OrdersPage({ orders, onStatusChange, onReload, busy }) {
           </tbody>
         </table>
       </div>
+
+      <ScrollToTop scrollRef={scrollRef} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import MsgBanner from "../../components/MsgBanner.jsx";
 import { getProductImage } from "../../../data/productImages.js";
 import ProductForm from "./ProductForm.jsx";
 import ExcelUploadPanel from "./ExcelUploadPanel.jsx";
+import ScrollToTop from "../../components/ScrollToTop.jsx";
 
 export default function ProductsPage({ products, onSave, onDelete, onToggleStock, busy, msg, setMsg }) {
   const [search,      setSearch]      = useState("");
@@ -12,23 +13,17 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
   const [editProduct, setEditProduct] = useState(null);
   const [showExcel,   setShowExcel]   = useState(false);
 
-  const filtered = useMemo(() =>
-    products.filter(p => {
-      const q      = search.toLowerCase();
-      const matchQ = !q || p.name?.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q);
-      const matchC = catFilter === "All" || p.category === catFilter;
-      return matchQ && matchC;
-    }),
-    [products, search, catFilter]
-  );
+  const filtered = useMemo(() => products.filter(p => {
+    const q      = search.toLowerCase();
+    const matchQ = !q || p.name?.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q);
+    const matchC = catFilter === "All" || p.category === catFilter;
+    return matchQ && matchC;
+  }), [products, search, catFilter]);
 
   const handleEdit   = (p) => { setEditProduct(p); setShowForm(true); setShowExcel(false); };
   const handleAdd    = ()  => { setEditProduct(null); setShowForm(true); setShowExcel(false); };
-  const handleExcel  = ()  => { setShowExcel(true);  setShowForm(false); };
-  const handleCancel = ()  => { setShowForm(false);  setEditProduct(null); setShowExcel(false); };
-
-  const focus = e => (e.target.style.borderColor = C.gold);
-  const blur  = e => (e.target.style.borderColor = C.border2);
+  const handleExcel  = ()  => { setShowExcel(true); setShowForm(false); };
+  const handleCancel = ()  => { setShowForm(false); setEditProduct(null); setShowExcel(false); };
 
   return (
     <div>
@@ -39,8 +34,9 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
           <p style={{ fontSize: 16, fontWeight: 600, color: C.muted, margin: 0 }}>{products.length} products in catalog</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button type="button" onClick={handleExcel} style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>📊 Excel Upload</button>
-          <button type="button" onClick={handleAdd}   style={S.btnPrimary}>+ Add Product</button>
+          <button type="button" onClick={handleExcel}
+            style={{ ...S.btnGhost, color: C.gold, borderColor: C.gold }}>📊 Excel Upload</button>
+          <button type="button" onClick={handleAdd} style={S.btnPrimary}>+ Add Product</button>
         </div>
       </div>
 
@@ -54,6 +50,7 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
           busy={busy}
         />
       )}
+
       {showForm && (
         <ProductForm
           initial={editProduct}
@@ -68,7 +65,8 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
         <input style={{ ...S.input, flex: 1, minWidth: 200 }}
           placeholder="Search name, brand, category…"
           value={search} onChange={e => setSearch(e.target.value)}
-          onFocus={focus} onBlur={blur} />
+          onFocus={e => e.target.style.borderColor = C.gold}
+          onBlur={e => e.target.style.borderColor = C.border2} />
         <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
           style={{ ...S.input, width: "auto", minWidth: 140, appearance: "none" }}>
           <option value="All">All Categories</option>
@@ -103,20 +101,17 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr>
-                <td colSpan={8} style={{ padding: "40px", textAlign: "center", color: C.muted, fontSize: 14 }}>
-                  No products found
-                </td>
-              </tr>
+              <tr><td colSpan={8} style={{ padding: "40px", textAlign: "center", color: C.muted, fontSize: 14 }}>No products found</td></tr>
             )}
             {filtered.map((p, i) => (
               <tr key={p.id}
                 style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none" }}
-                onMouseEnter={e => (e.currentTarget.style.background = C.surface2)}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                onMouseEnter={e => e.currentTarget.style.background = C.surface2}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                 <td style={{ padding: "14px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <img src={getProductImage(p)} alt="" style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: `1px solid ${C.border2}`, flexShrink: 0 }} />
+                    <img src={getProductImage(p)} alt=""
+                      style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 6, border: `1px solid ${C.border2}`, flexShrink: 0 }} />
                     <span style={{ color: C.text, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{p.name}</span>
                   </div>
                 </td>
@@ -141,7 +136,7 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
                       padding: "4px 10px", fontSize: 10, fontWeight: 700, borderRadius: 20, border: "none",
                       cursor: busy ? "not-allowed" : "pointer",
                       background: p.inStock !== false ? C.successBg : C.errorBg,
-                      color:      p.inStock !== false ? "#6DBF8A"    : "#CF8A8A",
+                      color: p.inStock !== false ? "#6DBF8A" : "#CF8A8A",
                       letterSpacing: "0.06em", textTransform: "uppercase", transition: "all 0.2s",
                     }}>
                     {p.inStock !== false ? "✓ In Stock" : "✕ Out"}
@@ -150,7 +145,8 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
                 <td style={{ padding: "14px 14px", borderLeft: `1px solid ${C.border}` }}>
                   <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                     <button type="button" onClick={() => handleEdit(p)} style={{ ...S.btnGhost, padding: "5px 12px", fontSize: 11 }}>Edit</button>
-                    <button type="button" onClick={() => { if (window.confirm(`Delete "${p.name}"?`)) onDelete(p.id); }}
+                    <button type="button"
+                      onClick={() => { if (window.confirm(`Delete "${p.name}"?`)) onDelete(p.id); }}
                       style={{ ...S.btnDanger, padding: "5px 12px", fontSize: 11 }}>Del</button>
                   </div>
                 </td>

@@ -388,7 +388,11 @@ export default function AdminApp() {
         </aside>
 
         {/* Main content */}
-        <main className="adm-main-pad" style={{ flex: 1, overflowY: "auto", padding: "44px 56px" }}>
+        <main
+  id="adm-main"
+  className="adm-main-pad"
+  style={{ flex: 1, overflowY: "auto", padding: "44px 56px" }}
+>
           {tab === "dashboard"     && <DashboardPage     products={products} customers={customers} customersLoaded={customersLoaded} orders={orders} />}
           {tab === "products"      && <ProductsPage      products={products} onSave={handleProductSave} onDelete={handleProductDelete} onToggleStock={handleToggleStock} busy={busy} msg={msg} setMsg={setMsg} />}
           {tab === "orders"        && <OrdersPage        orders={orders} onStatusChange={handleOrderStatusChange} onReload={handleOrderReload} busy={busy} />}

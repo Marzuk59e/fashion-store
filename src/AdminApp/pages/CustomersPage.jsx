@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { C, font, S } from "../constants.js";
 import MsgBanner from "../components/MsgBanner.jsx";
+import ScrollToTop from "../components/ScrollToTop.jsx";
 
 export default function CustomersPage({ customers, customersLoaded, onLoad, busy, msg, setMsg }) {
   const [search, setSearch] = useState("");
+  const scrollRef = useRef(null);
 
   const filtered = useMemo(() => {
     if (!search) return customers;
@@ -19,7 +21,7 @@ export default function CustomersPage({ customers, customersLoaded, onLoad, busy
   const blur  = e => (e.target.style.borderColor = C.border2);
 
   return (
-    <div>
+    <div ref={scrollRef} style={{ height: "100%", overflowY: "auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: "0 0 4px" }}>Customers</h2>
@@ -90,6 +92,8 @@ export default function CustomersPage({ customers, customersLoaded, onLoad, busy
           </div>
         </>
       )}
+
+      <ScrollToTop scrollRef={scrollRef} />
     </div>
   );
 }

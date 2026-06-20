@@ -1,5 +1,5 @@
 // ─── Run once if Excel upload fails: npm install xlsx ────────
-import { getProductImage } from "../../../data/productImages.js";
+import { getProductImage, normalizeProduct } from "../../data/productImages.js";
 
 export async function parseExcelFile(file) {
   let XLSX;

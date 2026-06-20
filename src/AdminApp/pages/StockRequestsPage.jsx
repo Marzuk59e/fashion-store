@@ -1,12 +1,15 @@
+import { useRef } from "react";
 import { C, font, S } from "../constants.js";
 import MsgBanner from "../components/MsgBanner.jsx";
+import ScrollToTop from "../components/ScrollToTop.jsx";
 
 export default function StockRequestsPage({ requests, onFulfill, busy, msg, setMsg }) {
   const pending   = requests.filter(r => r.status !== "fulfilled");
   const fulfilled = requests.filter(r => r.status === "fulfilled");
+  const scrollRef = useRef(null);
 
   return (
-    <div>
+    <div ref={scrollRef} style={{ height: "100%", overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
         <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>
           Stock Requests
@@ -31,7 +34,6 @@ export default function StockRequestsPage({ requests, onFulfill, busy, msg, setM
         </div>
       )}
 
-      {/* Pending */}
       {pending.length > 0 && (
         <>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono, margin: "0 0 12px" }}>
@@ -81,7 +83,6 @@ export default function StockRequestsPage({ requests, onFulfill, busy, msg, setM
         </>
       )}
 
-      {/* Fulfilled */}
       {fulfilled.length > 0 && (
         <>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: font.mono, margin: "0 0 12px" }}>
@@ -121,6 +122,8 @@ export default function StockRequestsPage({ requests, onFulfill, busy, msg, setM
           </div>
         </>
       )}
+
+      <ScrollToTop scrollRef={scrollRef} />
     </div>
   );
 }
