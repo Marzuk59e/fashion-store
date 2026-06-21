@@ -155,6 +155,7 @@ export default function ProductsPage({ products, onSave, onDelete, onToggleStock
           </tbody>
         </table>
       </div>
+       <ScrollToTop />
     </div>
   );
 }

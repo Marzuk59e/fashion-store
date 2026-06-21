@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { C, font, S } from "../constants.js";
 import MsgBanner from "../components/MsgBanner.jsx";
 import ScrollToTop from "../components/ScrollToTop.jsx";
@@ -6,10 +5,9 @@ import ScrollToTop from "../components/ScrollToTop.jsx";
 export default function StockRequestsPage({ requests, onFulfill, busy, msg, setMsg }) {
   const pending   = requests.filter(r => r.status !== "fulfilled");
   const fulfilled = requests.filter(r => r.status === "fulfilled");
-  const scrollRef = useRef(null);
 
   return (
-    <div ref={scrollRef} style={{ height: "100%", overflowY: "auto" }}>
+    <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
         <h2 style={{ fontSize: 34, fontWeight: 500, color: C.text, fontFamily: font.serif, margin: 0 }}>
           Stock Requests
@@ -92,9 +90,7 @@ export default function StockRequestsPage({ requests, onFulfill, busy, msg, setM
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <tbody>
                 {fulfilled.map((r, i) => {
-                  const date = r.fulfilledAt?.toDate
-                    ? r.fulfilledAt.toDate().toLocaleDateString()
-                    : "—";
+                  const date = r.fulfilledAt?.toDate ? r.fulfilledAt.toDate().toLocaleDateString() : "—";
                   return (
                     <tr key={r.id}
                       style={{ borderBottom: i < fulfilled.length - 1 ? `1px solid ${C.border}` : "none" }}
@@ -123,7 +119,7 @@ export default function StockRequestsPage({ requests, onFulfill, busy, msg, setM
         </>
       )}
 
-      <ScrollToTop scrollRef={scrollRef} />
+      <ScrollToTop />
     </div>
   );
 }

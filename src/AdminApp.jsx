@@ -332,8 +332,9 @@ export default function AdminApp() {
 
   /* ─── Layout ─────────────────────────────────────────────── */
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: font.sans, display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100vh", background: C.bg, color: C.text, fontFamily: font.sans, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <style>{`
+        html{font-size:16px;min-width:768px}body{min-width:768px;max-width:100%;zoom:clamp(0.67,1,1.25)}
         *{box-sizing:border-box;margin:0;padding:0}
         ::-webkit-scrollbar{width:5px;height:5px}
         ::-webkit-scrollbar-track{background:${C.bg}}
@@ -366,9 +367,9 @@ export default function AdminApp() {
         </div>
       </header>
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         {/* Sidebar */}
-        <aside className="adm-sidebar" style={{ width: 250, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <aside className="adm-sidebar" style={{ width: 250, minWidth: 200, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" }}>
           <nav style={{ padding: "20px 0", flex: 1 }}>
             {navItems.map(n => (
               <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />
@@ -391,7 +392,7 @@ export default function AdminApp() {
         <main
   id="adm-main"
   className="adm-main-pad"
-  style={{ flex: 1, overflowY: "auto", padding: "44px 56px" }}
+  style={{ flex: 1, minWidth: 0, overflowY: "auto", padding: "44px 56px" }}
 >
           {tab === "dashboard"     && <DashboardPage     products={products} customers={customers} customersLoaded={customersLoaded} orders={orders} />}
           {tab === "products"      && <ProductsPage      products={products} onSave={handleProductSave} onDelete={handleProductDelete} onToggleStock={handleToggleStock} busy={busy} msg={msg} setMsg={setMsg} />}
