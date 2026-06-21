@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { C, S, font } from "../constants/theme.js";
-import MsgBanner from "../components/MsgBanner.jsx";
-import { parseExcelFile } from "../utils/excelParser.js";
+import { C, font, S } from "../../constants.js";
+import MsgBanner from "../../components/MsgBanner.jsx";
+import { parseExcelFile } from "../../utils/excelParser.js";
+import { normalizeProduct } from "../../../data/productImages.js";
 
 export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, busy }) {
   const [preview, setPreview] = useState(null);
@@ -23,7 +24,10 @@ export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, 
     } catch (e) { setErr(e.message); }
   };
 
-  const handleDrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files?.[0]); };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    handleFile(e.dataTransfer.files?.[0]);
+  };
 
   const handleConfirm = () => {
     if (!preview) return;
@@ -39,7 +43,10 @@ export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, 
   };
 
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, marginBottom: 24 }}>
+    <div style={{
+      background: C.surface, border: `1px solid ${C.border}`,
+      borderRadius: 12, padding: 24, marginBottom: 24,
+    }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 500, color: C.text, fontFamily: font.serif }}>
           Bulk Upload via Excel
@@ -49,7 +56,10 @@ export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, 
       </div>
 
       {/* Format guide */}
-      <div style={{ background: C.bg, border: `1px solid ${C.border2}`, borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+      <div style={{
+        background: C.bg, border: `1px solid ${C.border2}`,
+        borderRadius: 8, padding: "12px 16px", marginBottom: 16,
+      }}>
         <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}>
           Required columns
         </p>
@@ -65,7 +75,11 @@ export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, 
           onDrop={handleDrop}
           onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = C.gold; }}
           onDragLeave={e => { e.currentTarget.style.borderColor = C.border2; }}
-          style={{ border: `2px dashed ${C.border2}`, borderRadius: 10, padding: "32px 20px", textAlign: "center", cursor: "pointer", transition: "border-color 0.2s" }}
+          style={{
+            border: `2px dashed ${C.border2}`, borderRadius: 10,
+            padding: "32px 20px", textAlign: "center",
+            cursor: "pointer", transition: "border-color 0.2s",
+          }}
           onClick={() => {
             const inp = document.createElement("input");
             inp.type = "file"; inp.accept = ".xlsx,.xls,.csv";
@@ -74,12 +88,14 @@ export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, 
           }}
         >
           <p style={{ margin: "0 0 6px", fontSize: 22, opacity: 0.5 }}>📊</p>
-          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 500, color: C.text }}>Drop your Excel file here</p>
+          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 500, color: C.text }}>
+            Drop your Excel file here
+          </p>
           <p style={{ margin: 0, fontSize: 12, color: C.muted }}>or click to browse · .xlsx .xls .csv</p>
         </div>
       )}
 
-      {err && <MsgBanner msg={err} onClose={() => setErr("")} />}
+      <MsgBanner msg={err} onClose={() => setErr("")} />
 
       {/* Preview table */}
       {preview && (
@@ -89,21 +105,37 @@ export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, 
             <button type="button" onClick={() => setPreview(null)} style={S.btnGhost}>Clear</button>
           </div>
 
-          {/* Merge mode */}
+          {/* Merge mode selector */}
           <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
-            {[["replace", "Replace all existing products"], ["merge", "Merge (keep existing, add/update from file)"]].map(([val, lbl]) => (
-              <label key={val} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: mode === val ? C.gold : C.muted, fontFamily: font.sans }}>
-                <input type="radio" value={val} checked={mode === val} onChange={() => setMode(val)} style={{ accentColor: C.gold }} /> {lbl}
+            {[
+              ["replace", "Replace all existing products"],
+              ["merge",   "Merge (keep existing, add/update from file)"],
+            ].map(([val, lbl]) => (
+              <label key={val} style={{
+                display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+                fontSize: 13, color: mode === val ? C.gold : C.muted, fontFamily: font.sans,
+              }}>
+                <input type="radio" value={val} checked={mode === val}
+                  onChange={() => setMode(val)} style={{ accentColor: C.gold }} />
+                {lbl}
               </label>
             ))}
           </div>
 
-          <div style={{ overflowX: "auto", border: `1px solid ${C.border}`, borderRadius: 10, maxHeight: 220, overflowY: "auto" }}>
+          <div style={{
+            overflowX: "auto", border: `1px solid ${C.border}`,
+            borderRadius: 10, maxHeight: 220, overflowY: "auto",
+          }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead style={{ position: "sticky", top: 0 }}>
                 <tr style={{ background: C.surface2 }}>
                   {["ID", "Name", "Brand", "Price", "Category", "Sizes", "Badge"].map(h => (
-                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: C.muted, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", borderBottom: `1px solid ${C.border}` }}>{h}</th>
+                    <th key={h} style={{
+                      padding: "8px 12px", textAlign: "left", color: C.muted,
+                      fontWeight: 700, fontSize: 11, textTransform: "uppercase",
+                      letterSpacing: "0.08em", whiteSpace: "nowrap",
+                      borderBottom: `1px solid ${C.border}`,
+                    }}>{h}</th>
                   ))}
                 </tr>
               </thead>
