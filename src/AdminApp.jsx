@@ -367,9 +367,9 @@ export default function AdminApp() {
         </div>
       </header>
 
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        {/* Sidebar */}
-        <aside className="adm-sidebar" style={{ width: 250, minWidth: 200, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0, position: "sticky", top: 0, height: "calc(100vh - 64px)", overflowY : "auto"  }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
+      {/* Sidebar */}
+      <aside className="adm-sidebar" style={{ width: 250, minWidth: 200, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" }}>
           <nav style={{ padding: "20px 0", flex: 1 }}>
             {navItems.map(n => (
               <NavBtn key={n.id} {...n} active={tab === n.id} onClick={id => { setTab(id); setMsg(""); }} />
