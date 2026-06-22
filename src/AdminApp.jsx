@@ -20,7 +20,7 @@ import NavBtn            from "./AdminApp/components/NavBtn.jsx";
 import AccessDenied      from "./AdminApp/components/AccessDenied.jsx";
 
 import DashboardPage     from "./AdminApp/pages/DashboardPage.jsx";
-import ProductsPage      from "./AdminApp/pages/products/ProductsPage.jsx";
+import ProductsPage      from "./AdminApp/products/ProductsPage.jsx";
 import OrdersPage        from "./AdminApp/pages/OrdersPage.jsx";
 import CustomersPage     from "./AdminApp/pages/CustomersPage.jsx";
 import StockRequestsPage from "./AdminApp/pages/StockRequestsPage.jsx";

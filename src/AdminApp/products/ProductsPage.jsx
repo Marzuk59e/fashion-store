@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { C, S, CATEGORIES, font } from "../../constants.js";
-import MsgBanner from "../../components/MsgBanner.jsx";
-import { getProductImage } from "../../../data/productImages.js";
+import { C, S, CATEGORIES, font } from "../constants.js";
+import MsgBanner from "../components/MsgBanner.jsx";
+import { getProductImage } from "../../data/productImages.js";
 import ProductForm from "./ProductForm.jsx";
 import ExcelUploadPanel from "./ExcelUploadPanel.jsx";
-import ScrollToTop from "../../components/ScrollToTop.jsx";
+import ScrollToTop from "../components/ScrollToTop.jsx";
 
 export default function ProductsPage({ products, onSave, onDelete, onToggleStock, busy, msg, setMsg }) {
   const [search,      setSearch]      = useState("");
