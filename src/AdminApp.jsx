@@ -114,6 +114,17 @@ export default function AdminApp() {
     return unsub;
   }, [adminOk]);
 
+  // Auto-load customers silently on login (for Dashboard count)
+  useEffect(() => {
+    if (!BYPASS_AUTH && !adminOk) return;
+    getDocs(query(collection(adminDb, "users"), limit(200)))
+      .then(snap => {
+        setCustomers(snap.docs.map(d => ({ uid: d.id, ...d.data() })));
+        setCustomersLoaded(true);
+      })
+      .catch(() => {});
+  }, [adminOk]);
+
   /* ─── Auth: login ────────────────────────────────────────── */
   const loginEmail = useCallback(async () => {
     setBusy(true); setMsg("");
