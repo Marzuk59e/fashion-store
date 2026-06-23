@@ -256,12 +256,34 @@ export default function AdminApp() {
   }, [adminOk]);
 
   const handleOrderStatusChange = useCallback(async (orderId, newStatus) => {
-    setBusy(true);
+    setBusy(true); setMsg("");
     try {
-      await updateDoc(doc(adminDb, "orders", orderId), { status: newStatus, updatedAt: serverTimestamp() });
+      await updateDoc(doc(adminDb, "orders", orderId), {
+        status: newStatus, updatedAt: serverTimestamp(),
+      });
+      const order = orders.find(o => o.id === orderId);
+      if (order?.userId) {
+        const statusMessages = {
+          processing: "Your order is now being processed. We'll keep you updated!",
+          shipped:    "Great news! Your order has been shipped and is on its way.",
+          delivered:  "Your order has been delivered. We hope you love it! ✦",
+          cancelled:  "Your order has been cancelled. Contact us if you have questions.",
+        };
+        if (statusMessages[newStatus]) {
+          await addDoc(collection(adminDb, "users", order.userId, "notifications"), {
+            type:      "order_status",
+            orderId,
+            status:    newStatus,
+            message:   statusMessages[newStatus],
+            read:      false,
+            createdAt: serverTimestamp(),
+          });
+        }
+      }
+      setMsg(`✓ Order status updated to "${newStatus}"`);
     } catch (e) { setMsg(e?.message || "Could not update order status."); }
     finally { setBusy(false); }
-  }, []);
+  }, [orders]);
 
   /* ─── Stock-request handler ──────────────────────────────── */
   const handleFulfillStockRequest = useCallback(async (requestId, productId, userId, productName) => {

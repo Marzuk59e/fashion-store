@@ -51,7 +51,18 @@ injectGlobalStyles();
 
 export default function App() {
   const [page, setPage] = useState("home");
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    // Instantly hydrate from localStorage — no network call
+    try {
+      const session = LS.getSession();
+      if (!session?.email) return null;
+      const u = normalizeUser(LS.getUser(session.email));
+      return u || null;
+    } catch {
+      return null;
+    }
+  });
+  const [authReady, setAuthReady] = useState(false);
   const [products, setProducts] = useState(() => enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
   const catalogRef = useRef(DEFAULT_PRODUCTS);
   const [cart, setCart] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).cart);
@@ -339,6 +350,9 @@ export default function App() {
       } catch (e) {
         console.error(e);
         addToastRef.current("Could not load account from cloud. Create a Firestore database and deploy rules (see firestore.rules).", "error");
+      } finally {
+        // Mark auth as resolved — whether user found or not
+        setAuthReady(true);
       }
     });
     return () => unsub();
@@ -1185,7 +1199,7 @@ export default function App() {
         requestedAt: serverTimestamp(),
         userName: user?.name || "Guest",
         userEmail: user?.email || "guest",
-        userUid: user?.firebaseUid || null,
+        userId: user?.firebaseUid || null,
       });
       addToast(`Stock request submitted for "${productName}" ✓`, "success");
     } catch {
@@ -1229,8 +1243,11 @@ export default function App() {
                 {user.name[0].toUpperCase()}
               </div>
             </button>
-          ) : (
+          ) : authReady ? (
             <button className="btn-primary" onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
+          ) : (
+            // Skeleton placeholder while Firebase auth resolves
+            <div style={{ width: 65, height: 32, borderRadius: 4, background: "var(--charcoal)", opacity: 0.3 }} />
           )}
         </div>
       </nav>
