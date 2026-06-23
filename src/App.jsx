@@ -1490,18 +1490,22 @@ export default function App() {
                       </div>
                       {!n.read && (
                         <button
-                          className="filter-btn"
-                          onClick={async () => {
-                            if (!user?.firebaseUid) return;
-                            try {
-                              await updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true });
-                            } catch {
-                              void 0;
-                            }
-                          }}
-                        >
-                          Mark read
-                        </button>
+                        onClick={async () => {
+                          if (!user?.firebaseUid) return;
+                          try {
+                            await updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true });
+                          } catch { void 0; }
+                        }}
+                        style={{
+                          background: "none", border: "1px solid var(--border)",
+                          color: "var(--warm-gray)", fontSize: "0.58rem",
+                          letterSpacing: "0.08em", padding: "3px 8px",
+                          cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+                          alignSelf: "flex-start",
+                        }}
+                      >
+                        Mark read
+                      </button>
                       )}
                     </div>
                   </div>
