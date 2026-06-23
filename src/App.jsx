@@ -1991,6 +1991,20 @@ export default function App() {
         }
       }
       
+  // Payment notification
+      if (user?.firebaseUid) {
+      try {
+    await addDoc(collection(db, "users", user.firebaseUid, "notifications"), {
+      type:      "payment",
+      orderId:   payNowOrder.id,
+      message:   `Payment confirmed for order ${payNowOrder.id}. Thank you! ✦`,
+      read:      false,
+      createdAt: serverTimestamp(),
+    });
+  } catch {}
+}
+      
+
       addToast("Payment completed successfully!", "success");
     }}
   />
