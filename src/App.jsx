@@ -1480,38 +1480,38 @@ export default function App() {
               ) : (
                 notifications.map((n) => (
                 
-               <div key={n.id} style={{ border: "1px solid var(--border)", background: "var(--surface)", padding: 12, opacity: n.read ? 0.72 : 1 }}>
-               <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>{n.title || "Update"}</div>
-               <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{n.message || "You have a new update."}</div>
-                <div style={{ fontSize: "0.62rem", color: "var(--warm-gray)", marginTop: 6 }}>
-    {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleString() : "Just now"}
-  </div>
-  {!n.read && (
-    <button
-      onClick={async () => {
-        if (!user?.firebaseUid) return;
-        try {
-          await updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true });
-        } catch { void 0; }
-      }}
-      style={{
-        marginTop: 10,
-        background: "var(--gold)",
-        border: "none",
-        color: "#1a1509",
-        fontSize: "0.58rem",
-        fontWeight: 700,
-        letterSpacing: "0.1em",
-        textTransform: "uppercase",
-        padding: "6px 14px",
-        cursor: "pointer",
-      }}
-    >
-      Mark Read
-    </button>
-  )}
-</div>
-                ))
+                  <div key={n.id} style={{ border: "1px solid var(--border)", background: "var(--surface)", padding: 12, opacity: n.read ? 0.72 : 1 }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>{n.title || "Update"}</div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{n.message || "You have a new update."}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+                    <span style={{ fontSize: "0.62rem", color: "var(--warm-gray)" }}>
+                      {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleString() : "Just now"}
+                    </span>
+                    {!n.read && (
+                      <button
+                        onClick={async () => {
+                          if (!user?.firebaseUid) return;
+                          try {
+                            await updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true });
+                          } catch { void 0; }
+                        }}
+                        style={{
+                          background: "var(--gold)",
+                          border: "none",
+                          color: "#1a1509",
+                          fontSize: "0.58rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          padding: "4px 12px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Mark Read
+                      </button>
+                    )}
+                  </div>
+                </div>     ))
               )}
             </div>
           </div>
