@@ -271,13 +271,21 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       try {
         if (fbUser) {
-          if (await isAdminAccountUid(fbUser.uid)) {
-            await signOut(auth);
-            setUser(null);
-            const g = readGuestBagFromStorage(catalogRef.current);
-            setCart(g.cart);
-            setWishlist(g.wishlist);
-            return;
+          // Check localStorage cache first — skip Firestore admin check for known customers
+          const adminCacheKey = `sanj_not_admin_${fbUser.uid}`;
+          const cachedNotAdmin = localStorage.getItem(adminCacheKey) === "1";
+
+          if (!cachedNotAdmin) {
+            if (await isAdminAccountUid(fbUser.uid)) {
+              await signOut(auth);
+              setUser(null);
+              const g = readGuestBagFromStorage(catalogRef.current);
+              setCart(g.cart);
+              setWishlist(g.wishlist);
+              return;
+            }
+            // Cache that this user is NOT an admin — skip check on next page load
+            localStorage.setItem(adminCacheKey, "1");
           }
           const ref = doc(db, "users", fbUser.uid);
           const snap = await getDoc(ref);
