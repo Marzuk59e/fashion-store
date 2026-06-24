@@ -49,7 +49,7 @@ import StoresPage from "./pages/StoresPage.jsx";
 
 injectGlobalStyles();
 
-function NotificationCard({ n, user, db, doc, updateDoc }) {
+function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
   const [popupOpen, setPopupOpen] = useState(false);
 
   const handleMarkRead = async (e) => {
@@ -63,6 +63,16 @@ function NotificationCard({ n, user, db, doc, updateDoc }) {
   const timeStr = n.createdAt?.seconds
     ? new Date(n.createdAt.seconds * 1000).toLocaleString()
     : "Just now";
+
+  // Match related order
+  const relatedOrder = n.orderId ? orders.find(o => o.id === n.orderId) : null;
+
+  // Match related product
+  const relatedProduct = n.productName
+    ? products.find(p => p.name === n.productName || p.id === n.productId)
+    : relatedOrder?.items?.[0]?.product || null;
+
+  const fmt = (v) => `$${Number(v || 0).toFixed(2)}`;
 
   return (
     <>
@@ -100,112 +110,211 @@ function NotificationCard({ n, user, db, doc, updateDoc }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
           <span style={{ fontSize: "0.62rem", color: "var(--warm-gray)" }}>{timeStr}</span>
           {!n.read && (
-            <button
-              onClick={handleMarkRead}
-              style={{
-                background: "var(--gold)", border: "none", color: "#1a1509",
-                fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.1em",
-                textTransform: "uppercase", padding: "4px 12px", cursor: "pointer", borderRadius: 1,
-              }}
-            >
-              Mark Read
-            </button>
+            <button onClick={handleMarkRead} style={{
+              background: "var(--gold)", border: "none", color: "#1a1509",
+              fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.1em",
+              textTransform: "uppercase", padding: "4px 12px", cursor: "pointer", borderRadius: 1,
+            }}>Mark Read</button>
           )}
         </div>
       </div>
 
-      {/* Popup Modal */}
+      {/* Popup */}
       {popupOpen && (
         <>
-          <div
-            onClick={() => setPopupOpen(false)}
-            style={{
-              position: "fixed", inset: 0,
-              background: "rgba(0,0,0,0.45)",
-              zIndex: 9999,
-            }}
-          />
+          <div onClick={() => setPopupOpen(false)} style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999,
+          }} />
           <div style={{
-            position: "fixed",
-            top: "50%", left: "50%",
+            position: "fixed", top: "50%", left: "50%",
             transform: "translate(-50%, -50%)",
             zIndex: 10000,
             background: "var(--cream)",
             border: "1px solid var(--border)",
             borderRadius: 4,
-            padding: "28px 24px",
-            width: "min(420px, 90vw)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+            width: "min(500px, 94vw)",
+            maxHeight: "88vh",
+            overflowY: "auto",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.22)",
             animation: "notif-popup 0.22s cubic-bezier(0.34,1.56,0.64,1)",
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.1rem", color: "var(--charcoal)" }}>
-                {n.title || "Update"}
+
+            {/* Product/Order Hero Image */}
+            {relatedProduct?.image && (
+              <div style={{
+                width: "100%", height: 200, overflow: "hidden",
+                borderRadius: "4px 4px 0 0", position: "relative",
+              }}>
+                <img
+                  src={relatedProduct.image}
+                  alt={relatedProduct.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)",
+                }} />
+                <div style={{
+                  position: "absolute", bottom: 14, left: 18,
+                  color: "#fff", fontFamily: "var(--font-serif)",
+                  fontSize: "1.1rem", fontWeight: 600,
+                  textShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                }}>
+                  {relatedProduct.name}
+                </div>
               </div>
-              <button
-                onClick={() => setPopupOpen(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1rem", color: "var(--warm-gray)", lineHeight: 1 }}
-              >✕</button>
-            </div>
+            )}
 
-            <div style={{ borderTop: "1px solid var(--border)", marginBottom: 16 }} />
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: "0.78rem" }}>
-              {n.orderId && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--warm-gray)" }}>Order ID</span>
-                  <strong style={{ color: "var(--charcoal)", fontFamily: "var(--font-serif)" }}>{n.orderId}</strong>
+            <div style={{ padding: "22px 24px" }}>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.05rem", color: "var(--charcoal)" }}>
+                    {n.title || "Update"}
+                  </div>
+                  <div style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 3, letterSpacing: "0.08em" }}>
+                    {timeStr}
+                  </div>
                 </div>
-              )}
-              {n.type && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--warm-gray)" }}>Type</span>
-                  <span style={{ color: "var(--charcoal)", textTransform: "capitalize" }}>{n.type}</span>
-                </div>
-              )}
-              {n.productName && (
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--warm-gray)" }}>Product</span>
-                  <strong style={{ color: "var(--charcoal)" }}>{n.productName}</strong>
-                </div>
-              )}
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--warm-gray)" }}>Time</span>
-                <span style={{ color: "var(--charcoal)" }}>{timeStr}</span>
+                <button onClick={() => setPopupOpen(false)} style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: "1rem", color: "var(--warm-gray)", lineHeight: 1, padding: 4,
+                }}>✕</button>
               </div>
-            </div>
 
-            <div style={{
-              marginTop: 16, padding: "12px 14px",
-              background: "var(--surface)", border: "1px solid var(--border)",
-              borderRadius: 2, fontSize: "0.74rem", color: "var(--charcoal)", lineHeight: 1.7,
-            }}>
-              {n.message || "You have a new update."}
-            </div>
+              <div style={{ borderTop: "1px solid var(--border)", marginBottom: 16 }} />
 
-            <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              {!n.read && (
-                <button
-                  onClick={async (e) => { await handleMarkRead(e); setPopupOpen(false); }}
-                  style={{
-                    background: "var(--gold)", border: "none", color: "#1a1509",
-                    fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em",
-                    textTransform: "uppercase", padding: "8px 18px", cursor: "pointer", borderRadius: 2,
-                  }}
-                >
-                  Mark as Read
-                </button>
+              {/* Notification Details */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                {n.type && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.76rem" }}>
+                    <span style={{ color: "var(--warm-gray)" }}>Type</span>
+                    <span style={{
+                      color: "#fff", background: n.type === "payment" ? "#5a7a4a" : "var(--charcoal)",
+                      fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.1em",
+                      textTransform: "uppercase", padding: "3px 10px", borderRadius: 20,
+                    }}>{n.type}</span>
+                  </div>
+                )}
+                {n.orderId && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.76rem" }}>
+                    <span style={{ color: "var(--warm-gray)" }}>Order ID</span>
+                    <strong style={{ color: "var(--charcoal)", fontFamily: "var(--font-serif)", fontSize: "0.72rem" }}>{n.orderId}</strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Message */}
+              <div style={{
+                padding: "12px 14px", background: "var(--surface)",
+                border: "1px solid var(--border)", borderRadius: 2,
+                fontSize: "0.74rem", color: "var(--charcoal)", lineHeight: 1.7,
+                marginBottom: relatedProduct || relatedOrder ? 16 : 0,
+              }}>
+                {n.message || "You have a new update."}
+              </div>
+
+              {/* Product Details */}
+              {relatedProduct && (
+                <>
+                  <div style={{ borderTop: "1px solid var(--border)", margin: "16px 0 12px" }} />
+                  <div style={{ fontSize: "0.65rem", color: "var(--warm-gray)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
+                    Product Details
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                    {[
+                      ["Name", relatedProduct.name],
+                      ["Brand", relatedProduct.brand],
+                      ["Category", relatedProduct.category],
+                      ["Price", relatedProduct.price ? fmt(relatedProduct.price) : null],
+                      relatedProduct.compareAt && relatedProduct.compareAt > relatedProduct.price
+                        ? ["Original Price", fmt(relatedProduct.compareAt)] : null,
+                      ["Sizes", relatedProduct.sizes?.join(", ")],
+                      ["In Stock", relatedProduct.inStock === false ? "Out of stock" : "Available"],
+                    ].filter(Boolean).filter(r => r[1]).map(([label, value]) => (
+                      <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.74rem", gap: 12 }}>
+                        <span style={{ color: "var(--warm-gray)", flexShrink: 0 }}>{label}</span>
+                        <span style={{ color: "var(--charcoal)", textAlign: "right", fontWeight: label === "Price" ? 600 : 400 }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
-              <button
-                onClick={() => setPopupOpen(false)}
-                style={{
+
+              {/* Order Details */}
+              {relatedOrder && (
+                <>
+                  <div style={{ borderTop: "1px solid var(--border)", margin: "16px 0 12px" }} />
+                  <div style={{ fontSize: "0.65rem", color: "var(--warm-gray)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
+                    Order Details
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                    {[
+                      ["Status", relatedOrder.payment?.status],
+                      ["Total", relatedOrder.total ? fmt(relatedOrder.total) : null],
+                      ["Delivery", relatedOrder.delivery?.type],
+                      ["Payment", relatedOrder.payment?.method],
+                      ["Placed", relatedOrder.createdAt ? new Date(relatedOrder.createdAt).toLocaleDateString() : null],
+                    ].filter(r => r[1]).map(([label, value]) => (
+                      <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.74rem", gap: 12 }}>
+                        <span style={{ color: "var(--warm-gray)", flexShrink: 0 }}>{label}</span>
+                        <span style={{ color: "var(--charcoal)", textAlign: "right", textTransform: "capitalize", fontWeight: label === "Total" ? 600 : 400 }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Order Items */}
+                  {relatedOrder.items?.length > 0 && (
+                    <>
+                      <div style={{ fontSize: "0.65rem", color: "var(--warm-gray)", letterSpacing: "0.12em", textTransform: "uppercase", margin: "14px 0 10px" }}>
+                        Items ({relatedOrder.items.length})
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {relatedOrder.items.map((item, idx) => (
+                          <div key={idx} style={{
+                            display: "flex", gap: 10, alignItems: "center",
+                            padding: "8px 10px", background: "var(--surface)",
+                            border: "1px solid var(--border)", borderRadius: 2,
+                          }}>
+                            {item.product?.image && (
+                              <img src={item.product.image} alt={item.product.name}
+                                style={{ width: 44, height: 54, objectFit: "cover", borderRadius: 1, flexShrink: 0 }} />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: "0.76rem", fontWeight: 600, color: "var(--charcoal)" }}>{item.product?.name}</div>
+                              <div style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 2 }}>
+                                {item.product?.brand} · Size {item.size} · Qty {item.qty}
+                              </div>
+                              <div style={{ fontSize: "0.7rem", color: "var(--charcoal)", marginTop: 2, fontWeight: 500 }}>
+                                {fmt(item.product?.price * item.qty)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
+              {/* Footer Buttons */}
+              <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                {!n.read && (
+                  <button
+                    onClick={async (e) => { await handleMarkRead(e); setPopupOpen(false); }}
+                    style={{
+                      background: "var(--gold)", border: "none", color: "#1a1509",
+                      fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em",
+                      textTransform: "uppercase", padding: "9px 18px", cursor: "pointer", borderRadius: 2,
+                    }}
+                  >Mark as Read</button>
+                )}
+                <button onClick={() => setPopupOpen(false)} style={{
                   background: "none", border: "1px solid var(--border)", color: "var(--charcoal)",
                   fontSize: "0.65rem", fontWeight: 600, letterSpacing: "0.1em",
-                  textTransform: "uppercase", padding: "8px 18px", cursor: "pointer", borderRadius: 2,
-                }}
-              >
-                Close
-              </button>
+                  textTransform: "uppercase", padding: "9px 18px", cursor: "pointer", borderRadius: 2,
+                }}>Close</button>
+              </div>
             </div>
           </div>
         </>
@@ -1643,13 +1752,15 @@ export default function App() {
         ) : (
           notifications.map((n) => (
             <NotificationCard
-              key={n.id}
-              n={n}
-              user={user}
-              db={db}
-              doc={doc}
-              updateDoc={updateDoc}
-            />
+  key={n.id}
+  n={n}
+  user={user}
+  db={db}
+  doc={doc}
+  updateDoc={updateDoc}
+  orders={user?.orders || []}
+  products={products}
+/>
           ))
         )}
       </div>
