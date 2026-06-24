@@ -49,6 +49,108 @@ import StoresPage from "./pages/StoresPage.jsx";
 
 injectGlobalStyles();
 
+function NotificationCard({ n, user, db, doc, updateDoc }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const handleMarkRead = async (e) => {
+    e.stopPropagation();
+    if (!user?.firebaseUid) return;
+    try {
+      await updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true });
+    } catch { void 0; }
+  };
+
+  const timeStr = n.createdAt?.seconds
+    ? new Date(n.createdAt.seconds * 1000).toLocaleString()
+    : "Just now";
+
+  const renderDetails = () => (
+    <div style={{
+      marginTop: 10,
+      padding: "10px 12px",
+      background: "var(--cream)",
+      border: "1px solid var(--border)",
+      borderRadius: 2,
+      fontSize: "0.7rem",
+      color: "var(--charcoal)",
+      lineHeight: 1.7,
+      animation: "notif-expand 0.22s ease",
+    }}>
+      {n.orderId && <div><span style={{ color: "var(--warm-gray)" }}>Order ID:</span> <strong>{n.orderId}</strong></div>}
+      {n.type && <div><span style={{ color: "var(--warm-gray)" }}>Type:</span> {n.type.charAt(0).toUpperCase() + n.type.slice(1)}</div>}
+      {n.productName && <div><span style={{ color: "var(--warm-gray)" }}>Product:</span> <strong>{n.productName}</strong></div>}
+      <div><span style={{ color: "var(--warm-gray)" }}>Time:</span> {timeStr}</div>
+      <div style={{ marginTop: 6, color: "var(--warm-gray)" }}>{n.message || "You have a new update."}</div>
+    </div>
+  );
+
+  return (
+    <div
+      onClick={() => setExpanded((prev) => !prev)}
+      style={{
+        border: "1px solid var(--border)",
+        background: "var(--surface)",
+        padding: 12,
+        opacity: n.read ? 0.72 : 1,
+        cursor: "pointer",
+        borderRadius: 2,
+        transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.10)";
+        e.currentTarget.style.borderColor = "var(--gold)";
+        e.currentTarget.style.background = "var(--cream)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "none";
+        e.currentTarget.style.borderColor = "var(--border)";
+        e.currentTarget.style.background = "var(--surface)";
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>
+          {n.title || "Update"}
+        </div>
+        <span style={{
+          fontSize: "0.6rem",
+          color: "var(--warm-gray)",
+          transition: "transform 0.18s ease",
+          transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+          display: "inline-block",
+        }}>▾</span>
+      </div>
+      <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>
+        {n.message || "You have a new update."}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+        <span style={{ fontSize: "0.62rem", color: "var(--warm-gray)" }}>{timeStr}</span>
+        {!n.read && (
+          <button
+            onClick={handleMarkRead}
+            style={{
+              background: "var(--gold)",
+              border: "none",
+              color: "#1a1509",
+              fontSize: "0.58rem",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              padding: "4px 12px",
+              cursor: "pointer",
+              borderRadius: 1,
+            }}
+          >
+            Mark Read
+          </button>
+        )}
+      </div>
+      {expanded && renderDetails()}
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [user, setUser] = useState(() => {
@@ -1440,83 +1542,57 @@ export default function App() {
       )}
 
       {/* Notifications Panel */}
-      {notificationOpen && (
-        <>
-          <div className="overlay-backdrop" onClick={() => setNotificationOpen(false)} />
-          <div className="cart-drawer" style={{ right: 0, width: "min(460px, 92vw)" }}>
-            <div className="cart-header">
-              <div className="cart-title">Notifications</div>
-              <button className="close-btn" onClick={() => setNotificationOpen(false)}>âœ•</button>
-            </div>
-            <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
-                {unreadNotificationCount > 0 ? `${unreadNotificationCount} unread` : "All read"}
-              </div>
-              <button
-                className="filter-btn"
-                disabled={!unreadNotificationCount}
-                onClick={async () => {
-                  if (!user?.firebaseUid || !unreadNotificationCount) return;
-                  try {
-                    await Promise.all(
-                      notifications
-                        .filter((n) => !n.read)
-                        .map((n) => updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true })),
-                    );
-                  } catch {
-                    void 0;
-                  }
-                }}
-              >
-                Mark all as read
-              </button>
-            </div>
-            <div style={{ padding: 16, display: "grid", gap: 10, overflowY: "auto" }}>
-              {notifications.length === 0 ? (
-                <div style={{ textAlign: "center", color: "var(--warm-gray)", padding: "44px 0" }}>
-                  <div style={{ fontSize: "2rem", marginBottom: 10 }}>ðŸ””</div>
-                  No notifications yet
-                </div>
-              ) : (
-                notifications.map((n) => (
-                
-                  <div key={n.id} style={{ border: "1px solid var(--border)", background: "var(--surface)", padding: 12, opacity: n.read ? 0.72 : 1 }}>
-                  <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--charcoal)" }}>{n.title || "Update"}</div>
-                  <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{n.message || "You have a new update."}</div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
-                    <span style={{ fontSize: "0.62rem", color: "var(--warm-gray)" }}>
-                      {n.createdAt?.seconds ? new Date(n.createdAt.seconds * 1000).toLocaleString() : "Just now"}
-                    </span>
-                    {!n.read && (
-                      <button
-                        onClick={async () => {
-                          if (!user?.firebaseUid) return;
-                          try {
-                            await updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true });
-                          } catch { void 0; }
-                        }}
-                        style={{
-                          background: "var(--gold)",
-                          border: "none",
-                          color: "#1a1509",
-                          fontSize: "0.58rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          padding: "4px 12px",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Mark Read
-                      </button>
-                    )}
-                  </div>
-                </div>     ))
-              )}
-            </div>
+{notificationOpen && (
+  <>
+    <div className="overlay-backdrop" onClick={() => setNotificationOpen(false)} />
+    <div className="cart-drawer" style={{ right: 0, width: "min(460px, 92vw)" }}>
+      <div className="cart-header">
+        <div className="cart-title">Notifications</div>
+        <button className="close-btn" onClick={() => setNotificationOpen(false)}>✕</button>
+      </div>
+      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
+          {unreadNotificationCount > 0 ? `${unreadNotificationCount} unread` : "All read"}
+        </div>
+        <button
+          className="filter-btn"
+          disabled={!unreadNotificationCount}
+          onClick={async () => {
+            if (!user?.firebaseUid || !unreadNotificationCount) return;
+            try {
+              await Promise.all(
+                notifications
+                  .filter((n) => !n.read)
+                  .map((n) => updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true })),
+              );
+            } catch { void 0; }
+          }}
+        >
+          Mark all as read
+        </button>
+      </div>
+      <div style={{ padding: 16, display: "grid", gap: 10, overflowY: "auto" }}>
+        {notifications.length === 0 ? (
+          <div style={{ textAlign: "center", color: "var(--warm-gray)", padding: "44px 0" }}>
+            <div style={{ fontSize: "2rem", marginBottom: 10 }}>🔔</div>
+            No notifications yet
           </div>
-        </>
-      )}
+        ) : (
+          notifications.map((n) => (
+            <NotificationCard
+              key={n.id}
+              n={n}
+              user={user}
+              db={db}
+              doc={doc}
+              updateDoc={updateDoc}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  </>
+)}
 
       {/* Checkout Modal */}
       {checkoutOpen && (
