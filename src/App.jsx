@@ -417,28 +417,24 @@ export default function App() {
     catalogRef.current = products;
   }, [products]);
 
-  useEffect(() => {
-    const cref = doc(db, "catalog", "store");
-    const unsub = onSnapshot(
-      cref,
-      (snap) => {
-        if (!snap.exists()) {
-          setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
-          return;
-        }
-        const list = snap.data()?.products;
-        if (Array.isArray(list) && list.length > 0) {
-          setProducts(enrichCatalogWithKidsFallback(list));
-        } else {
-          setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
-        }
-      },
-      () => {
+ // নতুন কোড — এটা রাখো:
+useEffect(() => {
+  const unsub = onSnapshot(
+    collection(db, "catalog"),
+    (snap) => {
+      const list = snap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));
+      if (list.length > 0) {
+        setProducts(enrichCatalogWithKidsFallback(list));
+      } else {
         setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
-      },
-    );
-    return () => unsub();
-  }, []);
+      }
+    },
+    () => {
+      setProducts(enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
+    },
+  );
+  return () => unsub();
+}, []);
 
   /* Live promo codes from Firestore */
   useEffect(() => {
