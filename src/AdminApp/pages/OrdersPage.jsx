@@ -22,18 +22,45 @@ export default function OrdersPage({ orders, onStatusChange, onReload, busy }) {
   );
 
   const reloadBtn = (
-    <button type="button" onClick={onReload} disabled={busy}
+    <button
+      type="button"
+      onClick={onReload}
+      disabled={busy}
       style={{
-        ...S.btnGhost, color: C.gold, borderColor: C.gold,
-        minWidth: 110, display: "flex", alignItems: "center", gap: 6,
-      }}>
+        ...S.btnGhost,
+        color: C.gold,
+        borderColor: C.gold,
+        minWidth: 118,
+        display: "flex",
+        alignItems: "center",
+        gap: 7,
+        transition: "opacity 0.2s, transform 0.15s, box-shadow 0.2s",
+        boxShadow: busy ? `0 0 0 2px ${C.gold}33` : "none",
+        opacity: busy ? 0.75 : 1,
+      }}
+      onMouseEnter={e => {
+        if (!busy) {
+          e.currentTarget.style.boxShadow = `0 0 0 2px ${C.gold}55`;
+          e.currentTarget.style.transform = "translateY(-1px)";
+        }
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.boxShadow = busy ? `0 0 0 2px ${C.gold}33` : "none";
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
+    >
       <span style={{
         display: "inline-block",
-        animation: busy ? "spin 1s linear infinite" : "none",
-        transformOrigin: "center",
+        fontSize: "1.1rem",
         lineHeight: 1,
+        animation: busy ? "spin 0.7s cubic-bezier(0.4,0,0.2,1) infinite" : "none",
+        transformOrigin: "center",
+        color: C.gold,
+        transition: "color 0.2s",
       }}>↺</span>
-      {busy ? "Reloading…" : "Reload"}
+      <span style={{ fontSize: 13, letterSpacing: "0.04em" }}>
+        {busy ? "Reloading…" : "Reload"}
+      </span>
     </button>
   );
 
