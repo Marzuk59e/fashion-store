@@ -51,6 +51,14 @@ injectGlobalStyles();
 
 function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
   const [popupOpen, setPopupOpen] = useState(false);
+  const openPopup = () => {
+    setPopupOpen(true);
+    document.body.style.overflow = "hidden";
+  };
+  const closePopup = () => {
+    setPopupOpen(false);
+    document.body.style.overflow = "";
+  };
 
   const handleMarkRead = async (e) => {
     e.stopPropagation();
@@ -78,7 +86,7 @@ function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
     <>
       {/* Card */}
       <div
-        onClick={() => setPopupOpen(true)}
+        onClick={openPopup}
         style={{
           border: "1px solid var(--border)",
           background: "var(--surface)",
@@ -122,7 +130,7 @@ function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
       {/* Popup */}
       {popupOpen && (
         <>
-          <div onClick={() => setPopupOpen(false)} style={{
+          <div onClick={closePopup} style={{
             position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 9999,
           }} />
           <div style={{
@@ -301,7 +309,7 @@ function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
               <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "flex-end" }}>
                 {!n.read && (
                   <button
-                    onClick={async (e) => { await handleMarkRead(e); setPopupOpen(false); }}
+                    onClick={async (e) => { await handleMarkRead(e); closePopup() }}
                     style={{
                       background: "var(--gold)", border: "none", color: "#1a1509",
                       fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.1em",
@@ -309,7 +317,7 @@ function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
                     }}
                   >Mark as Read</button>
                 )}
-                <button onClick={() => setPopupOpen(false)} style={{
+                <button onClick={closePopup} style={{
                   background: "none", border: "1px solid var(--border)", color: "var(--charcoal)",
                   fontSize: "0.65rem", fontWeight: 600, letterSpacing: "0.1em",
                   textTransform: "uppercase", padding: "9px 18px", cursor: "pointer", borderRadius: 2,
@@ -1713,51 +1721,105 @@ useEffect(() => {
 {notificationOpen && (
   <>
     <div className="overlay-backdrop" onClick={() => setNotificationOpen(false)} />
-    <div className="cart-drawer" style={{ right: 0, width: "min(460px, 92vw)" }}>
-      <div className="cart-header">
-        <div className="cart-title">Notifications</div>
-        <button className="close-btn" onClick={() => setNotificationOpen(false)}>✕</button>
-      </div>
-      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <div style={{ fontSize: "0.72rem", color: "var(--warm-gray)" }}>
-          {unreadNotificationCount > 0 ? `${unreadNotificationCount} unread` : "All read"}
+    <div className="cart-drawer" style={{ right: 0, width: "min(460px, 92vw)", display: "flex", flexDirection: "column" }}>
+
+      {/* Header */}
+      <div style={{
+        padding: "20px 22px 16px",
+        borderBottom: "1px solid var(--border)",
+        background: "var(--cream)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.15rem", color: "var(--charcoal)", letterSpacing: "0.02em" }}>
+              Notifications
+            </div>
+            <div style={{ fontSize: "0.65rem", color: "var(--warm-gray)", marginTop: 3, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              {unreadNotificationCount > 0
+                ? `${unreadNotificationCount} unread message${unreadNotificationCount > 1 ? "s" : ""}`
+                : "You're all caught up"}
+            </div>
+          </div>
+          <button className="close-btn" onClick={() => setNotificationOpen(false)}>✕</button>
         </div>
-        <button
-          className="filter-btn"
-          disabled={!unreadNotificationCount}
-          onClick={async () => {
-            if (!user?.firebaseUid || !unreadNotificationCount) return;
-            try {
-              await Promise.all(
-                notifications
-                  .filter((n) => !n.read)
-                  .map((n) => updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true })),
-              );
-            } catch { void 0; }
-          }}
-        >
-          Mark all as read
-        </button>
+
+        {/* Unread bar + Mark all */}
+        {notifications.length > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              {unreadNotificationCount > 0 && (
+                <span style={{
+                  background: "var(--gold)", color: "#1a1509",
+                  fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.1em",
+                  textTransform: "uppercase", padding: "3px 10px", borderRadius: 20,
+                }}>
+                  {unreadNotificationCount} New
+                </span>
+              )}
+              <span style={{
+                background: "var(--surface)", color: "var(--warm-gray)",
+                fontSize: "0.58rem", fontWeight: 600, letterSpacing: "0.08em",
+                textTransform: "uppercase", padding: "3px 10px", borderRadius: 20,
+                border: "1px solid var(--border)",
+              }}>
+                {notifications.length} Total
+              </span>
+            </div>
+            <button
+              className="filter-btn"
+              disabled={!unreadNotificationCount}
+              style={{ fontSize: "0.6rem", padding: "5px 12px" }}
+              onClick={async () => {
+                if (!user?.firebaseUid || !unreadNotificationCount) return;
+                try {
+                  await Promise.all(
+                    notifications
+                      .filter((n) => !n.read)
+                      .map((n) => updateDoc(doc(db, "users", user.firebaseUid, "notifications", n.id), { read: true })),
+                  );
+                } catch { void 0; }
+              }}
+            >
+              Mark all as read
+            </button>
+          </div>
+        )}
       </div>
-      <div style={{ padding: 16, display: "grid", gap: 10, overflowY: "auto" }}>
+
+      {/* Notification List */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
         {notifications.length === 0 ? (
-          <div style={{ textAlign: "center", color: "var(--warm-gray)", padding: "44px 0" }}>
-            <div style={{ fontSize: "2rem", marginBottom: 10 }}>🔔</div>
-            No notifications yet
+          <div style={{ textAlign: "center", color: "var(--warm-gray)", padding: "60px 0" }}>
+            <div style={{ fontSize: "2.4rem", marginBottom: 12 }}>🔔</div>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: "0.95rem", marginBottom: 6 }}>No notifications yet</div>
+            <div style={{ fontSize: "0.7rem", opacity: 0.7 }}>We'll let you know about orders & restocks</div>
           </div>
         ) : (
-          notifications.map((n) => (
-            <NotificationCard
-  key={n.id}
-  n={n}
-  user={user}
-  db={db}
-  doc={doc}
-  updateDoc={updateDoc}
-  orders={user?.orders || []}
-  products={products}
-/>
-          ))
+          <>
+            {/* Unread section */}
+            {notifications.filter(n => !n.read).length > 0 && (
+              <>
+                <div style={{ fontSize: "0.6rem", color: "var(--warm-gray)", letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 2px" }}>
+                  Unread
+                </div>
+                {notifications.filter(n => !n.read).map((n) => (
+                  <NotificationCard key={n.id} n={n} user={user} db={db} doc={doc} updateDoc={updateDoc} orders={user?.orders || []} products={products} />
+                ))}
+              </>
+            )}
+
+            {/* Read section */}
+            {notifications.filter(n => n.read).length > 0 && (
+              <>
+                <div style={{ fontSize: "0.6rem", color: "var(--warm-gray)", letterSpacing: "0.12em", textTransform: "uppercase", padding: "4px 2px", marginTop: 6 }}>
+                  Earlier
+                </div>
+                {notifications.filter(n => n.read).map((n) => (
+                  <NotificationCard key={n.id} n={n} user={user} db={db} doc={doc} updateDoc={updateDoc} orders={user?.orders || []} products={products} />
+                ))}
+              </>
+            )}
+          </>
         )}
       </div>
     </div>
