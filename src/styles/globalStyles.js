@@ -122,8 +122,10 @@ const css = `
     pointer-events: none;
   }
   .nav-links--desktop .nav-link { pointer-events: auto; }
-  .nav-link { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; }
-  .nav-link:hover, .nav-link.active { color: var(--charcoal); }
+  .nav-link { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--warm-gray); cursor: pointer; transition: color 0.2s; border: none; background: none; position: relative; padding-bottom: 4px; }
+  .nav-link:hover { color: var(--charcoal); }
+  .nav-link.active { color: var(--charcoal); }
+  .nav-link.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px; background: var(--gold); }
   .nav-icons { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-shrink: 0; }
   .nav-icons .btn-primary { padding: 10px 20px; font-size: 0.7rem; }
   .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--charcoal); padding: 4px; transition: color 0.2s; display: flex; align-items: center; }
@@ -131,6 +133,25 @@ const css = `
   .nav-icons svg { width: 18px; height: 18px; }
   .icon-btn--notification svg { width: 20px; height: 20px; stroke-width: 2.1; }
   .badge { position: absolute; top: -4px; right: -6px; background: var(--gold); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .product-gallery { position: relative; width: 100%; height: 100%; }
+  .product-gallery-img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    animation: gallerySlideIn 0.5s ease;
+  }
+  @keyframes gallerySlideIn {
+    from { opacity: 0; transform: scale(1.02); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .gallery-dots {
+    position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 5;
+  }
+  .gallery-dot {
+    width: 7px; height: 7px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,0.55); cursor: pointer; padding: 0;
+    transition: all 0.25s;
+  }
+  .gallery-dot.active { background: var(--gold); width: 22px; border-radius: 4px; }
   .bell-dot {
     position: absolute;
     top: 2px;

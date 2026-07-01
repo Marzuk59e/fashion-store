@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { C, font, S, CATEGORIES } from "../constants.js";
 import FormField from "../components/FormField.jsx";
-import { getProductImage, normalizeProduct } from "../../data/productImages.js";
+import { getProductImage, getProductImages, normalizeProduct } from "../../data/productImages.js";
 import { uploadImage } from "../utils/imageUpload.js";
 
 const EMPTY = {
@@ -30,20 +30,45 @@ export default function ProductForm({ initial, onSave, onCancel, busy }) {
   );
 
   const [imgUploading, setImgUploading] = useState(false);
+  const [images, setImages] = useState(() => (initial ? getProductImages(initial) : []));
+  const [urlInput, setUrlInput] = useState("");
   const imgRef = useRef();
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
 
   const handleImgUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setImgUploading(true);
-    try {
-      const url = await uploadImage(file);
-      set("image", url);
-    } catch (err) {
-      set("image", URL.createObjectURL(file));
-      alert("Storage upload failed. Using local preview only.\n" + err.message);
-    } finally { setImgUploading(false); }
+    for (const file of files) {
+      try {
+        const url = await uploadImage(file);
+        setImages(prev => [...prev, url]);
+      } catch (err) {
+        setImages(prev => [...prev, URL.createObjectURL(file)]);
+        alert(`"${file.name}" upload failed. Using local preview only.\n` + err.message);
+      }
+    }
+    setImgUploading(false);
+    e.target.value = ""; // same file abar select korte parbe
+  };
+
+  const handleAddUrl = () => {
+    const url = urlInput.trim();
+    if (!url) return;
+    setImages(prev => [...prev, url]);
+    setUrlInput("");
+  };
+
+  const removeImage = (idx) => setImages(prev => prev.filter((_, i) => i !== idx));
+
+  const moveImage = (idx, dir) => {
+    setImages(prev => {
+      const arr = [...prev];
+      const j = idx + dir;
+      if (j < 0 || j >= arr.length) return arr;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      return arr;
+    });
   };
 
   const handleSave = () => {
@@ -56,11 +81,12 @@ export default function ProductForm({ initial, onSave, onCancel, busy }) {
       badge:    f.badge.trim() || null,
       bg:       [f.bg1, f.bg2],
       desc:     f.desc.trim(),
-      image:    f.image.trim(),
+      image:    images[0] || "",
+      images:   images,
       sizes:    f.sizes.split(",").map(s => s.trim()).filter(Boolean),
     };
-    if (!product.name)  return alert("Product name is required.");
-    if (!product.image) return alert("Product photo is required. Upload an image or paste an image URL.");
+    if (!product.name)      return alert("Product name is required.");
+    if (images.length === 0) return alert("At least one product photo is required. Upload an image or paste an image URL.");
     if (initial?.compareAt != null) product.compareAt = initial.compareAt;
     if (initial?.inStock  != null)  product.inStock   = initial.inStock;
     onSave(normalizeProduct(product));
@@ -138,19 +164,47 @@ export default function ProductForm({ initial, onSave, onCancel, busy }) {
           onChange={e => set("desc", e.target.value)} onFocus={focus} onBlur={blur} />
       </FormField>
 
-      <FormField label="Product Photo (required)">
+      <FormField label="Product Photos (min 1 required, first = cover photo)">
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <input style={{ ...inp, flex: 1 }} placeholder="https://... or upload below"
-            value={f.image} onChange={e => set("image", e.target.value)} onFocus={focus} onBlur={blur} />
-          <input type="file" accept="image/*" ref={imgRef} style={{ display: "none" }} onChange={handleImgUpload} />
+          <input style={{ ...inp, flex: 1 }} placeholder="Paste image URL, then click Add URL"
+            value={urlInput} onChange={e => setUrlInput(e.target.value)} onFocus={focus} onBlur={blur} />
+          <button type="button" onClick={handleAddUrl} style={{ ...S.btnGhost, whiteSpace: "nowrap" }}>Add URL</button>
+          <input type="file" accept="image/*" multiple ref={imgRef} style={{ display: "none" }} onChange={handleImgUpload} />
           <button type="button" onClick={() => imgRef.current?.click()}
             style={{ ...S.btnGhost, whiteSpace: "nowrap" }} disabled={imgUploading}>
-            {imgUploading ? "Uploading…" : "Upload Image"}
+            {imgUploading ? "Uploading…" : "Upload Images"}
           </button>
         </div>
-        {f.image && (
-          <img src={f.image} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, marginTop: 10, border: `1px solid ${C.border2}` }}
-            onError={e => (e.target.style.display = "none")} />
+
+        {images.length > 0 && (
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
+            {images.map((url, i) => (
+              <div key={url + i} style={{ position: "relative" }}>
+                <img src={url} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border2}` }}
+                  onError={e => (e.target.style.opacity = 0.25)} />
+                <button type="button" onClick={() => removeImage(i)} aria-label="Remove photo"
+                  style={{
+                    position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%",
+                    background: C.errorBg, color: "#CF8A8A", border: "none", cursor: "pointer",
+                    fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>×</button>
+                {images.length > 1 && (
+                  <div style={{ display: "flex", gap: 2, marginTop: 4, justifyContent: "center" }}>
+                    <button type="button" onClick={() => moveImage(i, -1)} disabled={i === 0}
+                      style={{ ...S.btnGhost, padding: "1px 6px", fontSize: 10, opacity: i === 0 ? 0.3 : 1 }}>◀</button>
+                    <button type="button" onClick={() => moveImage(i, 1)} disabled={i === images.length - 1}
+                      style={{ ...S.btnGhost, padding: "1px 6px", fontSize: 10, opacity: i === images.length - 1 ? 0.3 : 1 }}>▶</button>
+                  </div>
+                )}
+                {i === 0 && (
+                  <span style={{
+                    position: "absolute", bottom: images.length > 1 ? 22 : -8, left: 4, fontSize: 9, fontWeight: 700,
+                    background: C.gold, color: "#fff", padding: "1px 6px", borderRadius: 20, textTransform: "uppercase",
+                  }}>Cover</span>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </FormField>
 

@@ -43,11 +43,27 @@ export function getProductImage(product) {
   return GENERIC;
 }
 
-/** Strip legacy `emoji` and ensure every product has a photo URL. */
+/** Returns an array of all photo URLs for a product's gallery. Falls back to the single `image`. */
+export function getProductImages(product) {
+  if (Array.isArray(product?.images) && product.images.length > 0) {
+    const cleaned = product.images
+      .filter(u => typeof u === "string" && u.trim())
+      .map(u => u.trim());
+    if (cleaned.length > 0) return cleaned;
+  }
+  const single = getProductImage(product);
+  return single ? [single] : [];
+}
+
+/** Strip legacy `emoji` and ensure every product has a photo URL + gallery array. */
 export function normalizeProduct(raw) {
   if (!raw || typeof raw !== "object") return raw;
   const { emoji: _emoji, ...rest } = raw;
-  return { ...rest, image: getProductImage(rest) };
+  const cover = getProductImage(rest);
+  const images = Array.isArray(rest.images)
+    ? rest.images.filter(u => typeof u === "string" && u.trim()).map(u => u.trim())
+    : [];
+  return { ...rest, image: cover, images: images.length > 0 ? images : [cover] };
 }
 
 export function normalizeProductList(list) {

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import ProductPhoto from "../components/ProductPhoto.jsx";
+import ProductGallery from "../components/ProductGallery.jsx";
+import { getProductImages } from "../data/productImages.js";
 import { isOnSale, saleDiscountPercent, fmt } from "../utils/helpers.js";
 
 // ─── Accordion ────────────────────────────────────────────────────────────────
@@ -131,11 +132,11 @@ export default function ProductDetailPage({
         <div>
           <div style={{ position: "sticky", top: 80 }}>
             <div style={{ position: "relative", background: "var(--surface)", aspectRatio: "3/4", overflow: "hidden" }}>
-              <div className="product-badge-stack">
+            <div className="product-badge-stack">
                 {product.badge && <div className="product-badge">{product.badge}</div>}
                 {!inStock && <div className="product-badge product-badge-oos">Out of Stock</div>}
               </div>
-              <ProductPhoto product={product} />
+              <ProductGallery images={getProductImages(product)} alt={product.name} />
             </div>
           </div>
         </div>
