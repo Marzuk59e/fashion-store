@@ -111,13 +111,19 @@ export default function ProductDetailPage({
         display: "flex", alignItems: "center", gap: 10,
         background: "var(--cream)",
       }}>
+        <button
+          type="button"
+          onClick={() => (window.history.length > 1 ? window.history.back() : navigate("shop"))}
+          style={{ ...CRUMB_BTN, display: "flex", alignItems: "center", gap: 4, marginRight: 6 }}
+        >
+          ← Back
+        </button>
         <button type="button" style={CRUMB_BTN} onClick={() => navigate("home")}>Home</button>
         <span style={{ color: "var(--border)", fontSize: "0.75rem" }}>›</span>
         <button type="button" style={CRUMB_BTN} onClick={() => navigate("shop")}>Collection</button>
         <span style={{ color: "var(--border)", fontSize: "0.75rem" }}>›</span>
         <span style={{ fontSize: "0.65rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--charcoal)" }}>{product.name}</span>
       </div>
-
       {/* ── Main Grid ── */}
       <div style={{
         display: "grid",
@@ -260,7 +266,6 @@ export default function ProductDetailPage({
                   ["Fit",            product.fit            ?? "True to size · Regular fit"],
                   ["Origin",         product.origin         ?? "Ethically crafted in Italy"],
                   ["Care",           product.care           ?? "Dry clean recommended · Do not tumble dry"],
-                  ["Sustainability", product.sustainability  ?? "Made with responsibly sourced materials"],
                   ["Packaging",      product.packaging      ?? "Ships in recycled, plastic-free packaging"],
                 ].map(([k, v]) => (
                   <div key={k} style={{ display: "flex", gap: 14 }}>

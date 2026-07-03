@@ -729,7 +729,8 @@ useEffect(() => {
     authOpen ||
     Boolean(payConfirmOrder) ||
     cookieOpen ||
-    shopSearchOpen;
+    shopSearchOpen ||
+    notificationOpen;
 
   useEffect(() => {
     if (!overlayBlocksBackgroundScroll) return;
