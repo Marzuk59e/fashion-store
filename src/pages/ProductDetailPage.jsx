@@ -112,12 +112,12 @@ export default function ProductDetailPage({
         background: "var(--cream)",
       }}>
         <button
-          type="button"
-          onClick={() => (window.history.length > 1 ? window.history.back() : navigate("shop"))}
-          style={{ ...CRUMB_BTN, display: "flex", alignItems: "center", gap: 4, marginRight: 6 }}
-        >
-          ← Back
-        </button>
+  type="button"
+  onClick={() => (window.history.length > 1 ? window.history.back() : navigate("shop"))}
+  style={{ ...CRUMB_BTN, display: "flex", alignItems: "center", gap: 4, marginRight: 6 }}
+>
+  ← Back
+</button>
         <button type="button" style={CRUMB_BTN} onClick={() => navigate("home")}>Home</button>
         <span style={{ color: "var(--border)", fontSize: "0.75rem" }}>›</span>
         <button type="button" style={CRUMB_BTN} onClick={() => navigate("shop")}>Collection</button>
