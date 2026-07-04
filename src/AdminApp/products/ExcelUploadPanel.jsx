@@ -35,8 +35,8 @@ export default function ExcelUploadPanel({ existingProducts, onUpload, onClose, 
     if (mode === "replace") {
       final = preview;
     } else {
-      const map = new Map(existingProducts.map(p => [p.id, p]));
-      preview.forEach(p => map.set(p.id, p));
+      const map = new Map(existingProducts.map(p => [String(p.id), p]));
+preview.forEach(p => map.set(String(p.id), p));
       final = [...map.values()];
     }
     onUpload(final);
