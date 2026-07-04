@@ -27,7 +27,10 @@ export async function parseExcelFile(file) {
         badge:    row.badge ? String(row.badge).trim() : null,
         bg:       bgRaw.split(",").map(s => s.trim()).filter(Boolean),
         desc:     String(row.desc || "").trim(),
-        ...(String(row.image || "").trim() ? { image: String(row.image || "").trim() } : {}),
+        ...(() => {
+          const imgs = String(row.images || row.image || "").split(",").map(s => s.trim()).filter(Boolean);
+          return imgs.length ? { images: imgs, image: imgs[0] } : {};
+        })(),
         ...(row.compareAt ? { compareAt: Number(row.compareAt) } : {}),
       };
     })
