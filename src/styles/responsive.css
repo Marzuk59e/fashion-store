@@ -148,15 +148,15 @@ button,
 
   .nav-links--desktop {
     display: flex !important;
-    position: static;
-    transform: none;
+    position: static !important;
+    transform: none !important;
     grid-row: 2;
     grid-column: 1 / -1;
     justify-content: center;
     gap: 20px;
     width: 100%;
     padding-top: 2px;
-    pointer-events: auto;
+    pointer-events: auto !important;
   }
 
   .nav-links--desktop .nav-link {
