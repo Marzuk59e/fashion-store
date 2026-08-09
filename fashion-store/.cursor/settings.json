@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "datadog": {
+      "enabled": true
+    },
+    "slack": {
+      "enabled": true
+    },
+    "linear": {
+      "enabled": true
+    }
+  }
+}
