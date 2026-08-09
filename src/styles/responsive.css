@@ -141,7 +141,7 @@ button,
   }
 
   .nav-menu-btn {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     grid-column: 1;
@@ -152,6 +152,10 @@ button,
     border: none;
     color: var(--charcoal);
     cursor: pointer;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    height: auto !important;
   }
 
   .nav-logo {
@@ -181,7 +185,7 @@ button,
   .icon-btn--notification,
   .icon-btn--profile,
   .nav-signin-btn {
-    display: none;
+    display: none !important;
   }
 
   .icon-btn {

@@ -46,6 +46,7 @@ import SustainabilityPage from "./pages/SustainabilityPage.jsx";
 import CareersPage from "./pages/CareersPage.jsx";
 import PressPage from "./pages/PressPage.jsx";
 import StoresPage from "./pages/StoresPage.jsx";
+import useIsMobile from "./hooks/useIsMobile.js";
 
 injectGlobalStyles();
 
@@ -398,6 +399,7 @@ export default function App() {
   const [shopSearchQuery, setShopSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [profileTab, setProfileTab] = useState("orders");
   const [notifications, setNotifications] = useState([]);
   const [stockRequestPopup, setStockRequestPopup] = useState(null);
@@ -1497,28 +1499,34 @@ useEffect(() => {
     <div style={{ minHeight: "100vh" }}>
       {/* Navbar */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
-        <button type="button" className="nav-menu-btn" onClick={() => setNavOpen(true)} aria-label="Open menu">
-          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-        </button>
+        {isMobile && (
+          <button type="button" className="nav-menu-btn" onClick={() => setNavOpen(true)} aria-label="Open menu">
+            <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+          </button>
+        )}
         <button type="button" className="nav-logo" onClick={() => navigate("home")}>sanj<span className="logo-accent">iiiii</span></button>
-        <div className="nav-links nav-links--desktop">
-          {[["home", "Home"], ["shop", "Collection"], ["about", "About"]].map(([p, l]) => (
-            <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
-          ))}
-        </div>
+        {!isMobile && (
+          <div className="nav-links nav-links--desktop">
+            {[["home", "Home"], ["shop", "Collection"], ["about", "About"]].map(([p, l]) => (
+              <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => navigate(p)}>{l}</button>
+            ))}
+          </div>
+        )}
         <div className="nav-icons">
           <button type="button" className="icon-btn icon-btn--search" onClick={goToCollectionSearch} aria-label="Search collection">
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
           </button>
-          <button type="button" className="icon-btn icon-btn--wishlist" aria-label="Wishlist" onClick={() => user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true)}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-            {wishlist.length > 0 && <span className="badge" aria-label={`${wishlist.length} items in wishlist`}>{wishlist.length}</span>}
-          </button>
+          {!isMobile && (
+            <button type="button" className="icon-btn icon-btn--wishlist" aria-label="Wishlist" onClick={() => user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true)}>
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+              {wishlist.length > 0 && <span className="badge" aria-label={`${wishlist.length} items in wishlist`}>{wishlist.length}</span>}
+            </button>
+          )}
           <button type="button" className="icon-btn icon-btn--cart" aria-label="Shopping bag" onClick={() => setCartOpen(true)}>
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>
             {cartCount > 0 && <span className="badge" aria-label={`${cartCount} items in bag`}>{cartCount}</span>}
           </button>
-          {user && (
+          {!isMobile && user && (
             <button className="icon-btn icon-btn--notification" onClick={() => setNotificationOpen(true)} aria-label="Notifications">
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                 <path d="M7.5 9.5a4.5 4.5 0 1 1 9 0c0 3 .8 4.8 2 6H5.5c1.2-1.2 2-3 2-6" />
@@ -1527,22 +1535,24 @@ useEffect(() => {
               {unreadNotificationCount > 0 && <span className="bell-dot" />}
             </button>
           )}
-          {user ? (
-            <button type="button" className="icon-btn icon-btn--profile" aria-label="View profile" onClick={() => navigate("profile")}>
-              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
-                {user.name[0].toUpperCase()}
-              </div>
-            </button>
-          ) : authReady ? (
-            <button className="btn-primary nav-signin-btn" onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
-          ) : (
-            // Skeleton placeholder while Firebase auth resolves
-            <div className="nav-signin-btn" style={{ width: 65, height: 32, borderRadius: 4, background: "var(--charcoal)", opacity: 0.3 }} />
+          {!isMobile && (
+            user ? (
+              <button type="button" className="icon-btn icon-btn--profile" aria-label="View profile" onClick={() => navigate("profile")}>
+                <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
+                  {user.name[0].toUpperCase()}
+                </div>
+              </button>
+            ) : authReady ? (
+              <button className="btn-primary nav-signin-btn" onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
+            ) : (
+              // Skeleton placeholder while Firebase auth resolves
+              <div className="nav-signin-btn" style={{ width: 65, height: 32, borderRadius: 4, background: "var(--charcoal)", opacity: 0.3 }} />
+            )
           )}
         </div>
       </nav>
 
-      {navOpen && (
+      {isMobile && navOpen && (
         <>
           <div className="nav-mobile-backdrop" onClick={() => setNavOpen(false)} aria-hidden />
           <div className="nav-mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu">
