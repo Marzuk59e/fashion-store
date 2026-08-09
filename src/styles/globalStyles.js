@@ -1,3 +1,5 @@
+import responsiveCss from "./responsive.css?inline";
+
 const css = `
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -95,7 +97,7 @@ const css = `
     .navbar { backdrop-filter: none; background: var(--cream); }
   }
   .nav-menu-btn {
-    display: none !important;
+    display: none;
     width: 0; height: 0; padding: 0; margin: 0;
     overflow: hidden; opacity: 0; pointer-events: none; border: none;
   }
@@ -861,4 +863,13 @@ export function injectGlobalStyles() {
   styleTag.id = "sanji-global-styles";
   styleTag.textContent = css;
   document.head.appendChild(styleTag);
+
+  // IMPORTANT: responsive.css must be injected AFTER the generated global
+  // stylesheet. The global stylesheet is inserted dynamically at runtime,
+  // so importing responsive.css from main.jsx alone makes its mobile rules
+  // lose the cascade against later global rules.
+  const responsiveTag = document.createElement("style");
+  responsiveTag.id = "sanji-responsive-styles";
+  responsiveTag.textContent = responsiveCss;
+  document.head.appendChild(responsiveTag);
 }

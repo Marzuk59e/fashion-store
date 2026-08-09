@@ -4,8 +4,7 @@ export default function Footer({ navigate }) {
     <footer
       className="footer"
       style={{
-        width: "100vw",
-        marginLeft: "calc(50% - 50vw)",
+        width: "100%",
         marginTop: "80px",
         position: "relative",
         boxSizing: "border-box",
