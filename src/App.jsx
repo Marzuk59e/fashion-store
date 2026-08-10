@@ -1535,17 +1535,17 @@ useEffect(() => {
               {unreadNotificationCount > 0 && <span className="bell-dot" />}
             </button>
           )}
-          {!isMobile && (
-            user ? (
-              <button type="button" className="icon-btn icon-btn--profile" aria-label="View profile" onClick={() => navigate("profile")}>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
-                  {user.name[0].toUpperCase()}
-                </div>
-              </button>
-            ) : authReady ? (
+          {!isMobile && user && (
+            <button type="button" className="icon-btn icon-btn--profile" aria-label="View profile" onClick={() => navigate("profile")}>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--charcoal)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--gold)", fontFamily: "var(--font-serif)", fontWeight: 600, fontSize: "0.85rem" }}>
+                {user.name[0].toUpperCase()}
+              </div>
+            </button>
+          )}
+          {!user && (
+            authReady ? (
               <button className="btn-primary nav-signin-btn" onClick={() => { setAuthMode("login"); setAuthOpen(true); }}>Sign In</button>
             ) : (
-              // Skeleton placeholder while Firebase auth resolves
               <div className="nav-signin-btn" style={{ width: 65, height: 32, borderRadius: 4, background: "var(--charcoal)", opacity: 0.3 }} />
             )
           )}
@@ -1561,20 +1561,14 @@ useEffect(() => {
               <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => { setNavOpen(false); navigate(p); }}>{l}</button>
             ))}
             <div className="nav-mobile-divider" />
+            <button type="button" className="nav-link" onClick={() => { setNavOpen(false); setCartOpen(true); }}>
+              Bag{cartCount > 0 ? ` (${cartCount})` : ""}
+            </button>
             <button type="button" className="nav-link" onClick={() => { setNavOpen(false); user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true); }}>
               Wishlist{user && wishlist.length > 0 ? ` (${wishlist.length})` : ""}
             </button>
             {user && (
               <button type="button" className="nav-link" onClick={() => { setNavOpen(false); navigate("profile"); }}>My Account</button>
-            )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
             )}
           </div>
         </>

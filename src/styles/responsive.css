@@ -183,9 +183,15 @@ button,
      room to breathe instead of overflowing off-screen. */
   .icon-btn--wishlist,
   .icon-btn--notification,
-  .icon-btn--profile,
-  .nav-signin-btn {
+  .icon-btn--profile {
     display: none !important;
+  }
+
+  .nav-signin-btn {
+    padding: 8px 12px !important;
+    font-size: 0.62rem !important;
+    min-height: 40px;
+    white-space: nowrap;
   }
 
   .icon-btn {
