@@ -3,10 +3,26 @@ import ProductPhoto from "../components/ProductPhoto.jsx";
 import { useState, useEffect, useMemo, useRef } from "react";
 import ProductCard from "../components/ProductCard.jsx";
 import { fmt, productMatchesSearch } from "../utils/helpers.js";
+import useIsMobile from "../hooks/useIsMobile.js";
+
+// Desktop-only: single-column list view shows this many product rows per page.
+const DESKTOP_PAGE_SIZE = 6;
+
+const FILTER_ICON = (
+  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" viewBox="0 0 24 24" aria-hidden="true">
+    <line x1="4" y1="6" x2="20" y2="6" /><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none" />
+    <line x1="4" y1="12" x2="20" y2="12" /><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none" />
+    <line x1="4" y1="18" x2="20" y2="18" /><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none" />
+  </svg>
+);
 
 // ─── Shop Page ────────────────────────────────────────────────────────────────
 export default function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToCart, toggleWishlist, wishlist, searchOpen, onCloseSearch, searchQuery, setSearchQuery, onRequestStock }) {
+  const isMobile = useIsMobile();
   const searchInputRef = useRef(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
+
   useEffect(() => {
     if (searchOpen) {
       const id = requestAnimationFrame(() => searchInputRef.current?.focus());
@@ -30,6 +46,54 @@ else base = products.filter(p => p.category === filter);
     return { displayed, suggestions };
   }, [products, filter, sort, searchQuery]);
 
+  // Reset to page 1 whenever the result set changes underneath the pagination.
+  useEffect(() => { setPage(1); }, [filter, sort, searchQuery]);
+
+  // Desktop: paginate 6 rows at a time. Mobile: show everything (unpaginated, unchanged for now).
+  const pageCount = Math.max(1, Math.ceil(displayed.length / DESKTOP_PAGE_SIZE));
+  const pageProducts = isMobile ? displayed : displayed.slice((page - 1) * DESKTOP_PAGE_SIZE, page * DESKTOP_PAGE_SIZE);
+
+  const filterButtons = [
+    "All", "Women", "Men", "Kids", "Accessories",
+    ...(filter === "New Arrivals" ? ["New Arrivals"] : []),
+    ...(filter === "Sale" ? ["Sale"] : []),
+  ].map(c => (
+    <button
+      type="button"
+      key={c}
+      className={`filter-btn${filter === c ? " active" : ""}`}
+      onClick={() => { setFilter(c); if (isMobile) setFilterOpen(false); }}
+    >
+      {c}
+    </button>
+  ));
+
+  const sortSelect = (
+    <select
+      className="sort-select"
+      value={filter === "New Arrivals" ? "new-arrivals" : filter === "Sale" ? "sale" : sort}
+      onChange={e => {
+        const val = e.target.value;
+        if (val === "new-arrivals") {
+          setFilter("New Arrivals");
+          setSort("featured");
+        } else if (val === "sale") {
+          setFilter("Sale");
+          setSort("featured");
+        } else {
+          if (filter === "New Arrivals" || filter === "Sale") setFilter("All");
+          setSort(val);
+        }
+      }}
+    >
+      <option value="featured">Featured</option>
+      <option value="new-arrivals">New Arrivals</option>
+      <option value="sale">Sale</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
+    </select>
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <div className="shop-layout" style={{ flex: 1 }}>
@@ -38,40 +102,39 @@ else base = products.filter(p => p.category === filter);
             <h1 className="shop-title">The Collection</h1>
             <p style={{ fontSize: "0.72rem", color: "var(--warm-gray)", marginTop: 4 }}>{displayed.length} pieces</p>
           </div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="filter-bar">
-            {[
-  "All", "Women", "Men", "Kids", "Accessories",
-  ...(filter === "New Arrivals" ? ["New Arrivals"] : []),
-  ...(filter === "Sale" ? ["Sale"] : []),
-].map(c => (
-                <button type="button" key={c} className={`filter-btn${filter === c ? " active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
-              ))}
+          {isMobile ? (
+            <div className="shop-filter-mobile">
+              <button
+                type="button"
+                className="filter-toggle-btn"
+                aria-expanded={filterOpen}
+                aria-controls="shop-filter-panel"
+                onClick={() => setFilterOpen(o => !o)}
+              >
+                {FILTER_ICON}
+                Filter &amp; Sort
+                {filter !== "All" && <span className="filter-toggle-dot" aria-hidden="true" />}
+              </button>
+              {filterOpen && (
+                <>
+                  <div className="shop-filter-backdrop" onClick={() => setFilterOpen(false)} aria-hidden="true" />
+                  <div className="shop-filter-panel" id="shop-filter-panel" role="dialog" aria-modal="true" aria-label="Filter and sort">
+                    <div className="shop-filter-panel-head">
+                      <span>Filter &amp; Sort</span>
+                      <button type="button" className="close-btn" onClick={() => setFilterOpen(false)} aria-label="Close filters">✕</button>
+                    </div>
+                    <div className="filter-bar">{filterButtons}</div>
+                    {sortSelect}
+                  </div>
+                </>
+              )}
             </div>
-            <select
-              className="sort-select"
-              value={filter === "New Arrivals" ? "new-arrivals" : filter === "Sale" ? "sale" : sort}
-              onChange={e => {
-                const val = e.target.value;
-                if (val === "new-arrivals") {
-                  setFilter("New Arrivals");
-                  setSort("featured");
-                } else if (val === "sale") {
-                  setFilter("Sale");
-                  setSort("featured");
-                } else {
-                  if (filter === "New Arrivals" || filter === "Sale") setFilter("All");
-                  setSort(val);
-                }
-              }}
-            >
-              <option value="featured">Featured</option>
-              <option value="new-arrivals">New Arrivals</option>
-              <option value="sale">Sale</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
-          </div>
+          ) : (
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div className="filter-bar">{filterButtons}</div>
+              {sortSelect}
+            </div>
+          )}
         </div>
         {searchOpen && (
           <div className="shop-search-wrap animate-fade">
@@ -119,11 +182,44 @@ else base = products.filter(p => p.category === filter);
             )}
           </div>
         )}
-        <div className="products-grid">
-          {displayed.map((p, i) => (
+        <div className={`products-grid${!isMobile ? " products-grid--list" : ""}`}>
+          {pageProducts.map((p, i) => (
             <ProductCard key={p.id} product={p} delay={i % 4} navigate={navigate} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlisted={wishlist.includes(p.id)} onRequestStock={onRequestStock} />
           ))}
         </div>
+        {!isMobile && pageCount > 1 && (
+          <div className="shop-pagination" role="navigation" aria-label="Collection pages">
+            <button
+              type="button"
+              className="shop-page-btn shop-page-nav"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              aria-label="Previous page"
+            >
+              ‹
+            </button>
+            {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
+              <button
+                type="button"
+                key={n}
+                className={`shop-page-btn${n === page ? " active" : ""}`}
+                onClick={() => setPage(n)}
+                aria-current={n === page ? "page" : undefined}
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="shop-page-btn shop-page-nav"
+              onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+              disabled={page === pageCount}
+              aria-label="Next page"
+            >
+              ›
+            </button>
+          </div>
+        )}
       </div>
       <div style={{ borderTop: "1px solid var(--border)" }} />
       <Footer navigate={navigate} />
