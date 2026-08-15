@@ -273,6 +273,7 @@ const STORES = [
               </div>
   
               <div
+                className="store-detail-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr",
@@ -340,7 +341,7 @@ const STORES = [
                 </div>
               </div>
   
-              <div style={{ marginTop: 24, display: "flex", gap: 10 }}>
+              <div style={{ marginTop: 24, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeStore.address)}`}
                   target="_blank"
@@ -385,6 +386,12 @@ const STORES = [
           @media (max-width: 768px) {
             .stores-layout {
               grid-template-columns: 1fr !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .store-detail-grid {
+              grid-template-columns: 1fr !important;
+              gap: 14px !important;
             }
           }
         `}</style>
