@@ -16,6 +16,24 @@ const FILTER_ICON = (
   </svg>
 );
 
+// Builds a compact page-number list like: 1 2 3 … 58 59 60 … 116 117
+function getPageNumbers(current, total) {
+  const delta = 1; // pages shown around current
+  const pages = [];
+  const range = new Set([1, total, current]);
+  for (let i = current - delta; i <= current + delta; i++) {
+    if (i > 1 && i < total) range.add(i);
+  }
+  const sorted = [...range].sort((a, b) => a - b);
+  let prev = 0;
+  for (const p of sorted) {
+    if (prev && p - prev > 1) pages.push("...");
+    pages.push(p);
+    prev = p;
+  }
+  return pages;
+}
+
 // ─── Shop Page ────────────────────────────────────────────────────────────────
 export default function ShopPage({ products, navigate, filter, setFilter, sort, setSort, addToCart, toggleWishlist, wishlist, searchOpen, onCloseSearch, searchQuery, setSearchQuery, onRequestStock }) {
   const isMobile = useIsMobile();
@@ -188,38 +206,44 @@ else base = products.filter(p => p.category === filter);
           ))}
         </div>
         {!isMobile && pageCount > 1 && (
-          <div className="shop-pagination" role="navigation" aria-label="Collection pages">
-            <button
-              type="button"
-              className="shop-page-btn shop-page-nav"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              aria-label="Previous page"
-            >
-              ‹
-            </button>
-            {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
-              <button
-                type="button"
-                key={n}
-                className={`shop-page-btn${n === page ? " active" : ""}`}
-                onClick={() => setPage(n)}
-                aria-current={n === page ? "page" : undefined}
-              >
-                {n}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="shop-page-btn shop-page-nav"
-              onClick={() => setPage(p => Math.min(pageCount, p + 1))}
-              disabled={page === pageCount}
-              aria-label="Next page"
-            >
-              ›
-            </button>
-          </div>
-        )}
+  <div className="shop-pagination" role="navigation" aria-label="Collection pages">
+    <button
+      type="button"
+      className="shop-page-btn shop-page-nav"
+      onClick={() => setPage(p => Math.max(1, p - 1))}
+      disabled={page === 1}
+      aria-label="Previous page"
+    >
+      ‹
+    </button>
+
+    {getPageNumbers(page, pageCount).map((n, i) =>
+      n === "..." ? (
+        <span key={`dots-${i}`} className="shop-page-dots">…</span>
+      ) : (
+        <button
+          type="button"
+          key={n}
+          className={`shop-page-btn${n === page ? " active" : ""}`}
+          onClick={() => setPage(n)}
+          aria-current={n === page ? "page" : undefined}
+        >
+          {n}
+        </button>
+      )
+    )}
+
+    <button
+      type="button"
+      className="shop-page-btn shop-page-nav"
+      onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+      disabled={page === pageCount}
+      aria-label="Next page"
+    >
+      ›
+    </button>
+  </div>
+)}
       </div>
       <div style={{ borderTop: "1px solid var(--border)" }} />
       <Footer navigate={navigate} />
