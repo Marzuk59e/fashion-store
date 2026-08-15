@@ -1575,69 +1575,6 @@ useEffect(() => {
                 Sign In
               </button>
             )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
-            )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
-            )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
-            )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
-            )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
-            )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
-            )}
-            {!user && (
-              <button
-                type="button"
-                className="btn-primary nav-mobile-auth"
-                onClick={() => { setNavOpen(false); setAuthMode("login"); setAuthOpen(true); }}
-              >
-                Sign In
-              </button>
-            )}
           </div>
         </>
       )}
