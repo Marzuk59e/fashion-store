@@ -191,7 +191,8 @@ const css = `
   .section-title em { font-style: italic; }
 
   .categories-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
-  .category-card { position: relative; overflow: hidden; cursor: pointer; aspect-ratio: 3/4; }
+  .category-card { position: relative; overflow: hidden; cursor: pointer; aspect-ratio: 3/4; transition: box-shadow 0.35s ease, transform 0.35s ease; }
+  .category-card:hover { box-shadow: 0 18px 40px rgba(10,12,16,0.22); transform: translateY(-2px); }
   .category-bg { width: 100%; height: 100%; transition: transform 0.6s ease; display: flex; align-items: center; justify-content: center; }
   .category-card:hover .category-bg { transform: scale(1.04); }
   .cat-women { background: linear-gradient(160deg, #E8EDF4 0%, #D7DFEA 100%); }
