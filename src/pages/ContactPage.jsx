@@ -130,7 +130,7 @@ export default function ContactPage({ navigate }) {
 
             <div style={{ display: "grid", gap: 18 }}>
               {/* Name + Email row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="contact-name-email-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
                   <label style={labelStyle}>Your Name *</label>
                   <input

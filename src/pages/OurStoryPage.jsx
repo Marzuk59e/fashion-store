@@ -138,7 +138,7 @@ export default function OurStoryPage({ navigate }) {
             What We Stand For
           </h2>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+          <div className="careers-benefits-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
             {VALUES.map((v, i) => (
               <div
                 key={v.label}

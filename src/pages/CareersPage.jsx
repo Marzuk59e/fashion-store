@@ -213,7 +213,7 @@ export default function CareersPage({ navigate }) {
           }}>
             What We Offer
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+          <div className="careers-benefits-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
             {BENEFITS.map((b, i) => (
               <div
                 key={b.label}

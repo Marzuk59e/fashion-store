@@ -462,6 +462,48 @@ button,
   }
 }
 
+/* sanjiiiii-fix: ContactPage name/email inputs and CareersPage benefits
+   used a raw inline 2-column grid with no mobile fallback, so fields and
+   text got squeezed on phones. Stack to a single column below 560px. */
+@media (max-width: 560px) {
+  .contact-name-email-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .careers-benefits-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .careers-benefits-grid > div {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+
+  .careers-benefits-grid > div:last-child {
+    border-bottom: none !important;
+  }
+}
+
+/* sanjiiiii-fix: SustainabilityPage metrics strip was a fixed 4-column
+   grid with no mobile fallback, causing squeezed/cut-off numbers on phones. */
+@media (max-width: 600px) {
+  .sustain-metrics {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .sustain-metrics > div:nth-child(2) {
+    border-right: none !important;
+  }
+
+  .sustain-metrics > div {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sustain-metrics > div:nth-last-child(-n+2) {
+    border-bottom: none;
+  }
+}
+
 /* ─── Small phones (≤480px) ─────────────────────────────────── */
 @media (max-width: 480px) {
   .products-grid {

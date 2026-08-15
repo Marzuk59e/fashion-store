@@ -102,7 +102,7 @@ export default function SustainabilityPage({ navigate }) {
         </p>
 
         {/* Metrics strip */}
-        <div style={{
+        <div className="sustain-metrics" style={{
           display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
           border: "1px solid var(--border)", marginBottom: 40,
         }}>
