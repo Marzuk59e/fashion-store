@@ -32,8 +32,19 @@ export const CATEGORY_FALLBACK_IMAGES = {
 const GENERIC =
   "https://images.unsplash.com/photo-1445205170230-053b83016050?w=900&q=65&auto=format&fit=crop";
 
+/** loremflickr.com is known to fail intermittently (HTTP2 protocol errors,
+ * rate-limiting), especially on slow/throttled connections. Any product
+ * still pointing at it is treated as if it had no image, so it falls
+ * straight through to a reliable Unsplash fallback instead of wasting a
+ * failed network request. */
+const UNRELIABLE_HOSTS = ["loremflickr.com"];
+function isUnreliableImageUrl(url) {
+  return UNRELIABLE_HOSTS.some(host => url.includes(host));
+}
+
 export function getProductImage(product) {
-  const url = typeof product?.image === "string" ? product.image.trim() : "";
+  const raw = typeof product?.image === "string" ? product.image.trim() : "";
+  const url = raw && !isUnreliableImageUrl(raw) ? raw : "";
   if (url) return url;
   if (product?.id != null && PRODUCT_IMAGES_BY_ID[product.id]) {
     return PRODUCT_IMAGES_BY_ID[product.id];
@@ -47,7 +58,7 @@ export function getProductImage(product) {
 export function getProductImages(product) {
   if (Array.isArray(product?.images) && product.images.length > 0) {
     const cleaned = product.images
-      .filter(u => typeof u === "string" && u.trim())
+      .filter(u => typeof u === "string" && u.trim() && !isUnreliableImageUrl(u))
       .map(u => u.trim());
     if (cleaned.length > 0) return cleaned;
   }
