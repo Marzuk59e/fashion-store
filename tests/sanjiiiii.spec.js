@@ -232,9 +232,12 @@ test.describe('Responsive - Mobile View', () => {
   test('should render shop page on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await dismissCookie(page);
-    await page.click('button.nav-link:has-text("Collection")');
+
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await page.getByRole('button', { name: 'Collection', exact: true }).click();
+
     await expect(page.locator('.products-grid')).toBeVisible({ timeout: 8000 });
-  });
+});
 
   test('navbar should be visible on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });

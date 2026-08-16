@@ -1516,6 +1516,32 @@ useEffect(() => {
           <button type="button" className="icon-btn icon-btn--search" onClick={goToCollectionSearch} aria-label="Search collection">
             <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
           </button>
+          <button
+  type="button"
+  className="icon-btn icon-btn--cart"
+  aria-label="Shopping bag"
+  onClick={() => setCartOpen(true)}
+>
+  <svg
+    width="18"
+    height="18"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 24 24"
+  >
+    <path d="M6 8h12l1 12H5L6 8Z" />
+    <path d="M9 8a3 3 0 0 1 6 0" />
+  </svg>
+
+  {cartCount > 0 && (
+    <span className="badge" aria-label={`${cartCount} items in bag`}>
+      {cartCount}
+    </span>
+  )}
+</button>
           {!isMobile && (
             <button type="button" className="icon-btn icon-btn--wishlist" aria-label="Wishlist" onClick={() => user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true)}>
               <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
@@ -1557,9 +1583,17 @@ useEffect(() => {
               <button key={p} type="button" className={`nav-link${page === p ? " active" : ""}`} onClick={() => { setNavOpen(false); navigate(p); }}>{l}</button>
             ))}
             <div className="nav-mobile-divider" />
-            <button type="button" className="nav-link" onClick={() => { setNavOpen(false); setCartOpen(true); }}>
-              Bag{cartCount > 0 ? ` (${cartCount})` : ""}
-            </button>
+            <button
+    type="button"
+    className="nav-link"
+    aria-label="Shopping bag"
+    onClick={() => {
+        setNavOpen(false);
+        setCartOpen(true);
+    }}
+>
+    Bag{cartCount > 0 ? ` (${cartCount})` : ""}
+</button>
             <button type="button" className="nav-link" onClick={() => { setNavOpen(false); user ? (setProfileTab("wishlist"), navigate("profile")) : setAuthOpen(true); }}>
               Wishlist{user && wishlist.length > 0 ? ` (${wishlist.length})` : ""}
             </button>
