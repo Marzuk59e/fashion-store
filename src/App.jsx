@@ -333,6 +333,7 @@ function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
 }
 
 export default function App() {
+  const DEV_SKIP_LOGIN = true; // TODO: local test shesh hole false / delete korte hobe
   const [page, setPage] = useState("home");
   const [user, setUser] = useState(() => {
     // Instantly hydrate from localStorage — no network call
@@ -345,7 +346,7 @@ export default function App() {
       return null;
     }
   });
-  const [authReady, setAuthReady] = useState(false);
+  const [authReady, setAuthReady] = useState(DEV_SKIP_LOGIN ? true : false);
   const [products, setProducts] = useState(() => enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
   const catalogRef = useRef(DEFAULT_PRODUCTS);
   const [cart, setCart] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).cart);
@@ -874,6 +875,7 @@ useEffect(() => {
   };
 
   const promptSignIn = (action, message = "Please sign in to continue.") => {
+    if (DEV_SKIP_LOGIN) return;
     pendingAuthActionRef.current = action;
     setAuthMode("login");
     setAuthOpen(true);
