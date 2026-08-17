@@ -333,21 +333,8 @@ function NotificationCard({ n, user, db, doc, updateDoc, orders, products }) {
 }
 
 export default function App() {
-  const DEV_SKIP_LOGIN = true; // TODO: local test shesh hole false / delete korte hobe
   const [page, setPage] = useState("home");
   const [user, setUser] = useState(() => {
-    if (DEV_SKIP_LOGIN) {
-      return normalizeUser({
-        email: "devtest@local.com",
-        firstName: "Dev",
-        lastName: "Tester",
-        name: "Dev Tester",
-        profile: {},
-        cart: [],
-        wishlist: [],
-        orders: [],
-      });
-    }
     // Instantly hydrate from localStorage — no network call
     try {
       const session = LS.getSession();
@@ -358,7 +345,7 @@ export default function App() {
       return null;
     }
   });
-  const [authReady, setAuthReady] = useState(DEV_SKIP_LOGIN ? true : false);
+  const [authReady, setAuthReady] = useState(false);
   const [products, setProducts] = useState(() => enrichCatalogWithKidsFallback(DEFAULT_PRODUCTS));
   const catalogRef = useRef(DEFAULT_PRODUCTS);
   const [cart, setCart] = useState(() => readGuestBagFromStorage(DEFAULT_PRODUCTS).cart);
