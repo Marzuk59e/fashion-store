@@ -1,18 +1,18 @@
 export default function PayMethodIcon({ name }) {
   if (name === "card") {
     return (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-        <rect x="2" y="5" width="20" height="14" rx="2" />
-        <path d="M2 10h20" />
-      </svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M2 10h20M6 15h4" />
+    </svg>
     );
   }
   if (name === "paypal") {
     return (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
-        <path d="M7 5h8a4.5 4.5 0 0 1 0 9h-3l-1.2 8H8.5L9.6 14H7.5L7 5z" strokeLinejoin="round" />
-        <path d="M9.5 5v7" />
-      </svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+      <path fill="#253B80" d="M7.266 21.802h-4.61c-.309 0-.542-.278-.542-.606L4.973.882C5.05.372 5.487 0 6.001 0h7.937c2.35 0 4.187.487 5.156 1.634.917 1.087 1.187 2.29.884 3.98v.001c-.023.13-.047.264-.075.4C19.043 10.9 15.98 12.6 12 12.6H9.98c-.478 0-.883.348-.958.822l-1.756 8.38z" />
+      <path fill="#179BD7" d="M20.653 5.556c-.049-.216-.1-.427-.15-.63.023-.143.05-.278.077-.4h.007c.303-1.69.033-2.893-.884-3.98C18.735.487 16.9 0 14.55 0h-7.937a.943.943 0 0 0-.936.703l-3.316 20.5a.588.588 0 0 0 .594.665h4.61l1.756-8.38a.848.848 0 0 1 .958-.822h2.02c3.98 0 7.043-1.7 8.014-6.55.038-.216.08-.425.128-.628" />
+    </svg>
     );
   }
   if (name === "google") {
