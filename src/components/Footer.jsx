@@ -8,7 +8,8 @@ export default function Footer({ navigate }) {
         marginTop: "80px",
         position: "relative",
         boxSizing: "border-box",
-      }}
+      }
+    }
     >
       <div className="footer-grid">
         <div>

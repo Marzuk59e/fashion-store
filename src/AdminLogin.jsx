@@ -336,6 +336,76 @@ export default function AdminLogin({ storefrontUrl, busy, msg, setMsg, email, pa
             </>
           )}
 
+{view === "register" && (
+            <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div>
+                  <label style={labelStyle}>Full name</label>
+                  <input
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Your full name"
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Email address</label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Password</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showRegPass ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="At least 8 characters"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      style={{ ...inputStyle, paddingRight: 48 }}
+                    />
+                    <PasswordToggle show={showRegPass} onToggle={() => setShowRegPass((v) => !v)} />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Confirm password</label>
+                  <input
+                    type={showRegPass ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Re-enter your password"
+                    value={regConfirm}
+                    onChange={(e) => setRegConfirm(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Admin secret key</label>
+                  <input
+                    type="password"
+                    placeholder="Provided by your team"
+                    value={regKey}
+                    onChange={(e) => setRegKey(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+              {banner && <p style={bannerStyle}>{banner}</p>}
+              <button type="button" disabled={working} onClick={handleRegister} style={{ ...btnPrimary, width: "100%", marginTop: 22, opacity: working ? 0.75 : 1, cursor: working ? "wait" : "pointer" }}>
+                {working ? "Creating account…" : "Create Account"}
+              </button>
+            </>
+          )}
+          
           {view === "forgot-email" && (
             <>
               <p style={{ margin: "0 0 20px", fontSize: 14, color: C.warmGray, lineHeight: 1.65, textAlign: "center" }}>
